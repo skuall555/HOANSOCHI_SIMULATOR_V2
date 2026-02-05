@@ -516,27 +516,9 @@ pointer-events: none;
 .ps-container .meter-serial-label{position:absolute;left:50%;top:12%;transform:translateX(-50%);background:rgba(255,255,255,0.9);border:0.2vmin solid #003366;border-radius:0.8vmin;padding:0.25vmin 0.8vmin;font-weight:bold;font-size:1.8vmin;color:#003366;pointer-events:none;white-space:nowrap;z-index:2;display:none;}
 
 
-/* === 緑ボタン（通報者） === */
-.controls-r{display:flex;gap:2vmin;align-items:flex-end;justify-content:flex-end;}
-.talk-btn{background:radial-gradient(circle, rgba(0,200,80,0.55), rgba(0,120,60,0.85));border:0.3vmin solid #fff;box-shadow:0 0.5vmin 1vmin rgba(0,0,0,0.5);display:none;}
-.talk-btn:active{transform:scale(0.95);}
-
-/* === コミュニケーションウィンドウ === */
-.comm-body{display:flex;gap:2vmin;height:calc(100vh - 22vmin);min-height:40vh;}
-.comm-history{flex:1;border:1px solid #ccc;border-radius:1vmin;background:#fff;overflow-y:auto;padding:2vmin;display:flex;flex-direction:column;gap:1.2vmin;}
-.comm-side{width:28%;display:flex;flex-direction:column;gap:1.5vmin;align-items:center;}
-.comm-avatar{width:100%;aspect-ratio:1;max-height:32vh;border:2px solid #ccc;border-radius:1vmin;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-.comm-hint{font-size:70%;color:#333;background:#e1f5fe;border:1px solid #81d4fa;border-radius:1vmin;padding:1vmin;width:100%;box-sizing:border-box;}
-.comm-footer{margin-top:1.5vmin;display:flex;gap:1vmin;}
-.comm-move{width:28%;border:1px solid #999;border-radius:1vmin;padding:1vmin;font-size:2.2vmin;background:#fff;}
-.comm-input{flex:1;border:1px solid #999;border-radius:1vmin;padding:1vmin;font-size:2.3vmin;}
-.comm-send{width:18%;background:#2e7d32;color:#fff;border:none;border-radius:1vmin;font-weight:bold;font-size:2.5vmin;cursor:pointer;}
-.comm-msg{max-width:85%;padding:1.2vmin 1.8vmin;border-radius:1vmin;font-size:2.2vmin;line-height:1.4;word-break:break-word;white-space:pre-wrap;}
-.comm-user{align-self:flex-end;background:#e3f2fd;border:1px solid #bbdefb;}
-.comm-reporter{align-self:flex-start;background:#f5f5f5;border:1px solid #ddd;display:flex;gap:1vmin;align-items:flex-start;}
-.comm-reporter img{width:6vmin;height:6vmin;object-fit:cover;border-radius:50%;flex:0 0 auto;}
-.comm-reporter .txt{flex:1;}
-
+/* === 全画面表示ボタン（タイトル左下） === */
+#btn-fullscreen.fs-btn{position:absolute;left:2vmin;bottom:2vmin;z-index:80;background:rgba(0,0,0,0.45);border:0.2vmin solid #fff;font-size:65%;padding:1.2vmin 2.2vmin;border-radius:1vmin;}
+#btn-fullscreen.fs-btn:active{transform:scale(0.97);} 
 </style>
 </head>
 <body>
@@ -544,6 +526,7 @@ pointer-events: none;
 <div id="app-container">
 
 <div id="scene-title" class="screen active">
+<button id="btn-fullscreen" class="hud-btn fs-btn" onclick="toggleFullscreen(event)">⛶ 全画面</button>
 <div class="title-text">GAS EMERGENCY V85</div>
 <div class="tap-area" onclick="startApp()"><div class="tap-msg">TAP TO START</div></div>
 <div class="title-ui">
@@ -656,34 +639,6 @@ pointer-events: none;
 </div>
 </div>
 
-
-<div id="comm-window" class="overlay-screen">
-  <div class="menu-panel" style="width:100vw;height:100vh;max-height:100vh;position:relative;border-radius:0;padding:2vmin;box-sizing:border-box;">
-    <button class="close-talk-btn" style="top:1vmin;right:1vmin;left:auto;" onclick="closeCommWindow()">×</button>
-    <h2 style="color:#003366;margin:0 0 1vmin 0;">コミュニケーションウィンドウ</h2>
-    <div class="comm-body">
-      <div class="comm-history" id="comm-history"></div>
-      <div class="comm-side">
-        <div class="comm-avatar"><img id="comm-avatar-img" src="optimized_assets_v2/img_049.webp" alt="通報者" style="width:100%;height:100%;object-fit:contain;"></div>
-        <div class="comm-hint">通報者と会話できます。<br>例：どこ／どんなとき／どの程度／換気／警報器／窓／いつから…<br>「移動」「避難」と送ると移動先を選べます。</div>
-      </div>
-    </div>
-    <div class="comm-footer">
-      <select id="comm-move" class="comm-move" style="display:none">
-        <option value="">移動先を選択...</option>
-        <option value="kitchen">台所</option>
-        <option value="toilet">トイレ</option>
-        <option value="changing">脱衣所</option>
-        <option value="hallway">廊下</option>
-        <option value="bedroom">寝室</option>
-        <option value="evac">避難</option>
-      </select>
-      <input id="comm-input" class="comm-input" type="text" placeholder="聞きたいことを入力...">
-      <button class="comm-send" onclick="sendComm()">送信</button>
-    </div>
-  </div>
-</div>
-
 <div id="scene-talk" class="screen">
 <div class="talk-container">
 <div class="talk-left">
@@ -777,8 +732,7 @@ pointer-events: none;
 
 <!-- UI Parts: Controls (Hideable) -->
 <div class="controls-l"><div class="d-btn" onmousedown="input.l=true" onmouseup="input.l=false" onmouseleave="input.l=false" ontouchstart="input.l=true;event.preventDefault()" ontouchend="input.l=false;event.preventDefault()">◀</div><div class="d-btn" onmousedown="input.r=true" onmouseup="input.r=false" onmouseleave="input.r=false" ontouchstart="input.r=true;event.preventDefault()" ontouchend="input.r=false;event.preventDefault()">▶</div></div>
-<div class="controls-r"><div id="talk-btn" class="act-btn talk-btn" onmousedown="openCommWindow()" ontouchstart="openCommWindow();event.preventDefault()"><img id="talk-icon-img" alt="通報者" src="optimized_assets_v2/img_049.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
-<div id="action-btn" class="act-btn" onmousedown="handleAction()" onmouseup="input.j=false" onmouseleave="input.j=false" ontouchstart="handleAction();event.preventDefault()" ontouchend="input.j=false;event.preventDefault()"><span id="action-icon">🚪</span></div></div>
+<div class="controls-r"><div id="action-btn" class="act-btn" onmousedown="handleAction()" onmouseup="input.j=false" onmouseleave="input.j=false" ontouchstart="handleAction();event.preventDefault()" ontouchend="input.j=false;event.preventDefault()"><span id="action-icon">🚪</span></div></div>
 </div>
 
 <!-- Danger Panel (Always Visible) -->
@@ -3267,7 +3221,7 @@ function resumeLoopSafe(){
           // どの部屋に置いたか：item.room からDOMを推定するのは難しいので、置いた瞬間の active room で判定
           var active = document.querySelector('.room.active');
           var isStreet = active && active.id === 'room-street';
-          var scale = isStreet ? 1.5 : 3;
+          var scale = isStreet ? 3 : 6;
           // translate(-50%,-50%) は維持
           el.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
           el.dataset.scale = String(scale);
@@ -3281,300 +3235,64 @@ function resumeLoopSafe(){
 
 
 /* ===============================
-   改良 v6.14：PowerApps返答復活 + コミュニケーション（移動/避難）
-   - 初期：通報者は台所（room 9）→台所で緑ボタン表示
-   - 「移動/避難」を依頼した後：選択した移動先のみ緑ボタン表示、避難は非表示
-   - PowerApps由来の定型返答（換気/警報/窓…）を再び返す
+   改良 v6.15：全画面表示ボタン（タイトル左下）
    =============================== */
-
-var reporterRoom = 9; // 初期：台所
-
-function updateTalkButtonVisibility(){
+function toggleFullscreen(ev){
+  try{ if(ev) ev.stopPropagation(); }catch(e){}
   try{
-    var btn=document.getElementById('talk-btn');
-    if(!btn) return;
-    if(reporterRoom===-1){ btn.style.display='none'; return; }
-    if(state && typeof state.room==='number' && state.room===reporterRoom && !isPaused && !isDetectorMode && !isPlacementMode){
-      btn.style.display='flex';
-    } else {
-      btn.style.display='none';
+    var el=document.getElementById('app-container') || document.documentElement;
+    if(document.fullscreenElement){
+      if(document.exitFullscreen) document.exitFullscreen();
+      return;
+    }
+    if(el.requestFullscreen) el.requestFullscreen();
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else {
+      try{ showSystemMsg('このブラウザでは全画面表示が利用できません'); }catch(e){}
     }
   }catch(e){}
 }
 
-(function(){
-  try{ if(typeof updateHUD==='function'){ var _o=updateHUD; updateHUD=function(){ _o(); updateTalkButtonVisibility(); }; } }catch(e){}
-})();
-(function(){
-  try{ if(typeof initScenarioGameplay==='function'){ var _o=initScenarioGameplay; initScenarioGameplay=function(){ _o(); reporterRoom=9; updateTalkButtonVisibility(); }; } }catch(e){}
-})();
 
-function openCommWindow(){
-  try{
-    if(isPaused) return;
-    if(!(state && state.room===reporterRoom)) return;
-    var imgSrc=(customData && customData['resident'])?customData['resident']:'optimized_assets_v2/img_049.webp';
-    var b=document.getElementById('talk-icon-img'); var a=document.getElementById('comm-avatar-img');
-    if(b) b.src=imgSrc; if(a) a.src=imgSrc;
-    document.getElementById('comm-window').classList.add('active');
-    try{ if(loopId){ cancelAnimationFrame(loopId); loopId=null; } }catch(e){}
-    isPaused=true;
-    var hist=document.getElementById('comm-history');
-    if(hist && hist.children.length===0){ addReporterMsg('来てくださってありがとうございます。'); }
-    var inp=document.getElementById('comm-input'); if(inp){ inp.value=''; inp.focus(); }
-  }catch(e){}
-}
 
-function closeCommWindow(){
-  try{
-    document.getElementById('comm-window').classList.remove('active');
-    if(typeof resumeLoopSafe==='function') resumeLoopSafe();
-    else { isPaused=false; loop(); }
-  }catch(e){}
-}
-
-function addUserMsg(text){
-  var hist=document.getElementById('comm-history'); if(!hist) return;
-  var d=document.createElement('div'); d.className='comm-msg comm-user'; d.textContent=text;
-  hist.appendChild(d); hist.scrollTop=hist.scrollHeight;
-}
-
-function addReporterMsg(text){
-  var hist=document.getElementById('comm-history'); if(!hist) return;
-  var d=document.createElement('div'); d.className='comm-msg comm-reporter';
-  var imgSrc=(customData && customData['resident'])?customData['resident']:'optimized_assets_v2/img_049.webp';
-  d.innerHTML='<img src="'+imgSrc+'"><div class="txt"></div>';
-  d.querySelector('.txt').textContent=text;
-  hist.appendChild(d); hist.scrollTop=hist.scrollHeight;
-}
-
-function _rp(a){ return a[Math.floor(Math.random()*a.length)]; }
-function _normTxt(s){ return String(s||'').replace(/\s+/g,''); }
-function _containsAny(t, arr){ for(var i=0;i<arr.length;i++){ if(t.indexOf(arr[i])!==-1) return true; } return false; }
-
-// 移動UI
-function _showMoveSelect(){ var s=document.getElementById('comm-move'); if(s){ s.style.display='block'; s.value=''; } }
-function _hideMoveSelect(){ var s=document.getElementById('comm-move'); if(s){ s.style.display='none'; } }
-function _setReporterRoomByKey(key){
-  if(key==='kitchen') reporterRoom=9;
-  else if(key==='toilet') reporterRoom=6;
-  else if(key==='changing') reporterRoom=7;
-  else if(key==='hallway') reporterRoom=5;
-  else if(key==='bedroom') reporterRoom=10;
-  else if(key==='evac') reporterRoom=-1;
-  updateTalkButtonVisibility();
-}
-
+/* ===============================
+   改良 v6.16：点検口の開度判定（data-max-slideが無いと反応しない対策）
+   - getDoorOpenRatio2 が maxSlide=0 だと常に0扱い
+   - 点検口(hatch-lid)など data-max-slide を持たない扉でも開度を推定
+   =============================== */
 (function(){
   try{
-    document.addEventListener('change', function(ev){
-      var sel=ev.target;
-      if(!sel || sel.id!=='comm-move') return;
-      var v=sel.value; if(!v) return;
-      _setReporterRoomByKey(v);
-      if(v==='evac') addReporterMsg('わかった。避難しておくね。');
-      else {
-        var map={kitchen:'台所',toilet:'トイレ',changing:'脱衣所',hallway:'廊下',bedroom:'寝室'};
-        addReporterMsg(map[v]+'に移動するね。');
-      }
-      _hideMoveSelect();
-    });
-  }catch(e){}
-})();
-
-// 場所ワード（臭ってない返信用）
-var _PLACE_WORDS=[
-  {w:'外', name:'外'}, {w:'前面道路', name:'外'},
-  {w:'台所', name:'台所'}, {w:'トイレ', name:'トイレ'}, {w:'脱衣所', name:'脱衣所'}, {w:'廊下', name:'廊下'}, {w:'寝室', name:'寝室'}, {w:'浴室', name:'浴室'},
-  {w:'1F共用部', name:'1F共用部'}, {w:'2F共用部', name:'2F共用部'}
-];
-function _extractPlaces(text){
-  var t=_normTxt(text); var found=[];
-  for(var i=0;i<_PLACE_WORDS.length;i++){
-    if(t.indexOf(_PLACE_WORDS[i].w)!==-1){
-      if(!found.some(function(p){return p.name===_PLACE_WORDS[i].name;})) found.push(_PLACE_WORDS[i]);
+    if(typeof getDoorOpenRatio2==='function'){
+      var _origGetDoorOpenRatio2 = getDoorOpenRatio2;
+      getDoorOpenRatio2 = function(el){
+        try{
+          if(!el) return 0;
+          var max=parseFloat(el.dataset.maxSlide||'0');
+          if(!max || !isFinite(max)){
+            try{ max = (el.getBoundingClientRect().width||100) * 0.85; }catch(e2){ max = 85; }
+          }
+          var tr=getComputedStyle(el).transform;
+          if(!tr || tr==='none') tr = el.style.transform || '';
+          var tx=0;
+          var m = String(tr).match(/matrix\(([^)]+)\)/);
+          if(m){
+            var parts=m[1].split(',');
+            if(parts.length>=6) tx=parseFloat(parts[4]||'0');
+          } else {
+            var m2=String(tr).match(/translateX\(([-0-9.]+)px\)/);
+            if(m2) tx=parseFloat(m2[1]||'0');
+          }
+          var r=Math.abs(tx)/max;
+          if(!isFinite(r)) r=0;
+          if(r<0) r=0;
+          if(r>1) r=1;
+          return r;
+        }catch(e){
+          try{ return _origGetDoorOpenRatio2(el); }catch(e3){ return 0; }
+        }
+      };
     }
-  }
-  return found;
-}
-function _getLeak1Name(){
-  var leak=(activeScenario && activeScenario.leak1)?String(activeScenario.leak1).trim():'';
-  if(!leak) return '';
-  if(leak==='前面道路') return '外';
-  return leak;
-}
-
-// PowerApps由来の定型返答（全部返す）
-function powerAppsReplies(userText){
-  var t=_normTxt(userText);
-  var out=[];
-  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-
-  if(t.indexOf('換気')!==-1){
-    out.push(pick([
-      '【換気】台所だけ少し開けといたけど',
-      '【換気】台所開けてたけど寒くて少し閉めた',
-      '【換気】台所だけ軽く換気しました。',
-      '【換気】台所の換気は少しだけやりました。',
-      '【換気】台所の窓を少しだけ開けておきました。',
-      '【換気】換気はしてない。',
-      '【換気】窓は開けていない。'
-    ]));
-  }
-
-  if(_containsAny(t,['警報','音','ランプ','点','光'])){
-    out.push(pick([
-      '【警報器作動】警報器は点滅も音もしてなかったよ。',
-      '【警報器作動】警報器は全く作動していません。',
-      '【警報器作動】特に警報器の音も光もありませんでした。',
-      '【警報器作動】警報器が鳴ったり点滅したりすることはなかったです。',
-      '【警報器作動】警報器は何も反応していませんでした。'
-    ]));
-  }
-
-  if(_containsAny(t,['機器','器具','機具','コンロ','湯'])){
-    out.push(pick([
-      '【消費機器の使用】コンロもお湯も使ってなかったよ。',
-      '【消費機器の使用】コンロも給湯器も使用していませんでした。',
-      '【消費機器の使用】特に火を使うような機器は使っていません。',
-      '【消費機器の使用】お湯を沸かすことも、コンロを使うこともなかったです。',
-      '【消費機器の使用】コンロもガス給湯器も停止状態でした。',
-      '【消費機器の使用】さっき少しだけお湯を使ったかも。'
-    ]));
-  }
-
-  if(t.indexOf('窓')!==-1){
-    out.push(pick([
-      '【窓の設置場所】窓は「台所」「浴室」にあるよ。',
-      '【窓の設置場所】台所と浴室に窓がありますね。',
-      '【窓の設置場所】窓は台所と浴室にそれぞれ付いています。',
-      '【窓の設置場所】台所と浴室にしか窓はありません。',
-      '【窓の設置場所】窓は台所と浴室にありました。'
-    ]));
-  }
-
-  if(t.indexOf('電気')!==-1){
-    out.push(pick(['【電気操作厳禁】わかりました。','【電気操作厳禁】承知しました。','【電気操作厳禁】了解です。','【電気操作厳禁】かしこまりました。','【電気操作厳禁】はい、分かりました。']));
-  }
-
-  if(_containsAny(t,['火','たばこ','タバコ','煙草'])){
-    out.push(pick(['【火気厳禁】わかりました。','【火気厳禁】承知しました。','【火気厳禁】了解です。','【火気厳禁】かしこまりました。','【火気厳禁】はい、分かりました。']));
-  }
-
-  if(_containsAny(t,['離れ','階'])){
-    out.push(pick(['【調査範囲の拡張】わかりました。','【調査範囲の拡張】承知しました。','【調査範囲の拡張】了解です。','【調査範囲の拡張】かしこまりました。','【調査範囲の拡張】はい、分かりました。']));
-  }
-
-  if(_containsAny(t,['ポケ','ピ','警報器が','鳴ったら','したら'])){
-    out.push(pick([
-      '【ポケット警報器】警報器が鳴ったらあなた方を呼びます。',
-      '【ポケット警報器】ポケット警報器が鳴ったら、すぐにお知らせしますね。',
-      '【ポケット警報器】警報器の反応があれば、すぐにご連絡します。',
-      '【ポケット警報器】警報器が鳴ったら、皆さんに声をかけます。',
-      '【ポケット警報器】はい、警報器が鳴ったらすぐにお伝えします。'
-    ]));
-  }
-
-  if(_containsAny(t,['制服','社員','声'])){
-    out.push(pick(['【作業者への声掛け】わかりました。','【作業者への声掛け】承知しました。','【作業者への声掛け】了解です。','【作業者への声掛け】かしこまりました。','【作業者への声掛け】はい、分かりました。']));
-  }
-
-  if(_containsAny(t,['入','調','見て','みて','を調'])){
-    out.push(pick([
-      '【他の部屋への入室】他の部屋も出入りしていいよ。',
-      '【他の部屋への入室】他の部屋も自由に見て回ってください。',
-      '【他の部屋への入室】どうぞ、他の部屋も確認してください。',
-      '【他の部屋への入室】はい、他の部屋も調査していただいて結構です。',
-      '【他の部屋への入室】他の部屋も入って確認してもらって大丈夫です。'
-    ]));
-  }
-
-  if(t.indexOf('開')!==-1){
-    out.push(pick(['どうぞ。','はい、どうぞ。','ええ、問題ありません。','はい、結構です。','どうぞ、お入りください。']));
-  }
-
-  if(_containsAny(t,['なかった','臭わ','にお'])){
-    out.push(pick([
-      '【臭気を感じなかった部屋】和室と台所は感じなかったかな。',
-      '【臭気を感じなかった部屋】和室も台所も、特に臭いはありませんでした。',
-      '【臭気を感じなかった部屋】和室と台所では臭気を感じませんでしたね。',
-      '【臭気を感じなかった部屋】臭いがなかったのは、和室と台所です。',
-      '【臭気を感じなかった部屋】和室や台所では、臭いは確認できませんでした。'
-    ]));
-  }
-
-  if(_containsAny(t,['いつから','頃から','前から'])){
-    out.push(pick([
-      '【いつから】そう言われると、２週間前も臭ったかも。',
-      '【いつから】言われてみれば、2週間前にも同じような臭いがありました。',
-      '【いつから】2週間ほど前にも、この臭いを感じた気がします。',
-      '【いつから】確かに、2週間前にも一度臭いを感じた覚えがあります。',
-      '【いつから】もしかしたら、2週間くらい前から臭っていたかもしれません。'
-    ]));
-  }
-
-  return out;
-}
-
-function generateReporterReply(userText){
-  var raw=String(userText||'');
-  var t=_normTxt(raw);
-  var replies=[];
-
-  // 移動/避難
-  if(_containsAny(t,['避難','移動'])){
-    _showMoveSelect();
-    return 'どこに移動（または避難）すればいい？下のリストから選んでね。';
-  }
-
-  // leak1以外の場所ワード
-  var leak1=_getLeak1Name();
-  var places=_extractPlaces(raw);
-  if(places.length>0 && leak1){
-    places.forEach(function(p){ if(p.name && p.name!==leak1){ replies.push(p.name+'では臭ってないな。'); } });
-  }
-
-  // シナリオ固定回答
-  var whereTxt=(activeScenario && activeScenario.where)?String(activeScenario.where).trim():'';
-  var whenTxt=(activeScenario && activeScenario.when)?String(activeScenario.when).trim():'';
-  var degreeTxt=(activeScenario && activeScenario.degree)?String(activeScenario.degree).trim():'';
-
-  if(t.indexOf('どこ')!==-1) replies.push(whereTxt || 'うまく説明できなくて…でも、部屋の中のあたり。');
-  if(t.indexOf('どんなとき')!==-1) replies.push(whenTxt || '気づいたのは、普段どおり過ごしていたとき。');
-  if(t.indexOf('どの程度')!==-1 || t.indexOf('どの')!==-1) replies.push(degreeTxt || '強いというより、時々ふわっと感じるくらい。');
-
-  // PowerApps返答（全部返す）
-  var pa=powerAppsReplies(raw);
-  if(pa && pa.length) replies = replies.concat(pa);
-
-  if(replies.length>0) return replies.join('\n');
-
-  // その他
-  var leakPlace=(activeScenario && activeScenario.leak1)?String(activeScenario.leak1).trim():'室内';
-  if(leakPlace==='前面道路') leakPlace='外';
-  var opener=_rp(['ええと、','そうだね、','うーん…']);
-  var emo=_rp(['ちょっと怖い。','落ち着かない。','不安。','心配。']);
-  var smell=_rp(['ガスっぽいにおいがする。','ツンとするにおいがする。','なんとなくガスのにおいに近い気がする。']);
-  var place=_rp([leakPlace+'のあたりで感じた。', leakPlace+'付近がいちばん気になる。', '最初に気づいたのは'+leakPlace+'だった。']);
-  var extra=_rp(['換気したほうがいい？','火は使わないほうがいいよね？','このまま待ってて大丈夫？','外に出たほうがいい？']);
-  return opener+emo+' '+smell+' '+place+' '+extra;
-}
-
-function sendComm(){
-  try{
-    var inp=document.getElementById('comm-input'); if(!inp) return;
-    var text=String(inp.value||'').trim(); if(!text) return;
-    inp.value=''; addUserMsg(text);
-    setTimeout(function(){ addReporterMsg(generateReporterReply(text)); }, 250+Math.floor(Math.random()*350));
   }catch(e){}
-}
-
-(function(){
-  try{ document.addEventListener('keydown', function(ev){
-    if(ev.key==='Enter'){ var cw=document.getElementById('comm-window');
-      if(cw && cw.classList.contains('active')){ ev.preventDefault(); sendComm(); }
-    }
-  }); }catch(e){}
 })();
 
 </script>
