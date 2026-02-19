@@ -2924,6 +2924,15 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
           <option value="雨">雨</option>
           <option value="大雪">大雪</option>
         </select>
+      </div><div class="scenario-field" draggable="true" data-field="weatherAfter">
+        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="時間経過後の天候変化">時間経過後の天候変化</span></label>
+        <select id="sc-weather-after">
+          <option value="なし">なし（変化しない）</option>
+          <option value="晴れ">晴れ</option>
+          <option value="雨">雨</option>
+          <option value="大雪">大雪</option>
+        </select>
+        <div style="font-size:80%;color:#666;margin-top:0.3em;">反応箇所１を検知器モードで発見した後に天候が変化します</div>
       </div><div class="scenario-field" draggable="true" data-field="name">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="シナリオ名称">シナリオ名称</span></label>
         <input id="sc-name" type="text" placeholder="例：集合住宅 2F で臭気あり">
@@ -6482,7 +6491,7 @@ function createDefaultScenarioData(){
     a.push({
       name:'',stage:'戸建て',line1:'',placeAbout:'',line2:'',where:'',when:'',degree:'',
       gasKind:'13A',
-      weather:'晴れ',
+      weather:'晴れ',weatherAfter:'なし',
       leak1:'脱衣所',leak2:'脱衣所',
       alarm:'なし',alarmEntry:'なし',
       reporterRoomNo:'101',
@@ -6513,6 +6522,7 @@ function normalizeScenarioData(arr){
       degree:(s.degree!=null)?String(s.degree):'',
       gasKind:(s.gasKind!=null)?String(s.gasKind):(s.gasType!=null?String(s.gasType):'13A'),
       weather:(s.weather!=null)?String(s.weather):'晴れ',
+      weatherAfter:(s.weatherAfter!=null)?String(s.weatherAfter):'なし',
       leak1:(s.leak1!=null)?String(s.leak1):'脱衣所',
       leak2:(s.leak2!=null)?String(s.leak2):'脱衣所',
       alarm:(s.alarm!=null)?String(s.alarm):'なし',
@@ -6673,10 +6683,8 @@ function openScenarioEdit(idx){
   document.getElementById('sc-when').value=s.when?String(s.when):'';
   document.getElementById('sc-degree').value=s.degree?String(s.degree):'';
   try{ var w=document.getElementById('sc-weather'); if(w) w.value = s.weather?String(s.weather):'晴れ'; }catch(e){}
+  try{ var wa=document.getElementById('sc-weather-after'); if(wa) wa.value = s.weatherAfter?String(s.weatherAfter):'なし'; }catch(e){}
   try{ var gk=document.getElementById('sc-gas-kind'); if(gk) gk.value = s.gasKind?String(s.gasKind):'13A'; }catch(e){}
-  try{ var w=document.getElementById('sc-weather'); if(w) w.value = s.weather?String(s.weather):'晴れ'; }catch(e){}
-  try{ var w=document.getElementById('sc-weather'); if(w) w.value = s.weather?String(s.weather):'晴れ'; }catch(e){}
-  try{ var w=document.getElementById('sc-weather'); if(w) w.value = s.weather?String(s.weather):'晴れ'; }catch(e){}
   document.getElementById('sc-leak1').value=s.leak1?String(s.leak1):'脱衣所';
   document.getElementById('sc-leak2').value=s.leak2?String(s.leak2):'脱衣所';
   document.getElementById('sc-alarm').value=s.alarm?String(s.alarm):'なし';
@@ -6783,6 +6791,7 @@ function saveScenario(){
     degree: document.getElementById('sc-degree').value || '',
     gasKind: (function(){ try{ var el=document.getElementById('sc-gas-kind'); return (el&&el.value)?el.value:'13A'; }catch(e){ return '13A'; } })(),
     weather: (function(){ try{ var el=document.getElementById('sc-weather'); return (el&&el.value)?el.value:'晴れ'; }catch(e){ return '晴れ'; } })(),
+    weatherAfter: (function(){ try{ var el=document.getElementById('sc-weather-after'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     leak1: document.getElementById('sc-leak1').value || '脱衣所',
     leak2: document.getElementById('sc-leak2').value || '脱衣所',
     alarm: document.getElementById('sc-alarm').value || 'なし',
@@ -8397,6 +8406,14 @@ try{ document.getElementById('detector-tool').style.display='block'; }catch(e){}
               hs1FoundAt=Date.now();
               // hs2生成（初回のみ）
               try{ if(activeScenario && activeScenario.leak2 && String(activeScenario.leak2)!=='なし'){ hotspot2=buildHotspot2(activeScenario.leak2,2); } else { hotspot2=null; } ensureHotspotDiv('hs2'); }catch(e2){}
+              // 時間経過後の天候変化（反応箇所１発見時にトリガー）
+              try{
+                var newWeather = activeScenario && activeScenario.weatherAfter ? String(activeScenario.weatherAfter) : 'なし';
+                if(newWeather !== 'なし'){
+                  setWeather(newWeather);
+                  showSystemMsg('天候が変化しました：' + newWeather);
+                }
+              }catch(e3){}
             }
             if(canBeep){
               var now1=Date.now();
@@ -10068,6 +10085,7 @@ function _applyScenarioToForm(s){
   document.getElementById('sc-degree').value=s.degree?String(s.degree):'';
   try{ var gk=document.getElementById('sc-gas-kind'); if(gk) gk.value = s.gasKind?String(s.gasKind):'13A'; }catch(e){}
   try{ var w=document.getElementById('sc-weather'); if(w) w.value = s.weather?String(s.weather):'晴れ'; }catch(e){}
+  try{ var wa=document.getElementById('sc-weather-after'); if(wa) wa.value = s.weatherAfter?String(s.weatherAfter):'なし'; }catch(e){}
   document.getElementById('sc-leak1').value=s.leak1?String(s.leak1):'脱衣所';
   document.getElementById('sc-leak2').value=s.leak2?String(s.leak2):'浴室';
   document.getElementById('sc-alarm').value=s.alarm?String(s.alarm):'なし';
@@ -10103,6 +10121,7 @@ function _collectScenarioFromForm(){
     degree: document.getElementById('sc-degree')?.value || '',
     gasKind: (function(){ try{ var el=document.getElementById('sc-gas-kind'); return (el&&el.value)?el.value:'13A'; }catch(e){ return '13A'; } })(),
     weather: (function(){ try{ var el=document.getElementById('sc-weather'); return (el&&el.value)?el.value:'晴れ'; }catch(e){ return '晴れ'; } })(),
+    weatherAfter: (function(){ try{ var el=document.getElementById('sc-weather-after'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     leak1: document.getElementById('sc-leak1')?.value || '脱衣所',
     leak2: document.getElementById('sc-leak2')?.value || '脱衣所',
     alarm: document.getElementById('sc-alarm')?.value || 'なし',
