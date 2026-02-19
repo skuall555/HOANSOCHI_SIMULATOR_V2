@@ -2608,6 +2608,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <button class="menu-btn" onclick="startGame()">シミュレーション</button>
 <button class="menu-btn sec" onclick="showScenarioList()">📝 シナリオ設定</button>
 <button class="menu-btn sec" onclick="openHistory()">📈 履歴/統計</button>
+<button class="menu-btn sec" onclick="openSaveDataManager()">💾 セーブデータ管理</button>
 <button class="menu-btn sec" onclick="hideMenu()">ゲームに戻る</button>
 </div>
 </div>
@@ -2616,15 +2617,6 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   <div class="menu-panel start-panel">
     <h2 style="color:#000; margin:0 0 2vmin 0; font-family: 'MS Gothic', 'Meiryo', sans-serif; font-weight: bold; text-shadow: 1px 1px 0px rgba(255,255,255,0.3);">シミュレーション開始設定</h2>
     <div class="start-form">
-      <div class="start-row"><label>ステージ名</label>
-        <select id="start-stage">
-          <option value="戸建て">戸建て</option>
-          <option value="集合住宅" selected="">集合住宅</option>
-          <option value="地下街">地下街</option>
-          <option value="業務用">業務用</option>
-          <option value="道路">道路</option>
-        </select>
-      </div>
       <div class="start-row"><label>難易度</label>
         <select id="start-diff" onchange="refreshStartScenarioOptions()">
           <option value="C級">C級</option>
@@ -2639,6 +2631,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         <div class="scenario-help" id="start-scenario-help">選択した難易度のシナリオのみ表示されています。</div>
       </div>
     </div>
+    <button class="menu-btn sec" style="margin-bottom:1.5vmin;" onclick="openHistoryFromStartSetup()">📋 リストからシナリオを選択する</button>
     <button class="menu-btn" onclick="confirmStartSetup()">開始（会話へ）</button>
     <button class="menu-btn sec" onclick="closeStartSetup()">キャンセル</button>
   </div>
@@ -2918,9 +2911,6 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       </div><div class="scenario-field" draggable="true" data-field="safetyNorma">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="安全率ノルマ">安全率ノルマ<br><span style="font-size:80%;color:#666;">（クリア必要な内部値。表示は最大100%に正規化）</span></span></label>
         <input id="sc-safety-norma" type="number" min="1" max="9999" step="1" placeholder="例: 100" value="100" style="width:100%;box-sizing:border-box;padding:0.8vmin;">
-      </div><div class="scenario-field" draggable="true" data-field="stage">
-        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="ステージ">ステージ</span></label>
-        <select id="sc-stage"><option value="戸建て">戸建て</option><option value="集合住宅">集合住宅</option><option value="道路">道路</option></select>
       </div><div class="scenario-field" draggable="true" data-field="basement">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="地下街の有無">地下街（飲食店フロア）への立入</span></label>
         <select id="sc-basement">
@@ -3081,8 +3071,21 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       </div>
       <button onclick="closeHistory()" style="width:3.5vmin;height:3.5vmin;background:#37474f;color:#fff;border:none;border-radius:50%;font-size:2vmin;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
     </div>
-    <!-- サブタイトル -->
-    <div style="background:rgba(0,0,0,0.3);padding:0.8vmin 2vmin;font-size:1.8vmin;color:#90caf9;font-weight:bold;border-bottom:0.2vmin solid #1e3a5f;flex-shrink:0;">■ シナリオ別統計 &nbsp;<span style="font-size:1.4vmin;font-weight:normal;color:#64b5f6;">（シナリオ名をクリックすると詳細履歴が表示されます）</span></div>
+    <!-- サブタイトル + 難易度フィルター -->
+    <div style="background:rgba(0,0,0,0.3);padding:0.8vmin 2vmin;border-bottom:0.2vmin solid #1e3a5f;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:1.2vmin;flex-wrap:wrap;margin-bottom:0.6vmin;">
+        <span style="font-size:1.8vmin;color:#90caf9;font-weight:bold;">■ シナリオ別統計</span>
+        <div style="display:flex;gap:0.5vmin;">
+          <button id="hdf-all" onclick="setHistoryDiffFilter('all')" style="padding:0.4vmin 1.1vmin;font-size:1.5vmin;border:none;border-radius:0.4vmin;cursor:pointer;background:#42a5f5;color:#fff;font-weight:bold;">全て</button>
+          <button id="hdf-c" onclick="setHistoryDiffFilter('C級')" style="padding:0.4vmin 1.1vmin;font-size:1.5vmin;border:none;border-radius:0.4vmin;cursor:pointer;background:#546e7a;color:#fff;">C級</button>
+          <button id="hdf-b" onclick="setHistoryDiffFilter('B級')" style="padding:0.4vmin 1.1vmin;font-size:1.5vmin;border:none;border-radius:0.4vmin;cursor:pointer;background:#546e7a;color:#fff;">B級</button>
+          <button id="hdf-a" onclick="setHistoryDiffFilter('A級')" style="padding:0.4vmin 1.1vmin;font-size:1.5vmin;border:none;border-radius:0.4vmin;cursor:pointer;background:#546e7a;color:#fff;">A級</button>
+          <button id="hdf-s" onclick="setHistoryDiffFilter('S級')" style="padding:0.4vmin 1.1vmin;font-size:1.5vmin;border:none;border-radius:0.4vmin;cursor:pointer;background:#546e7a;color:#fff;">S級</button>
+        </div>
+        <span style="font-size:1.4vmin;font-weight:normal;color:#64b5f6;">（行をクリックすると詳細履歴が表示されます）</span>
+      </div>
+      <div id="diff-filter-summary" style="font-size:1.6vmin;color:#b0bec5;padding:0.2vmin 0;">選択中の難易度　クリア済み <b style="color:#fff;">0</b>件　／　シナリオ数 <b style="color:#fff;">0</b>件</div>
+    </div>
     <!-- 統計リスト -->
     <div id="history-stats" style="flex:1;overflow-y:auto;padding:1.5vmin 2vmin;"></div>
   </div>
@@ -3109,6 +3112,32 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
     </div>
     <!-- 履歴リスト -->
     <div id="history-detail-list" style="flex:1;overflow-y:auto;padding:1.5vmin 2vmin;"></div>
+  </div>
+</div>
+<div id="scene-savedata" class="overlay-screen">
+  <div class="menu-panel" style="max-width:60vmin;width:90%;max-height:80vh;overflow-y:auto;">
+    <h2 style="color:#000;margin:0 0 2vmin 0;font-family:'MS Gothic','Meiryo',sans-serif;font-weight:bold;">💾 セーブデータ管理</h2>
+    <p style="font-size:1.6vmin;color:#333;margin:0 0 2vmin 0;line-height:1.6;">メイン保存はブラウザ内（localStorage）です。<br>JSONファイルに書き出せば、スマホ・PCなど別端末に移行できます。</p>
+    <div style="background:#e3f2fd;border-radius:1vmin;padding:1.5vmin 2vmin;margin-bottom:2vmin;">
+      <div style="font-size:1.8vmin;font-weight:bold;color:#1565c0;margin-bottom:1vmin;">📤 エクスポート（保存・移行用）</div>
+      <p style="font-size:1.4vmin;color:#333;margin:0 0 1.2vmin 0;">クリア履歴をJSONファイルとして書き出します。別の端末に移すには、このファイルをコピーしてインポートしてください。</p>
+      <button class="menu-btn" style="font-size:1.6vmin;padding:1vmin 2vmin;margin:0;" onclick="exportSaveData()">📤 セーブデータをエクスポート</button>
+    </div>
+    <div style="background:#e8f5e9;border-radius:1vmin;padding:1.5vmin 2vmin;margin-bottom:2vmin;">
+      <div style="font-size:1.8vmin;font-weight:bold;color:#2e7d32;margin-bottom:1vmin;">📥 インポート（別端末から移行）</div>
+      <p style="font-size:1.4vmin;color:#333;margin:0 0 1.2vmin 0;">エクスポートしたJSONファイルを読み込みます。<b style="color:#c62828;">現在のクリア履歴は上書きされます。</b></p>
+      <input type="file" id="save-import-file" accept=".json" style="display:none;" onchange="importSaveData(this)">
+      <button class="menu-btn" style="font-size:1.6vmin;padding:1vmin 2vmin;margin:0;background:#43a047;" onclick="document.getElementById('save-import-file').click()">📥 セーブデータをインポート</button>
+    </div>
+    <div style="background:#fff3e0;border-radius:1vmin;padding:1.2vmin 2vmin;margin-bottom:2vmin;">
+      <div style="font-size:1.6vmin;font-weight:bold;color:#e65100;margin-bottom:0.5vmin;">ℹ スマホ↔PC 共有の方法</div>
+      <ol style="font-size:1.3vmin;color:#555;margin:0;padding-left:3vmin;line-height:1.8;">
+        <li>エクスポートでJSONファイルを保存</li>
+        <li>クラウド（Google Drive, Dropboxなど）やメールで別端末に送る</li>
+        <li>別端末のブラウザでこのアプリを開き、インポートで読み込む</li>
+      </ol>
+    </div>
+    <button class="menu-btn sec" onclick="closeSaveDataManager()">閉じる</button>
   </div>
 </div>
 <div id="scene-game" class="screen">
@@ -6637,7 +6666,6 @@ function openScenarioEdit(idx){
   var s=scenarioData[idx]||{};
   document.getElementById('scenario-edit-title').textContent='シナリオ編集（No.'+(idx+1)+'）';
   document.getElementById('sc-name').value=s.name?String(s.name):'';
-  document.getElementById('sc-stage').value=s.stage?String(s.stage):'戸建て';
   document.getElementById('sc-line1').value=s.line1?String(s.line1):'';
   try{ var sp=document.getElementById('sc-place'); if(sp) sp.value = s.placeAbout?String(s.placeAbout):''; }catch(e){}
   document.getElementById('sc-line2').value=s.line2?String(s.line2):'';
@@ -6746,7 +6774,7 @@ function saveScenario(){
   var i=currentScenarioIndex;
   scenarioData[i]={
     name: document.getElementById('sc-name').value || '',
-    stage: document.getElementById('sc-stage').value || '戸建て',
+    stage: (scenarioData[i] && scenarioData[i].stage) ? scenarioData[i].stage : '集合住宅',
     line1: document.getElementById('sc-line1').value || '',
     placeAbout: (function(){ try{ var el=document.getElementById('sc-place'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     line2: document.getElementById('sc-line2').value || '',
@@ -6845,10 +6873,8 @@ function refreshStartScenarioOptions(){
 }
 
 function confirmStartSetup(){
-  var stageSel=document.getElementById('start-stage');
   var diffSel=document.getElementById('start-diff');
   var scSel=document.getElementById('start-scenario');
-  selectedStageName = stageSel ? stageSel.value : '集合住宅';
   selectedDifficulty = diffSel ? diffSel.value : 'B級';
 
   // 難易度に応じてシナリオをフィルター
@@ -6886,6 +6912,8 @@ function confirmStartSetup(){
   }
 
   activeScenario = scenarioData[selectedScenarioIdx];
+  // ステージ名はシナリオのstageプロパティから取得
+  selectedStageName = (activeScenario && activeScenario.stage) ? String(activeScenario.stage) : '集合住宅';
   try{ window.currentScenarioGasKind = (activeScenario && activeScenario.gasKind)?String(activeScenario.gasKind):'13A'; }catch(e){}
   try{ window.currentScenarioWeather = (activeScenario && activeScenario.weather)?String(activeScenario.weather):'晴れ'; setWeather(window.currentScenarioWeather);
     try{ forceApplyWeatherSoon(); }catch(e){}
@@ -10032,7 +10060,6 @@ function populateScenarioCopyOptions(){
 function _applyScenarioToForm(s){
   s=s||{};
   document.getElementById('sc-name').value=s.name?String(s.name):'';
-  document.getElementById('sc-stage').value=s.stage?String(s.stage):'戸建て';
   document.getElementById('sc-line1').value=s.line1?String(s.line1):'';
   try{ var sp=document.getElementById('sc-place'); if(sp) sp.value = s.placeAbout?String(s.placeAbout):''; }catch(e){}
   document.getElementById('sc-line2').value=s.line2?String(s.line2):'';
@@ -10064,9 +10091,10 @@ function copyScenarioFromSelected(){
   }catch(e){}
 }
 function _collectScenarioFromForm(){
+  var _curStage = (typeof currentScenarioIndex!=='undefined' && currentScenarioIndex!==null && scenarioData[currentScenarioIndex]) ? (scenarioData[currentScenarioIndex].stage||'集合住宅') : '集合住宅';
   return {
     name: document.getElementById('sc-name')?.value || '',
-    stage: document.getElementById('sc-stage')?.value || '戸建て',
+    stage: _curStage,
     line1: document.getElementById('sc-line1')?.value || '',
     placeAbout: (function(){ try{ var el=document.getElementById('sc-place'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     line2: document.getElementById('sc-line2')?.value || '',
@@ -13711,6 +13739,252 @@ function exportHistoryJson(){
   }catch(e){ console.error(e); }
 }
 
+// =============================================
+// 難易度フィルター機能
+// =============================================
+window._historyDiffFilter = window._historyDiffFilter || 'all';
+
+function setHistoryDiffFilter(diff){
+  window._historyDiffFilter = diff;
+  // ボタンの見た目を更新
+  var btns = {
+    'all':'hdf-all','C級':'hdf-c','B級':'hdf-b','A級':'hdf-a','S級':'hdf-s'
+  };
+  for(var k in btns){
+    var btn = document.getElementById(btns[k]);
+    if(!btn) continue;
+    if(k === diff){
+      btn.style.background = '#42a5f5';
+      btn.style.fontWeight = 'bold';
+    } else {
+      btn.style.background = '#546e7a';
+      btn.style.fontWeight = 'normal';
+    }
+  }
+  renderHistory();
+}
+
+// =============================================
+// renderStats を難易度フィルター対応に上書き
+// =============================================
+function renderStats(stats){
+  var box = document.getElementById('history-stats');
+  if(!box) return;
+
+  // 選択中の難易度フィルター
+  var diff = window._historyDiffFilter || 'all';
+
+  // scenarioData から表示対象のシナリオリストを取得
+  var allScenarios = [];
+  if(typeof scenarioData !== 'undefined'){
+    for(var i=0; i<scenarioData.length; i++){
+      var sc = scenarioData[i];
+      if(!sc || !sc.name || !String(sc.name).trim()) continue;
+      var scDiff = sc.difficulty || 'B級';
+      if(diff === 'all' || scDiff === diff){
+        allScenarios.push({idx: i, no: i+1, name: sc.name, difficulty: scDiff});
+      }
+    }
+  }
+
+  // stats を scenarioNo キーのマップに変換
+  var statsMap = {};
+  if(stats){
+    for(var j=0; j<stats.length; j++){
+      statsMap[stats[j].scenarioNo] = stats[j];
+    }
+  }
+
+  // サマリー更新
+  var clearedCount = 0;
+  for(var m=0; m<allScenarios.length; m++){
+    if(statsMap[allScenarios[m].no]) clearedCount++;
+  }
+  var summaryEl = document.getElementById('diff-filter-summary');
+  if(summaryEl){
+    summaryEl.innerHTML = '選択中の難易度　クリア済み <b style="color:#fff;">' + clearedCount + '</b>件　／　シナリオ数 <b style="color:#fff;">' + allScenarios.length + '</b>件';
+  }
+
+  if(allScenarios.length === 0){
+    box.innerHTML = '<div style="color:#90caf9;font-size:2vmin;padding:2vmin;">' + (diff==='all' ? '履歴がありません。ゲームをクリアすると統計が表示されます。' : diff + 'のシナリオが登録されていません。') + '</div>';
+    return;
+  }
+
+  function gradeColor(g){
+    if(g==='S') return '#ffd700';
+    if(g==='A') return '#4caf50';
+    if(g==='B') return '#42a5f5';
+    if(g==='C') return '#ffa726';
+    if(g==='D') return '#ef5350';
+    return '#90a4ae';
+  }
+  function diffColor(d){
+    if(d==='S級') return '#ffd700';
+    if(d==='A級') return '#4caf50';
+    if(d==='B級') return '#42a5f5';
+    if(d==='C級') return '#ffa726';
+    return '#90a4ae';
+  }
+
+  var h = '';
+  for(var n=0; n<allScenarios.length; n++){
+    var sc2 = allScenarios[n];
+    var st = statsMap[sc2.no] || null;
+    var isUnplayed = !st;
+    var diffBadge = '<span style="display:inline-block;padding:0.2vmin 0.8vmin;font-size:1.3vmin;border-radius:0.4vmin;background:' + diffColor(sc2.difficulty) + ';color:#fff;font-weight:bold;margin-right:0.5vmin;">' + _esc(sc2.difficulty) + '</span>';
+
+    var rightContent = '';
+    if(isUnplayed){
+      rightContent = '<span style="color:#ef5350;font-size:1.8vmin;font-weight:bold;">未プレイ</span>';
+    } else {
+      var correctRate = st.attempts ? Math.round((st.correct / st.attempts) * 100) : 0;
+      var bestGradeHtml = '';
+      if(st.bestGrade){
+        var gc = gradeColor(st.bestGrade);
+        bestGradeHtml = '<span style="display:inline-flex;align-items:center;justify-content:center;width:3vmin;height:3vmin;border-radius:50%;background:' + gc + ';color:#fff;font-weight:900;font-size:1.8vmin;box-shadow:0 0 0.8vmin ' + gc + ';margin-left:0.5vmin;">' + _esc(st.bestGrade) + '</span>';
+      }
+      rightContent = '<span style="font-size:1.7vmin;color:#b0bec5;">クリア <b style="color:#fff;">' + st.attempts + '回</b></span>'
+        + '<span style="font-size:1.7vmin;color:#b0bec5;margin-left:1.5vmin;">正答率 <b style="color:#' + (correctRate >= 70 ? '4caf50' : correctRate >= 40 ? 'ffa726' : 'ef5350') + ';">' + correctRate + '%</b></span>'
+        + (bestGradeHtml ? '<span style="margin-left:1vmin;font-size:1.5vmin;color:#90caf9;">最高</span>' + bestGradeHtml : '');
+    }
+
+    var rowBg = isUnplayed ? 'rgba(239,83,80,0.07)' : 'rgba(255,255,255,0.05)';
+    var rowBorder = isUnplayed ? '0.2vmin solid rgba(239,83,80,0.25)' : '0.2vmin solid rgba(100,181,246,0.2)';
+
+    h += '<div style="padding:1.2vmin 1.5vmin;margin-bottom:1vmin;background:' + rowBg + ';border:' + rowBorder + ';border-radius:1vmin;">'
+      + '<div style="display:flex;align-items:center;gap:1vmin;margin-bottom:0.6vmin;flex-wrap:wrap;">'
+      + '<div style="font-size:1.8vmin;font-weight:900;color:#64b5f6;white-space:nowrap;cursor:pointer;" onclick="openScenarioHistory(' + sc2.no + ')">No.' + sc2.no + '</div>'
+      + diffBadge
+      + '<div style="flex:1;font-size:2vmin;font-weight:700;color:#e3f2fd;cursor:pointer;" onclick="openScenarioHistory(' + sc2.no + ')">' + _esc(sc2.name || '(名称未設定)') + '</div>'
+      + (!isUnplayed ? '<div style="font-size:1.5vmin;color:#64b5f6;cursor:pointer;white-space:nowrap;" onclick="openScenarioHistory(' + sc2.no + ')">詳細 ▶</div>' : '')
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:1.5vmin;flex-wrap:wrap;justify-content:space-between;">'
+      + '<div style="display:flex;gap:1.5vmin;align-items:center;flex-wrap:wrap;">' + rightContent + '</div>'
+      + '<button onclick="challengeScenarioFromHistory(' + (sc2.idx) + ')" style="padding:0.5vmin 1.5vmin;font-size:1.5vmin;background:linear-gradient(135deg,#1976d2,#1565c0);color:#fff;border:none;border-radius:0.5vmin;cursor:pointer;white-space:nowrap;font-weight:bold;" onmouseover="this.style.background=\'linear-gradient(135deg,#42a5f5,#1976d2)\'" onmouseout="this.style.background=\'linear-gradient(135deg,#1976d2,#1565c0)\'">▶ このシミュレーションに挑戦する</button>'
+      + '</div>'
+      + '</div>';
+  }
+  box.innerHTML = h;
+}
+
+// =============================================
+// クリア履歴画面から開始設定画面へ遷移し、シナリオを選択状態にする
+// =============================================
+function challengeScenarioFromHistory(scenarioIdx){
+  try{
+    var sc = scenarioData[scenarioIdx];
+    if(!sc || !sc.name) return;
+    // クリア履歴を一旦閉じてシミュレーション開始設定を開く
+    try{ closeScenarioHistory(); }catch(e){}
+    try{ closeHistory(); }catch(e){}
+
+    // 難易度をセット
+    var diff = sc.difficulty || 'B級';
+    var diffSel = document.getElementById('start-diff');
+    if(diffSel) diffSel.value = diff;
+
+    // シナリオリストを更新
+    refreshStartScenarioOptions();
+
+    // シナリオを選択状態にする
+    var scSel = document.getElementById('start-scenario');
+    if(scSel){
+      for(var i=0; i<scSel.options.length; i++){
+        if(scSel.options[i].value === String(scenarioIdx)){
+          scSel.value = String(scenarioIdx);
+          break;
+        }
+      }
+    }
+
+    // 開始設定画面を表示
+    document.querySelectorAll('.overlay-screen').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById('scene-startsetup').classList.add('active');
+  }catch(e){ console.error(e); }
+}
+
+// =============================================
+// シミュレーション開始設定画面からクリア履歴画面へ移行
+// =============================================
+function openHistoryFromStartSetup(){
+  try{ document.getElementById('scene-startsetup').classList.remove('active'); }catch(e){}
+  // クリア履歴を開く（開始設定から来たフラグを立てる）
+  window._historyFromStartSetup = true;
+  openHistory();
+}
+
+// =============================================
+// セーブデータ管理
+// =============================================
+function openSaveDataManager(){
+  try{ hideMenu(); }catch(e){}
+  var s = document.getElementById('scene-savedata');
+  if(s) s.classList.add('active');
+}
+
+function closeSaveDataManager(){
+  var s = document.getElementById('scene-savedata');
+  if(s) s.classList.remove('active');
+}
+
+function exportSaveData(){
+  try{
+    var data = {};
+    // クリア履歴
+    data.clearHistory = loadHistory();
+    // 履歴上限設定
+    try{ data.historyLimit = localStorage.getItem('gasGame_historyLimit') || '500'; }catch(e){}
+    var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    var dateStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    a.download = 'hoansochi_savedata_' + dateStr + '.json';
+    a.click();
+  }catch(e){ console.error(e); alert('エクスポートに失敗しました: ' + e.message); }
+}
+
+function importSaveData(inputEl){
+  try{
+    var file = inputEl.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        var data = JSON.parse(e.target.result);
+        var imported = 0;
+        if(data.clearHistory && Array.isArray(data.clearHistory)){
+          localStorage.setItem('gasGame_clearHistory', JSON.stringify(data.clearHistory));
+          imported++;
+        }
+        if(data.historyLimit !== undefined){
+          localStorage.setItem('gasGame_historyLimit', String(data.historyLimit));
+        }
+        inputEl.value = '';
+        if(imported > 0){
+          alert('セーブデータをインポートしました。\nクリア履歴：' + (data.clearHistory ? data.clearHistory.length : 0) + '件');
+        } else {
+          alert('インポートできるデータが見つかりませんでした。\nファイルの形式を確認してください。');
+        }
+      }catch(err){
+        alert('インポートに失敗しました: ' + err.message);
+        inputEl.value = '';
+      }
+    };
+    reader.readAsText(file);
+  }catch(e){ console.error(e); alert('インポートに失敗しました: ' + e.message); }
+}
+
+// =============================================
+// 履歴画面オープン時に難易度フィルターボタンの初期状態を整える
+// =============================================
+var _baseOpenHistory = openHistory;
+openHistory = function(){
+  _baseOpenHistory.apply(this, arguments);
+  try{
+    // フィルターボタンの見た目を現在の状態に同期
+    setHistoryDiffFilter(window._historyDiffFilter || 'all');
+  }catch(e){}
+};
 
 
 // === PATCH: Pressure-drop safety +50 fix (fallback override) ===
