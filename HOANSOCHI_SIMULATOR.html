@@ -17,7 +17,25 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color:
 #app-container { position: relative; aspect-ratio: 16 / 9; width: 100vw; height: auto; max-width: 177.78vh; max-height: 100vh; background: #333; overflow: hidden; box-shadow: 0 0 0 2px #111; font-size: 2vw; }
 @media (min-aspect-ratio: 16/9) { #app-container { font-size: 3.55vh; } }
 
-/* [PATCH] Removed portrait-rotate layout (use letterbox instead) */
+/* ===== スマホ縦画面対応 =====
+   縦持ち時はゲームを90度回転してランドスケープ表示 */
+@media screen and (max-aspect-ratio: 1/1) and (max-width: 900px) {
+  body, html { overflow: hidden; }
+  #app-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    /* 縦画面の幅=短辺、高さ=長辺 → 回転後は幅が長辺になる */
+    aspect-ratio: 16 / 9;
+    width: 100vh;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center center;
+    font-size: 3.55vh;
+  }
+}
 /* 縦画面ローテーション案内バナー */
 #rotate-hint {
   display: none;
@@ -435,7 +453,7 @@ z-index: 100;
 #room-street { background: linear-gradient(#6cd 0%, #bde 60%, #fff 60%); background-size: 100% 100%; }
 #room-street .asphalt { z-index: 10; }
 .house-1 { position: absolute; bottom: 15%; left: 0%; width: 18%; height: 35%; background: #b2ebf2; border: 0.5vmin solid #006064; border-bottom: none; z-index: 2; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #006064; font-size: 60%; }
-.mansion { position: absolute; bottom: 14.5%; left: 20%; width: 40%; height: 64%; background: #ccc; border: 0.5vmin solid #333; border-bottom: none; z-index: 3; display: grid; grid-template-rows: 1fr 1fr 1fr; }
+.mansion { position: absolute; bottom: 14.5%; left: 20%; width: 40%; height: 75%; background: #ccc; border: 0.5vmin solid #333; border-bottom: none; z-index: 3; display: grid; grid-template-rows: 1fr 1fr 1fr; }
 .mansion-floor { border-bottom: 0.3vmin solid #999; display: flex; justify-content: space-around; align-items: center; position: relative;}
 .m-window { width: 25%; height: 50%; background: #fff; border: 0.3vmin solid #555; }
 .door-frame { position: absolute; bottom: 0; left: 35%; width: 30%; height: 70%; background: #444; border: 0.5vmin solid #222; }
@@ -2520,46 +2538,166 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 }
 
 
-
-/* =========================
-   [PATCH] Letterbox / Pillarbox
-   - Keep game at 16:9 (PC same aspect)
-   - Never stretch on tall/wide screens
-   - Extra area becomes black bars (PowerApps-like)
-   - Stabilize mobile viewport height using --vh
-   ========================= */
-html, body {
-  height: calc(var(--vh, 1vh) * 100) !important;
-  background: #000 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
+/* ===== TELモード（スマホパネル） ===== */
+#tel-panel {
+  position: absolute; top: 0; left: 0; width: 50%; height: 100%;
+  background: rgba(0,0,0,0.86); z-index: 420;
+  display: none; align-items: center; justify-content: center;
+  pointer-events: auto;
 }
-
-#app-container {
-  /* Force exact 16:9 inside the real viewport */
-  aspect-ratio: 16 / 9 !important;
-  width:  min(100vw, calc((var(--vh, 1vh) * 100) * 16 / 9)) !important;
-  height: min(calc(var(--vh, 1vh) * 100), calc(100vw * 9 / 16)) !important;
-  max-width: none !important;
-  max-height: none !important;
-  position: relative !important;
-  overflow: hidden !important;
-  /* Optional: keep a subtle frame; set to none if you want pure fullscreen */
-  box-shadow: 0 0 0 2px #111;
+#tel-panel.active { display: flex; }
+.tel-phone-wrap {
+  width: 86%; height: 91%;
+  background: #111; border-radius: 4vmin;
+  border: 0.5vmin solid #3a3a3a;
+  box-shadow: 0 0 0 0.3vmin #222, 0 0.5vmin 4vmin rgba(0,0,0,0.9),
+              inset 0 0 0.3vmin rgba(255,255,255,0.03);
+  display: flex; flex-direction: column; overflow: hidden; position: relative;
 }
-
-/* Reduce width-based scaling that can make the stage feel wider on large screens */
-#app-container {
-  font-size: clamp(12px, 2vmin, 20px) !important;
+.tel-status-bar {
+  height: 5%; min-height: 3vmin; background: #000;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 2vmin; color: #ccc; font-size: 1.3vmin; flex-shrink: 0;
 }
-
-/* Ensure overlays/screens don't try to exceed the container */
-.screen, .overlay-screen {
-  max-width: 100% !important;
-  max-height: 100% !important;
+.tel-screen { flex: 1; position: relative; overflow: hidden; }
+.tel-home-area {
+  height: 7%; min-height: 4vmin; background: #0a0a0a;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
+.tel-home-circle {
+  width: 5vmin; height: 5vmin; border-radius: 50%;
+  border: 0.3vmin solid #3a3a3a; background: #181818;
+}
+/* ロック画面 */
+#tel-lock-screen {
+  position: absolute; inset: 0;
+  background: linear-gradient(160deg, #0d1b2a 0%, #162447 55%, #1b263b 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: space-between;
+  padding: 8% 6% 6%;
+}
+.tel-lock-time {
+  font-size: 9vmin; color: #fff; font-weight: 100;
+  text-shadow: 0 0 2vmin rgba(100,160,255,0.4);
+  letter-spacing: 0.1vmin; text-align: center;
+}
+.tel-lock-date { font-size: 1.7vmin; color: rgba(255,255,255,0.55); margin-top: -1.5vmin; }
+.tel-lock-hint { font-size: 1.5vmin; color: rgba(255,255,255,0.42); }
+.tel-slide-wrap {
+  width: 84%; height: 7vmin;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3.5vmin; border: 0.2vmin solid rgba(255,255,255,0.22);
+  position: relative; overflow: hidden;
+}
+.tel-slide-label {
+  position: absolute; inset: 0; display: flex;
+  align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.62); font-size: 1.6vmin;
+  pointer-events: none; gap: 0.5vmin;
+}
+.tel-slide-arrows { animation: tel-arrow-anim 1.5s ease-in-out infinite; display: inline-block; }
+@keyframes tel-arrow-anim {
+  0%,100% { opacity: 0.3; transform: translateX(-0.5vmin); }
+  50%      { opacity: 1;   transform: translateX(0.6vmin); }
+}
+.tel-slide-puck {
+  position: absolute; top: 50%; left: 4px; transform: translateY(-50%);
+  width: calc(7vmin - 10px); height: calc(7vmin - 10px);
+  border-radius: 50%; background: rgba(255,255,255,0.92);
+  display: flex; align-items: center; justify-content: center; font-size: 2.3vmin;
+  user-select: none; -webkit-user-select: none; touch-action: none;
+  box-shadow: 0 0.2vmin 1vmin rgba(0,0,0,0.5); cursor: grab;
+}
+/* ホーム画面 */
+#tel-home-screen {
+  position: absolute; inset: 0;
+  background: linear-gradient(160deg, #0d1b2a 0%, #162447 60%, #1b263b 100%);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3vmin; padding: 5% 7%;
+}
+#tel-home-screen.active { display: flex; }
+.tel-home-title {
+  color: rgba(255,255,255,0.6); font-size: 1.7vmin;
+  text-align: center; margin-bottom: 0.5vmin;
+}
+.tel-app-btn {
+  width: 100%; padding: 3vmin 2.5vmin;
+  border: none; border-radius: 2vmin; cursor: pointer;
+  font-size: 2vmin; font-weight: bold;
+  display: flex; align-items: center; gap: 2vmin;
+  color: #fff; transition: filter 0.1s;
+}
+.tel-app-btn:active { filter: brightness(0.8); }
+.tel-btn-tantou {
+  background: linear-gradient(135deg, #1565c0 0%, #1e88e5 100%);
+  box-shadow: 0 0.5vmin 2vmin rgba(21,101,192,0.45);
+}
+.tel-btn-dial {
+  background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+  box-shadow: 0 0.5vmin 2vmin rgba(46,125,50,0.45);
+}
+.tel-app-icon { font-size: 2.8vmin; }
+.tel-close-btn {
+  position: absolute; bottom: 5%; right: 6%;
+  background: rgba(255,255,255,0.07); border: 0.15vmin solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.6); border-radius: 1vmin;
+  padding: 0.8vmin 2vmin; font-size: 1.5vmin; cursor: pointer;
+}
+/* ダイヤル画面 */
+#tel-dial-screen {
+  position: absolute; inset: 0;
+  background: linear-gradient(160deg, #0d1b2a 0%, #162447 100%);
+  display: none; flex-direction: column;
+  align-items: center; padding: 3% 5% 3%;
+  box-sizing: border-box;
+}
+#tel-dial-screen.active { display: flex; }
+.tel-dial-back {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.08); border: 0.15vmin solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.75); border-radius: 1vmin;
+  padding: 0.7vmin 2vmin; font-size: 1.5vmin; cursor: pointer; margin-bottom: 2%;
+}
+.tel-dial-display {
+  width: 100%; min-height: 10%;
+  background: rgba(0,0,0,0.5); border-radius: 1vmin;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 0 3vmin; color: #fff; font-size: 4vmin;
+  letter-spacing: 0.5vmin; margin-bottom: 3%;
+  box-sizing: border-box; word-break: break-all;
+}
+.tel-dial-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 2.5%; width: 100%; flex: 1;
+}
+.tel-dial-key {
+  background: rgba(255,255,255,0.08);
+  border: 0.15vmin solid rgba(255,255,255,0.15);
+  border-radius: 1.5vmin; color: #fff;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer; font-size: 3.5vmin; font-weight: 300;
+  transition: background 0.08s; aspect-ratio: 1;
+}
+.tel-dial-key:active { background: rgba(255,255,255,0.28); }
+.tel-dk-sub { font-size: 1.1vmin; color: rgba(255,255,255,0.48); margin-top: 0.2vmin; }
+.tel-dial-del {
+  background: rgba(220,60,50,0.12);
+  border-color: rgba(220,60,50,0.28); color: #ff8a80;
+}
+.tel-call-row { display: flex; width: 100%; justify-content: center; margin-top: 3%; }
+.tel-call-btn {
+  width: 60%; padding: 2.5vmin;
+  background: linear-gradient(135deg, #2e7d32, #43a047);
+  border: none; border-radius: 50vmin; color: #fff;
+  font-size: 2.3vmin; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 1vmin;
+  box-shadow: 0 0.5vmin 2vmin rgba(46,125,50,0.5);
+  transition: filter 0.1s;
+}
+.tel-call-btn:active { filter: brightness(0.8); }
+
 </style>
 
 <script>
@@ -2845,6 +2983,67 @@ html, body {
 <input id="comm-input" class="comm-input" type="text" placeholder="聞きたいことを入力..." style="flex:1;border:1px solid #999;border-radius:1vmin;padding:1vmin;font-size:2.3vmin;">
       <button class="comm-send" onclick="sendComm()" style="width:20%;background:#2e7d32;color:#fff;border:none;border-radius:1vmin;font-weight:bold;font-size:2.5vmin;cursor:pointer;">送信</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== TELモード パネル ===== -->
+<div id="tel-panel">
+  <div class="tel-phone-wrap">
+    <div class="tel-status-bar">
+      <span id="tel-clock-status">--:--</span>
+      <span>📶 🔋</span>
+    </div>
+    <div class="tel-screen">
+      <!-- ロック画面 -->
+      <div id="tel-lock-screen">
+        <div style="text-align:center;">
+          <div class="tel-lock-time" id="tel-clock">--:--</div>
+          <div class="tel-lock-date" id="tel-date"></div>
+        </div>
+        <div class="tel-lock-hint">▶ スライドして解除</div>
+        <div class="tel-slide-wrap" id="tel-slide-wrap">
+          <div class="tel-slide-label">
+            <span class="tel-slide-arrows">▶▶▶</span>
+            <span>スライドして解除</span>
+          </div>
+          <div class="tel-slide-puck" id="tel-slide-puck">🔒</div>
+        </div>
+      </div>
+      <!-- ホーム画面 -->
+      <div id="tel-home-screen">
+        <div class="tel-home-title">📱 スマートフォン</div>
+        <button class="tel-app-btn tel-btn-tantou" onclick="telCallTantou()">
+          <span class="tel-app-icon">📞</span>通信担当者へTEL
+        </button>
+        <button class="tel-app-btn tel-btn-dial" onclick="telShowDial()">
+          <span class="tel-app-icon">🔢</span>ダイヤルでTEL
+        </button>
+        <button class="tel-close-btn" onclick="closeTelPanel()">✕ 閉じる</button>
+      </div>
+      <!-- ダイヤル画面 -->
+      <div id="tel-dial-screen">
+        <button class="tel-dial-back" onclick="telShowHome()">← 戻る</button>
+        <div class="tel-dial-display" id="tel-dial-display">&#8203;</div>
+        <div class="tel-dial-grid">
+          <div class="tel-dial-key" onclick="telPress('1')">1<div class="tel-dk-sub">&nbsp;</div></div>
+          <div class="tel-dial-key" onclick="telPress('2')">2<div class="tel-dk-sub">ABC</div></div>
+          <div class="tel-dial-key" onclick="telPress('3')">3<div class="tel-dk-sub">DEF</div></div>
+          <div class="tel-dial-key" onclick="telPress('4')">4<div class="tel-dk-sub">GHI</div></div>
+          <div class="tel-dial-key" onclick="telPress('5')">5<div class="tel-dk-sub">JKL</div></div>
+          <div class="tel-dial-key" onclick="telPress('6')">6<div class="tel-dk-sub">MNO</div></div>
+          <div class="tel-dial-key" onclick="telPress('7')">7<div class="tel-dk-sub">PQRS</div></div>
+          <div class="tel-dial-key" onclick="telPress('8')">8<div class="tel-dk-sub">TUV</div></div>
+          <div class="tel-dial-key" onclick="telPress('9')">9<div class="tel-dk-sub">WXYZ</div></div>
+          <div class="tel-dial-key" onclick="telPress('*')">✱</div>
+          <div class="tel-dial-key" onclick="telPress('0')">0<div class="tel-dk-sub">+</div></div>
+          <div class="tel-dial-key tel-dial-del" onclick="telDel()">⌫</div>
+        </div>
+        <div class="tel-call-row">
+          <button class="tel-call-btn" onclick="telCall()">📞 発信</button>
+        </div>
+      </div>
+    </div>
+    <div class="tel-home-area"><div class="tel-home-circle"></div></div>
   </div>
 </div>
 
@@ -5872,6 +6071,7 @@ setTimeout(()=>{ box.style.display = 'none'; }, 3000);
 }
 
 function selectItem(key) {
+  if(key==='phone'){ try{ openTelPanel(); }catch(e){} return; }
   if(key==='memo'){ try{ openMemo(); }catch(e){} return; }
 if(state.room === 0 && ITEMS_DEF[key].type === 'coll') { playAudio('se_item', SE.item); state.inventory = state.inventory.filter(k => k !== key); if(state.equipped === key) { state.equipped = null; updateHand(); } state.vanStock.push(key); renderInventory(); renderVan(); }
 else {
@@ -5967,12 +6167,7 @@ if(!customData[key]) continue;
 if(key.startsWith('bgm_') || key.startsWith('se_') || key.startsWith('out_bgm_') || key==='indoor_bgm') { customAudio[key] = new Audio(customData[key]); continue; }
 if(key.startsWith('item_')) continue;
 const config = targets[key]; if (!config) continue;
-const __sel = (config.selector || '').toString().trim();
-if(!__sel || __sel === '.') { console.warn('[custom] skip invalid selector for', key, __sel); continue; }
-let __nodes;
-try { __nodes = document.querySelectorAll(__sel); }
-catch(e){ console.warn('[custom] bad selector for', key, __sel, e); continue; }
-__nodes.forEach(el => {
+document.querySelectorAll(config.selector).forEach(el => {
 if(config.type === 'html') {
 if(key === 'mansion') { el.style.border='none'; el.style.background='transparent'; }
 else if(key === 'boom' || key === 'resident' || key === 'npc') {
@@ -12310,9 +12505,6 @@ try{
     }
   }catch(e){}
 })();
-
-// [PATCH] Close missing outer IIFE for PATCH_B_PLAN_V3
-})();
 </script>
 
 <!-- DEBUG INFO DISPLAY -->
@@ -14152,17 +14344,220 @@ function __applySafetyAwarenessRules(labels, values){
 })();
 </script>
 
-</div></div>
+
 <script>
-/* [PATCH] Stabilize viewport height on mobile (Android/iOS) */
-(function () {
-  function setVH(){
-    var vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', vh + 'px');
+/* ===== TELモード ===== */
+(function(){
+  var _dialStr = '';
+  var _clockTimer = null;
+  var _slideInited = false;
+  var _sliding = false, _slideX0 = 0, _slideStartPx = 0;
+
+  /* DTMF周波数テーブル */
+  var DTMF = {
+    '1':[697,1209],'2':[697,1336],'3':[697,1477],
+    '4':[770,1209],'5':[770,1336],'6':[770,1477],
+    '7':[852,1209],'8':[852,1336],'9':[852,1477],
+    '*':[941,1209],'0':[941,1336],'#':[941,1477]
+  };
+
+  function playDTMF(digit) {
+    try {
+      initAudio();
+      if(!actx) return;
+      var freqs = DTMF[digit]; if(!freqs) return;
+      var t = actx.currentTime, dur = 0.13;
+      freqs.forEach(function(f){
+        var osc = actx.createOscillator(), g = actx.createGain();
+        osc.type = 'sine'; osc.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(0.17, t + 0.008);
+        g.gain.setValueAtTime(0.17, t + dur - 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.connect(g); g.connect(actx.destination);
+        osc.start(t); osc.stop(t + dur);
+      });
+    } catch(e){}
   }
-  setVH();
-  window.addEventListener('resize', setVH, {passive:true});
-  window.addEventListener('orientationchange', setVH, {passive:true});
+
+  function playRingOut() {
+    try {
+      initAudio();
+      if(!actx) return;
+      /* 呼び出し音 (440+480 Hz 二重音): 0.4s ON, 0.4s OFF x2 */
+      [0, 0.8].forEach(function(offset){
+        [440, 480].forEach(function(f){
+          var osc = actx.createOscillator(), g = actx.createGain();
+          osc.type = 'sine'; osc.frequency.value = f;
+          var t = actx.currentTime + offset;
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.linearRampToValueAtTime(0.13, t + 0.02);
+          g.gain.setValueAtTime(0.13, t + 0.36);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+          osc.connect(g); g.connect(actx.destination);
+          osc.start(t); osc.stop(t + 0.4);
+        });
+      });
+    } catch(e){}
+  }
+
+  function updateClock() {
+    try {
+      var now = new Date();
+      var hh = String(now.getHours()).padStart(2,'0');
+      var mm = String(now.getMinutes()).padStart(2,'0');
+      var t = hh+':'+mm;
+      var DAYS=['日','月','火','水','木','金','土'];
+      var ds=(now.getMonth()+1)+'月'+now.getDate()+'日（'+DAYS[now.getDay()]+'）';
+      var c=document.getElementById('tel-clock');
+      var cs=document.getElementById('tel-clock-status');
+      var d=document.getElementById('tel-date');
+      if(c) c.textContent=t; if(cs) cs.textContent=t; if(d) d.textContent=ds;
+    } catch(e){}
+  }
+
+  function moveSlide(clientX) {
+    try {
+      var puck=document.getElementById('tel-slide-puck');
+      var wrap=document.getElementById('tel-slide-wrap');
+      if(!puck||!wrap) return;
+      var maxPx=wrap.offsetWidth - puck.offsetWidth - 8;
+      var newL=Math.max(4, Math.min(_slideStartPx + (clientX - _slideX0), maxPx+4));
+      puck.style.transition='none';
+      puck.style.left=newL+'px';
+      puck.textContent=(newL >= (maxPx+4)*0.62) ? '🔓' : '🔒';
+    } catch(e){}
+  }
+
+  function endSlide() {
+    if(!_sliding) return;
+    _sliding=false;
+    try {
+      var puck=document.getElementById('tel-slide-puck');
+      var wrap=document.getElementById('tel-slide-wrap');
+      if(!puck||!wrap) return;
+      var maxPx=wrap.offsetWidth - puck.offsetWidth - 8;
+      var curL=puck.offsetLeft;
+      if(curL >= (maxPx+4)*0.62) {
+        puck.style.transition='left 0.2s';
+        puck.style.left=(maxPx+4)+'px';
+        setTimeout(function(){ window.telUnlock(); }, 200);
+      } else {
+        puck.style.transition='left 0.3s ease';
+        puck.style.left='4px';
+        puck.textContent='🔒';
+      }
+    } catch(e){}
+  }
+
+  function initSlide() {
+    var puck=document.getElementById('tel-slide-puck');
+    var wrap=document.getElementById('tel-slide-wrap');
+    if(!puck||!wrap) return;
+    function getX(e){ return e.touches ? e.touches[0].clientX : e.clientX; }
+    puck.addEventListener('mousedown', function(e){
+      _sliding=true; _slideX0=getX(e); _slideStartPx=puck.offsetLeft; e.preventDefault();
+    });
+    puck.addEventListener('touchstart', function(e){
+      _sliding=true; _slideX0=getX(e); _slideStartPx=puck.offsetLeft; e.preventDefault();
+    }, {passive:false});
+    document.addEventListener('mousemove', function(e){ if(_sliding) moveSlide(getX(e)); });
+    document.addEventListener('touchmove', function(e){
+      if(!_sliding) return; moveSlide(getX(e)); e.preventDefault();
+    }, {passive:false});
+    document.addEventListener('mouseup', endSlide);
+    document.addEventListener('touchend', endSlide);
+  }
+
+  /* ── パブリックAPI ── */
+  window.openTelPanel = function() {
+    try {
+      initAudio();
+      updateClock();
+      var hs=document.getElementById('tel-home-screen');
+      var ds=document.getElementById('tel-dial-screen');
+      var puck=document.getElementById('tel-slide-puck');
+      if(hs) hs.classList.remove('active');
+      if(ds) ds.classList.remove('active');
+      if(puck){ puck.style.transition='none'; puck.style.left='4px'; puck.textContent='🔒'; }
+      document.getElementById('tel-panel').classList.add('active');
+      if(_clockTimer) clearInterval(_clockTimer);
+      _clockTimer = setInterval(updateClock, 1000);
+      if(!_slideInited){ _slideInited=true; initSlide(); }
+    } catch(e){}
+  };
+
+  window.closeTelPanel = function() {
+    try {
+      document.getElementById('tel-panel').classList.remove('active');
+      if(_clockTimer){ clearInterval(_clockTimer); _clockTimer=null; }
+    } catch(e){}
+  };
+
+  window.telUnlock = function() {
+    try {
+      document.getElementById('tel-home-screen').classList.add('active');
+      playAudio('se_item', SE.item);
+    } catch(e){}
+  };
+
+  window.telShowHome = function() {
+    try {
+      document.getElementById('tel-dial-screen').classList.remove('active');
+      document.getElementById('tel-home-screen').classList.add('active');
+    } catch(e){}
+  };
+
+  window.telShowDial = function() {
+    try {
+      _dialStr='';
+      var d=document.getElementById('tel-dial-display');
+      if(d) d.innerHTML='&#8203;';
+      document.getElementById('tel-home-screen').classList.remove('active');
+      document.getElementById('tel-dial-screen').classList.add('active');
+    } catch(e){}
+  };
+
+  window.telCallTantou = function() {
+    try {
+      closeTelPanel();
+      openCommWindow('normal');
+    } catch(e){}
+  };
+
+  window.telPress = function(digit) {
+    try {
+      initAudio();
+      if(_dialStr.length >= 13) return;
+      _dialStr += digit;
+      var d=document.getElementById('tel-dial-display');
+      if(d) d.textContent=_dialStr;
+      playDTMF(digit);
+    } catch(e){}
+  };
+
+  window.telDel = function() {
+    try {
+      if(!_dialStr.length) return;
+      _dialStr=_dialStr.slice(0,-1);
+      var d=document.getElementById('tel-dial-display');
+      if(d) d.innerHTML=_dialStr||'&#8203;';
+    } catch(e){}
+  };
+
+  window.telCall = function() {
+    try {
+      if(!_dialStr) return;
+      initAudio();
+      playRingOut();
+      setTimeout(function(){
+        closeTelPanel();
+        try{ openCommWindow('normal'); }catch(e2){}
+      }, 2000);
+    } catch(e){}
+  };
+
 })();
 </script>
-</body></html>
+
+</div></div></body></html>
