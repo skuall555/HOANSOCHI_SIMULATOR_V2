@@ -453,7 +453,7 @@ z-index: 100;
 #room-street { background: linear-gradient(#6cd 0%, #bde 60%, #fff 60%); background-size: 100% 100%; }
 #room-street .asphalt { z-index: 10; }
 .house-1 { position: absolute; bottom: 15%; left: 0%; width: 18%; height: 35%; background: #b2ebf2; border: 0.5vmin solid #006064; border-bottom: none; z-index: 2; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #006064; font-size: 60%; }
-.mansion { position: absolute; bottom: 14.5%; left: 20%; width: 40%; height: 75%; background: #ccc; border: 0.5vmin solid #333; border-bottom: none; z-index: 3; display: grid; grid-template-rows: 1fr 1fr 1fr; }
+.mansion { position: absolute; bottom: 14.5%; left: 20%; width: 40%; height: 64%; background: #ccc; border: 0.5vmin solid #333; border-bottom: none; z-index: 3; display: grid; grid-template-rows: 1fr 1fr 1fr; }
 .mansion-floor { border-bottom: 0.3vmin solid #999; display: flex; justify-content: space-around; align-items: center; position: relative;}
 .m-window { width: 25%; height: 50%; background: #fff; border: 0.3vmin solid #555; }
 .door-frame { position: absolute; bottom: 0; left: 35%; width: 30%; height: 70%; background: #444; border: 0.5vmin solid #222; }
@@ -2649,36 +2649,36 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   position: absolute; inset: 0;
   background: linear-gradient(160deg, #0d1b2a 0%, #162447 100%);
   display: none; flex-direction: column;
-  align-items: center; padding: 3% 5% 3%;
-  box-sizing: border-box;
+  align-items: center; padding: 2% 4% 2%;
+  box-sizing: border-box; overflow: hidden;
 }
 #tel-dial-screen.active { display: flex; }
 .tel-dial-back {
   align-self: flex-start;
   background: rgba(255,255,255,0.08); border: 0.15vmin solid rgba(255,255,255,0.2);
   color: rgba(255,255,255,0.75); border-radius: 1vmin;
-  padding: 0.7vmin 2vmin; font-size: 1.5vmin; cursor: pointer; margin-bottom: 2%;
+  padding: 0.5vmin 1.5vmin; font-size: 1.4vmin; cursor: pointer; margin-bottom: 1%;
 }
 .tel-dial-display {
-  width: 100%; min-height: 10%;
+  width: 100%; min-height: 8%;
   background: rgba(0,0,0,0.5); border-radius: 1vmin;
   display: flex; align-items: center; justify-content: flex-end;
-  padding: 0 3vmin; color: #fff; font-size: 4vmin;
-  letter-spacing: 0.5vmin; margin-bottom: 3%;
+  padding: 0 2vmin; color: #fff; font-size: 3.2vmin;
+  letter-spacing: 0.3vmin; margin-bottom: 2%;
   box-sizing: border-box; word-break: break-all;
 }
 .tel-dial-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 2.5%; width: 100%; flex: 1;
+  gap: 2%; width: 100%; flex: 1; min-height: 0;
 }
 .tel-dial-key {
   background: rgba(255,255,255,0.08);
   border: 0.15vmin solid rgba(255,255,255,0.15);
-  border-radius: 1.5vmin; color: #fff;
+  border-radius: 1.2vmin; color: #fff;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  cursor: pointer; font-size: 3.5vmin; font-weight: 300;
-  transition: background 0.08s; aspect-ratio: 1;
+  cursor: pointer; font-size: 2.8vmin; font-weight: 300;
+  transition: background 0.08s;
 }
 .tel-dial-key:active { background: rgba(255,255,255,0.28); }
 .tel-dk-sub { font-size: 1.1vmin; color: rgba(255,255,255,0.48); margin-top: 0.2vmin; }
@@ -2686,14 +2686,14 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   background: rgba(220,60,50,0.12);
   border-color: rgba(220,60,50,0.28); color: #ff8a80;
 }
-.tel-call-row { display: flex; width: 100%; justify-content: center; margin-top: 3%; }
+.tel-call-row { display: flex; width: 100%; justify-content: center; margin-top: 2%; }
 .tel-call-btn {
-  width: 60%; padding: 2.5vmin;
+  width: 60%; padding: 1.8vmin;
   background: linear-gradient(135deg, #2e7d32, #43a047);
   border: none; border-radius: 50vmin; color: #fff;
-  font-size: 2.3vmin; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 1vmin;
-  box-shadow: 0 0.5vmin 2vmin rgba(46,125,50,0.5);
+  font-size: 2vmin; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 0.8vmin;
+  box-shadow: 0 0.4vmin 1.5vmin rgba(46,125,50,0.5);
   transition: filter 0.1s;
 }
 .tel-call-btn:active { filter: brightness(0.8); }
@@ -2968,6 +2968,12 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         </div>
         <div class="comm-avatar" style="width:100%;aspect-ratio:1;max-height:32vh;border:2px solid #ccc;border-radius:1vmin;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img id="comm-avatar-img" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png" alt="通報者" style="width:100%;height:100%;object-fit:contain;"></div>
         <div class="comm-hint" style="font-size:70%;color:#333;background:#e1f5fe;border:1px solid #81d4fa;border-radius:1vmin;padding:1vmin;width:100%;box-sizing:border-box;">通報者と会話できます。</div>
+        <div id="tantou-report-panel" style="display:none;width:100%;background:#fff8e1;border:1px solid #ffe082;border-radius:1vmin;padding:1vmin;font-size:65%;box-sizing:border-box;margin-top:0.5vmin;">
+          <div style="font-weight:bold;color:#e65100;margin-bottom:0.5vmin;">📋 報告状況</div>
+          <div style="margin:0.3vmin 0;">★到着時の事故発生　<span id="tantou-stat-a">0</span>%</div>
+          <div style="margin:0.3vmin 0;">★到着時の事故発生のおそれ　<span id="tantou-stat-b">0</span>%</div>
+          <div style="margin:0.3vmin 0;">★調査状況の報告　<span id="tantou-stat-c">0</span>%</div>
+        </div>
       </div>
     </div>
     <div class="comm-footer" style="margin-top:1.5vmin;display:flex;gap:1vmin;">
@@ -3859,7 +3865,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   <audio id="se-cardget" preload="auto" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89%E5%85%A5%E6%89%8B.mp3"></audio>
 </div>
 
-<div id="scene-smoking-danger" class="overlay-screen">
+<div id="scene-smoking-danger" class="overlay-screen" onclick="_smokeAnyTap(event)" style="cursor:pointer;">
   <div class="smoke-danger-wrap">
     <div class="smoke-danger-head">
   ⚠ DANGER EVENT <span style="font-size:2.2vmin;opacity:0.9;">喫煙</span>
@@ -9124,17 +9130,19 @@ function toggleFullscreen(ev){
 var reporterRoom = 9; // 初期：台所
 var residentBRoom = 5; // 初期：居住者B宅の廊下
 var MANAGER_IMG_URL = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E7%AE%A1%E7%90%86%E4%BA%BA.png';
+var TANTOU_IMG_URL = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E4%B8%80%E5%A0%B1.png';
 var commContext = { mode:'normal', doorId:null, awaitingId:false, partner:'reporter' };
 
-// 会話ログを相手ごとに分離（通報者/居住者B）
-var commLogs = { reporter: [], alarmB: [], manager: [] };
+// 会話ログを相手ごとに分離（通報者/居住者B/管理人/通信担当者）
+var commLogs = { reporter: [], alarmB: [], manager: [], tantou: [] };
 
-function _commPartnerKey(){ return (commContext && commContext.partner==='alarmB') ? 'alarmB' : ((commContext && commContext.partner==='manager') ? 'manager' : 'reporter'); }
+function _commPartnerKey(){ return (commContext && commContext.partner==='alarmB') ? 'alarmB' : ((commContext && commContext.partner==='manager') ? 'manager' : ((commContext && commContext.partner==='tantou') ? 'tantou' : 'reporter')); }
 function resetCommHistoryFor(partnerKey){ try{ if(commLogs[partnerKey]) commLogs[partnerKey]=[]; }catch(e){} }
-function resetCommHistory(){ try{ resetCommHistoryFor('reporter'); resetCommHistoryFor('alarmB'); resetCommHistoryFor('manager'); }catch(e){} }
+function resetCommHistory(){ try{ resetCommHistoryFor('reporter'); resetCommHistoryFor('alarmB'); resetCommHistoryFor('manager'); resetCommHistoryFor('tantou'); }catch(e){} }
 
 function _commAvatarSrcFor(partnerKey){
   if(partnerKey==='manager') return MANAGER_IMG_URL;
+  if(partnerKey==='tantou') return TANTOU_IMG_URL;
   // ※居住者Bの画像は ALARM_RESIDENT_IMG_URL を差し替えてください
   if(partnerKey==='alarmB') return (typeof ALARM_RESIDENT_IMG_URL!=='undefined') ? ALARM_RESIDENT_IMG_URL : 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png';
   return (customData && customData['resident']) ? customData['resident'] : 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png';
@@ -9385,12 +9393,13 @@ function openCommWindow(mode, partner){
     if(b) b.src=imgSrc;
     if(a) a.src=imgSrc;
     if(c) c.src=imgSrc;
-    var whoName = (key==='alarmB') ? '居住者B' : ((key==='manager') ? '管理人' : '通報者');
+    var whoName = (key==='alarmB') ? '居住者B' : ((key==='manager') ? '管理人' : ((key==='tantou') ? '通信担当者' : '通報者'));
     try{ if(a) a.alt = whoName; }catch(ea){}
     try{ if(b) b.alt = whoName; }catch(eb){}
     try{ if(c) c.alt = whoName; }catch(ec){}
     var hint=document.querySelector('#comm-window .comm-hint');
-    if(hint){ hint.textContent = (key==='alarmB') ? '居住者Bと会話できます。' : ((key==='manager') ? '管理人と会話できます。' : '通報者と会話できます。'); }
+    if(hint){ hint.textContent = (key==='alarmB') ? '居住者Bと会話できます。' : ((key==='manager') ? '管理人と会話できます。' : ((key==='tantou') ? '通信担当者と会話できます。' : '通報者と会話できます。')); }
+    try{ _tantouUpdateReportPanel(); }catch(e){}
   }catch(e){}
   try{ renderCommHistory(); }catch(e2){}
     // pause
@@ -9402,7 +9411,7 @@ function openCommWindow(mode, partner){
       if(commContext.mode==='knock'){
         addReporterMsg('どちら様ですか？');
       } else {
-        if(commContext.partner==='manager') addReporterMsg('はい、どちらさまでしょうか？'); else if(commContext.partner==='alarmB') addReporterMsg('警報器が鳴って困っています…。'); else addReporterMsg('来てくださってありがとうございます。');
+        if(commContext.partner==='manager') addReporterMsg('はい、どちらさまでしょうか？'); else if(commContext.partner==='alarmB') addReporterMsg('警報器が鳴って困っています…。'); else if(commContext.partner==='tantou') addReporterMsg('こちら通信担当です。状況を教えてください。'); else addReporterMsg('来てくださってありがとうございます。');
       }
     }
 
@@ -9491,6 +9500,11 @@ function _unlockAlarmEntryFromKnock(){
 function generateCommReply(userText){
   var raw = String(userText||'');
   var t = raw.replace(/\s+/g,'');
+
+  /* 通信担当者 */
+  if(commContext && commContext.partner==='tantou'){
+    try{ return window._tantouGenerateReply(raw); }catch(e){ return '状況を確認しました。'; }
+  }
 
   if (commContext && commContext.partner === 'manager') {
     try { if (typeof owned !== 'undefined' && owned.has('カード_鍵')) return '早く向かいましょう。'; } catch (e0) {}
@@ -11513,7 +11527,7 @@ try{
 })();
 </script>
 
-<div id="scene-delivery-danger" class="overlay-screen">
+<div id="scene-delivery-danger" class="overlay-screen" onclick="_deliveryAnyTap(event)" style="cursor:pointer;">
   <div class="smoke-danger-wrap">
     <div class="smoke-danger-head">⚠ DANGER EVENT <span style="font-size:2.2vmin;opacity:0.9;">配達員</span><button id="delivery-danger-close" class="bt-close" type="button">×</button></div>
     <div class="smoke-danger-body">
@@ -14521,7 +14535,7 @@ function __applySafetyAwarenessRules(labels, values){
   window.telCallTantou = function() {
     try {
       closeTelPanel();
-      openCommWindow('normal');
+      openCommWindow('normal', 'tantou');
     } catch(e){}
   };
 
@@ -14557,6 +14571,225 @@ function __applySafetyAwarenessRules(labels, values){
     } catch(e){}
   };
 
+})();
+</script>
+
+
+<script id="patch-tantou-tel">
+/* ===== 通信担当者 TELモード ===== */
+(function(){
+
+/* ---------- 報告状況スコア ---------- */
+var _tantouStats = {
+  /* ① 到着時の事故発生 (3項目 各33.3%) */
+  a: { arrived:false, noAccident:false, roadOk:false },
+  /* ② 到着時の事故発生のおそれ (3項目 各33.3%) */
+  b: { noSmell:false, alarmOk:false, noConstruct:false },
+  /* ③ 調査状況の報告 (1回報告ごと +5%, 上限100%) */
+  c: 0
+};
+var _tantouReplyUsed = {};  /* キーワード1回のみフラグ */
+var _tantouAlarmActive = false; /* 警報器鳴動フラグ */
+var _tantouReactionFound = false; /* 反応箇所1発見フラグ */
+
+function _pct(obj){
+  var keys=Object.keys(obj), done=0;
+  keys.forEach(function(k){ if(obj[k]) done++; });
+  return Math.round(done/keys.length*100);
+}
+
+window._tantouUpdateReportPanel = function(){
+  try{
+    var panel=document.getElementById('tantou-report-panel');
+    var key=(window.commContext&&window.commContext.partner==='tantou');
+    if(panel) panel.style.display = key ? 'block' : 'none';
+    if(!key) return;
+    var sa=document.getElementById('tantou-stat-a');
+    var sb=document.getElementById('tantou-stat-b');
+    var sc=document.getElementById('tantou-stat-c');
+    if(sa) sa.textContent=_pct(_tantouStats.a);
+    if(sb) sb.textContent=_pct(_tantouStats.b);
+    if(sc) sc.textContent=Math.min(100,_tantouStats.c);
+  }catch(e){}
+};
+
+window._tantouResetStats = function(){
+  _tantouStats={ a:{arrived:false,noAccident:false,roadOk:false}, b:{noSmell:false,alarmOk:false,noConstruct:false}, c:0 };
+  _tantouReplyUsed={};
+  _tantouAlarmActive=false;
+  _tantouReactionFound=false;
+};
+
+/* ---------- 通信担当者 THOUGHTS_MAP エントリ ---------- */
+function _injectTantouThoughts(){
+  try{
+    var TM=window.THOUGHTS_MAP;
+    if(!TM||TM.tantou) return;
+    /* 常時表示グループ（ランダム回転） */
+    var base=[
+      { id:'t_arrived', text:'作業者は現場に到着したのだろうか？',          resolved:'作業者は現地調査中である。',             keys:['着'] },
+      { id:'t_accident',text:'到着時に着火など事故は起きてないだろうか？',    resolved:'到着時点では事故は発生していない。',       keys:['着火','爆発','火災','損壊'] },
+      { id:'t_road',    text:'到着時に道路に何か影響はなかっただろうか？',    resolved:'道路状況は把握した。',                   keys:['道路','陥没','地盤','沈下','落ち','おち'] },
+      { id:'t_smell',   text:'到着時にガス臭気はあっただろうか？',           resolved:'到着時ガス臭気はなし。',                 keys:['臭','しゅう','におい','匂'] },
+      { id:'t_alarm',   text:'到着時に都市ガス警報器は鳴っていない？',       resolved:'都市ガス警報器の、鳴動状況は理解。',     keys:['警報','けい'] },
+      { id:'t_kouji',   text:'到着時に近くで工事は行っていそう？',           resolved:'工事状況は把握した。',                   keys:['工事'] }
+    ];
+    /* 反応発見後に追加されるグループ（後から push される） */
+    TM.tantou = base;
+    TM._tantouExtra=[
+      { id:'t_react',   text:'検知器反応は見つかったのか？',                 resolved:'検知器反応については報告を受けた。',     keys:['反応'] },
+      { id:'t_leak',    text:'圧力降下はあったのか？',                       resolved:'漏洩状況について把握。',                 keys:['漏','圧力','気密','もれ','ろうえい'] },
+      { id:'t_meet',    text:'通報者には会えたのか？',                       resolved:'通報者とは接触できたらしい。',            keys:['通報','会','あえ'] }
+    ];
+    TM._tantouAlarmExtra=[
+      { id:'t_fire',    text:'消防や警察の応援は必要だろうか？',             resolved:'消防、警察の応援も検討しよう。',          keys:['消防','警察'] }
+    ];
+  }catch(e){}
+}
+_injectTantouThoughts();
+
+/* 反応発見時に呼び出す（外部から） */
+window._tantouOnReactionFound = function(){
+  try{
+    if(_tantouReactionFound) return;
+    _tantouReactionFound=true;
+    var TM=window.THOUGHTS_MAP;
+    if(TM&&TM._tantouExtra) TM._tantouExtra.forEach(function(t){ TM.tantou.push(t); });
+  }catch(e){}
+};
+/* 警報器鳴動時に呼び出す（外部から） */
+window._tantouOnAlarmActive = function(){
+  try{
+    if(_tantouAlarmActive) return;
+    _tantouAlarmActive=true;
+    var TM=window.THOUGHTS_MAP;
+    if(TM&&TM._tantouAlarmExtra) TM._tantouAlarmExtra.forEach(function(t){ TM.tantou.push(t); });
+  }catch(e){}
+};
+
+/* ---------- キーワード返信テーブル ---------- */
+var TANTOU_REPLIES = [
+  { keys:['到着','着き'],            tag:'到着報告',         reply:'【到着報告】現場到着、承知しました。',                                     score:true },
+  { keys:['臭気'],                   tag:'臭気有無',         reply:'【臭気有無】ガス臭気なし、承知しました。',                                 score:true },
+  { keys:['警報'],                   tag:'警報器鳴動有無',   reply:'【警報器鳴動有無】警報器鳴動状況、承知しました。',                         score:true },
+  { keys:['喧騒'],                   tag:'喧騒状況',         reply:'【喧騒状況】喧騒状況問題ない旨、承知しました。',                           score:true },
+  { keys:['着火'],                   tag:'着火爆発有無',     reply:'【着火爆発有無】着火、爆発の有無について、承知しました。',                 score:true },
+  { keys:['損壊','建物','被害'],     tag:'建物損壊有無',     reply:'【建物損壊有無】建物損壊なし、承知しました。',                             score:true },
+  { keys:['陥没','落'],              tag:'道路陥没有無',     reply:'【道路陥没有無】道路陥没なし、承知しました。',                             score:true },
+  { keys:['工事','復旧'],            tag:'工事有無',         reply:'【工事有無】前面道路の工事状況について、承知しました。',                   score:true },
+  { keys:['行'],                     tag:'工事有無2',        reply:'【工事有無】現在の工事状況、承知しました。',                               score:true },
+  { keys:['噴出','導管の損壊','損','折'], tag:'ガス噴出有無', reply:'【ガス噴出有無】道路上のガス管の状況、承知しました。',                    score:true },
+  { keys:['発生'],                   tag:'事故発生',         reply:'【事故発生】現在の事故の発生状況、承知しました。',                         score:true },
+  { keys:['恐れ'],                   tag:'事故発生の恐れ',   reply:'【事故発生の恐れ】現在の事故発生の恐れについて、承知しました。',           score:true },
+  { keys:['向'],                     tag:'注意',             reply:'気を付けて作業を実施して下さい。',                                         score:true },
+  { keys:['反応あり','反応有','反応が'], tag:'検知器反応有無', reply:'【検知器反応有無】検知器反応、承知しました。',                           score:true },
+  { keys:['灯内管','テスト','試験','検査','降下','ゲージ'], tag:'漏洩検査', reply:'【漏洩検査】圧力保持試験について、承知しました。',           score:true },
+  { keys:['監視','管理','時間'],     tag:'濃度監視',         reply:'【濃度監視】時間による濃度管理を継続してください。',                       score:true },
+  { keys:['消火器'],                 tag:'消火器',           reply:'【消火器】消火器設置状況、把握しました。',                                 score:true },
+  { keys:['流入','特性','空気より','都市ガスは'], tag:'流入滞留ガス', reply:'【流入・滞留ガス】1F及び屋外も視野に入れて行動してください。',     score:true },
+  { keys:['調査範囲','拡張','１階','1階','１F','1F','外','広げ'], tag:'調査範囲拡張', reply:'【調査範囲拡張】調査範囲の拡張、承知しました。', score:true },
+  { keys:['共用'],                   tag:'共用部調査',       reply:'【共用部調査】共用部調査状況、承知しました。',                             score:true },
+  { keys:['応答','不在'],            tag:'応答有無',         reply:'【応答有無】応答ない旨、承知しました。',                                   score:true },
+  { keys:['あが','上','濃度','下','変'], tag:'事故発生の恐れ緊急', reply:'【事故発生の恐れ】ただちに消防、警察を要請してください。',           score:true },
+  { keys:['識別','13A','１３','ＬＰＧ','LPG','プロ','カセット','ボンベ'], tag:'ガス種', reply:'【ガス種】ガス種別について承知しました。13Ａ検出時は、状況により警察、消防を要請してください。', score:true },
+  { keys:['局所的'],                 tag:'保安閉栓理由1',    reply:'【保安閉栓理由】室内に局所的にガスが滞留している可能性について、理解しました。', score:true },
+  { keys:['実施にも'],               tag:'保安閉栓理由2',    reply:'【保安閉栓理由】保安措置実施後も状況に変化がない旨、理解しました。',       score:true },
+  { keys:['正常'],                   tag:'保安閉栓理由3',    reply:'【保安閉栓理由】都市ガス警報器が正常作動している旨、理解しました。',       score:true },
+  { keys:['LEL25','多量'],           tag:'保安閉栓理由4',    reply:'【保安閉栓理由】多量のガス漏洩が想定される旨、理解しました。',             score:true },
+  { keys:['3戸'],                    tag:'保安閉栓理由5',    reply:'【保安閉栓理由】室内調査の対象住戸が3戸を超える旨、理解しました。',         score:true },
+  { keys:['閉','供給遮断','供給','バルブ','装置'], tag:'保安閉栓', reply:'【保安閉栓】ガス供給遮断について、承知しました。',                    score:true },
+  { keys:['消防'],                   tag:'消防要請',         reply:'【消防要請】消防を要請する根拠を示してください。',                         score:false },
+  { keys:['要救助者','搬送'],        tag:'消防要請理由1',    reply:'【消防要請理由】要救助者の搬送・介護の件、了解しました。',                 score:true },
+  { keys:['滞留ガスの排出'],         tag:'消防要請理由2',    reply:'【消防要請理由】室内滞留ガス排出の為、理解しました。',                     score:true },
+  { keys:['火災警戒区域'],           tag:'消防要請理由3',    reply:'【消防要請理由】火災警戒区域設定の為、理解しました。',                     score:true },
+  { keys:['避難指示'],               tag:'消防要請理由4',    reply:'【消防要請理由】避難指示の為、理解しました。',                             score:true },
+  { keys:['広報活動'],               tag:'消防要請理由5',    reply:'【消防要請理由】現場広報活動の為、理解しました。',                         score:true },
+  { keys:['警察'],                   tag:'警察要請',         reply:'【警察要請】警察を要請する根拠を示してください。',                         score:false },
+  { keys:['立入禁止','立ち入','立入り','制限'], tag:'警察要請理由', reply:'【警察要請理由】立入禁止・交通規制の件、了解しました。',             score:true },
+  { keys:['応援','同時','排風'],     tag:'応援要請理由',     reply:'【応援要請理由】社内応援を手配します。',                                   score:true },
+  { keys:['燃焼','指針回転'],        tag:'指針回転有無',     reply:'【指針回転有無】指針回転状況、承知しました。',                             score:true },
+  { keys:['閉止'],                   tag:'閉止状況',         reply:'【閉止状況】閉止状況、承知しました。',                                     score:true },
+  { keys:['避難'],                   tag:'避難誘導',         reply:'【避難誘導】避難誘導について、承知しました。',                             score:true },
+  { keys:['ガス漏れ','漏洩'],        tag:'ガス漏れ確認',     reply:'【ガス漏れ確認】安全確認を優先してください。',                             score:true },
+  { keys:['調査開始'],               tag:'調査開始',         reply:'【調査開始】引き続き注意深く調査をお願いします。',                         score:true },
+  { keys:['完了','調査終了'],        tag:'調査完了',         reply:'【調査完了】報告ありがとうございました。後続対応を依頼します。',           score:true },
+  { keys:['戸別'],                   tag:'避難誘導戸別',     reply:'【避難誘導】戸別での避難誘導について、承知しました。',                     score:true },
+  { keys:['拡声器'],                 tag:'避難誘導拡声器',   reply:'【避難誘導】拡声器での避難指示について、承知しました。',                   score:true },
+  { keys:['男'],                     tag:'避難誘導情報',     reply:'【避難誘導】避難誘導した方の情報、承知しました。',                         score:true },
+  { keys:['管理会社','鍵'],          tag:'入室方法',         reply:'【入室方法】管理人や管理会社の連絡先は分かりますか？',                     score:true }
+];
+
+/* ① 事故発生スコア認識キーワード */
+var TANTOU_RECOG_A = {
+  arrived:  { keys:['着'] },
+  noAccident:{ keys:['着火','爆発','火災','損壊'] },
+  roadOk:   { keys:['道路','陥没','地盤','沈下','落ち','おち'] }
+};
+/* ② 事故発生のおそれスコア認識キーワード */
+var TANTOU_RECOG_B = {
+  noSmell:     { keys:['臭','しゅう','におい','匂'] },
+  alarmOk:     { keys:['警報','けい'] },
+  noConstruct: { keys:['工事'] }
+};
+
+function _containsAny(text, keys){
+  var t=text.toLowerCase();
+  for(var i=0;i<keys.length;i++){
+    if(t.indexOf(keys[i].toLowerCase())>=0) return true;
+  }
+  return false;
+}
+
+/* generateCommReply から呼ばれる tantou専用返信関数 */
+window._tantouGenerateReply = function(rawText){
+  var t = rawText.replace(/\s+/g,'');
+  /* スコアA・B 認識チェック */
+  Object.keys(TANTOU_RECOG_A).forEach(function(k){
+    if(!_tantouStats.a[k] && _containsAny(t, TANTOU_RECOG_A[k].keys)){
+      _tantouStats.a[k]=true;
+    }
+  });
+  Object.keys(TANTOU_RECOG_B).forEach(function(k){
+    if(!_tantouStats.b[k] && _containsAny(t, TANTOU_RECOG_B[k].keys)){
+      _tantouStats.b[k]=true;
+    }
+  });
+  /* キーワード返信マッチング（1回のみスコア加算） */
+  for(var i=0;i<TANTOU_REPLIES.length;i++){
+    var row=TANTOU_REPLIES[i];
+    if(_containsAny(t, row.keys)){
+      var used=_tantouReplyUsed[row.tag];
+      if(!used && row.score){
+        _tantouReplyUsed[row.tag]=true;
+        _tantouStats.c = Math.min(100, _tantouStats.c + 5);
+      }
+      try{ window._thoughtCheckInput && window._thoughtCheckInput(rawText); }catch(e2){}
+      setTimeout(window._tantouUpdateReportPanel, 100);
+      return row.reply;
+    }
+  }
+  setTimeout(window._tantouUpdateReportPanel, 100);
+  return 'はい、状況を確認しました。引き続き報告をお願いします。';
+};
+
+})();
+</script>
+
+
+<script id="patch-danger-anytap">
+/* 配達・喫煙 danger event: 画面のどこでもタップで爆発へ移行 */
+(function(){
+  window._smokeAnyTap = function(e){
+    /* ×ボタンや内部ボタンは既存ハンドラに任せ、それ以外でOK起動 */
+    if(e && e.target && (e.target.id==='smoke-danger-close')) return;
+    var btn=document.getElementById('smoke-danger-ok');
+    if(btn) btn.click();
+  };
+  window._deliveryAnyTap = function(e){
+    if(e && e.target && (e.target.id==='delivery-danger-close')) return;
+    var btn=document.getElementById('delivery-danger-ok');
+    if(btn) btn.click();
+  };
 })();
 </script>
 
