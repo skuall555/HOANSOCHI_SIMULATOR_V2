@@ -5967,7 +5967,12 @@ if(!customData[key]) continue;
 if(key.startsWith('bgm_') || key.startsWith('se_') || key.startsWith('out_bgm_') || key==='indoor_bgm') { customAudio[key] = new Audio(customData[key]); continue; }
 if(key.startsWith('item_')) continue;
 const config = targets[key]; if (!config) continue;
-document.querySelectorAll(config.selector).forEach(el => {
+const __sel = (config.selector || '').toString().trim();
+if(!__sel || __sel === '.') { console.warn('[custom] skip invalid selector for', key, __sel); continue; }
+let __nodes;
+try { __nodes = document.querySelectorAll(__sel); }
+catch(e){ console.warn('[custom] bad selector for', key, __sel, e); continue; }
+__nodes.forEach(el => {
 if(config.type === 'html') {
 if(key === 'mansion') { el.style.border='none'; el.style.background='transparent'; }
 else if(key === 'boom' || key === 'resident' || key === 'npc') {
@@ -12304,6 +12309,9 @@ try{
       close.__boundX = true;
     }
   }catch(e){}
+})();
+
+// [PATCH] Close missing outer IIFE for PATCH_B_PLAN_V3
 })();
 </script>
 
