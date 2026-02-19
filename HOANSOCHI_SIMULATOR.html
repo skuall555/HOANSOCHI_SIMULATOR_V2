@@ -10040,6 +10040,28 @@ function _commInferStanceFromHs1(){
     ]
   };
 
+  /* ===== 通信担当者 思考定義 ===== */
+  THOUGHTS_MAP.tantou = [
+    { id:'t_arrived',  text:'作業者は現場に到着したのだろうか？',          resolved:'作業者は現地調査中である。',         keys:['着'] },
+    { id:'t_accident', text:'到着時に着火など事故は起きてないだろうか？',    resolved:'到着時点では事故は発生していない。', keys:['着火','爆発','火災','損壊'] },
+    { id:'t_road',     text:'到着時に道路に何か影響はなかっただろうか？',    resolved:'道路状況は把握した。',              keys:['道路','陥没','地盤','沈下','落ち','おち'] },
+    { id:'t_smell',    text:'到着時にガス臭気はあっただろうか？',           resolved:'到着時ガス臭気はなし。',            keys:['臭','しゅう','におい','匂'] },
+    { id:'t_alarm',    text:'到着時に都市ガス警報器は鳴っていない？',       resolved:'都市ガス警報器の、鳴動状況は理解。',keys:['警報','けい'] },
+    { id:'t_kouji',    text:'到着時に近くで工事は行っていそう？',           resolved:'工事状況は把握した。',              keys:['工事'] }
+  ];
+  /* 反応箇所1発見後に追加する項目 */
+  THOUGHTS_MAP._tantouExtra = [
+    { id:'t_react',    text:'検知器反応は見つかったのか？',                 resolved:'検知器反応については報告を受けた。', keys:['反応'] },
+    { id:'t_leak',     text:'圧力降下はあったのか？',                       resolved:'漏洩状況について把握。',             keys:['漏','圧力','気密','もれ','ろうえい'] },
+    { id:'t_meet',     text:'通報者には会えたのか？',                       resolved:'通報者とは接触できたらしい。',        keys:['通報','会','あえ'] }
+  ];
+  THOUGHTS_MAP._tantouAlarmExtra = [
+    { id:'t_fire',     text:'消防や警察の応援は必要だろうか？',             resolved:'消防、警察の応援も検討しよう。',     keys:['消防','警察'] }
+  ];
+
+  /* グローバルに公開（外部スクリプトからアクセス可能にする） */
+  window.THOUGHTS_MAP = THOUGHTS_MAP;
+
   // ===== 状態（シミュレーション中は保持） =====
   // partner別に管理: { reporter: {resolved:{}, order:[], idx:0, current:null}, ... }
   var _state = {};
