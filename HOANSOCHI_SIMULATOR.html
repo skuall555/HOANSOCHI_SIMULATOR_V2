@@ -2492,7 +2492,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   .screen, .overlay-screen { display:none !important; }
   #scene-clear { display:flex !important; position: static !important; background:#fff !important; opacity:1 !important; }
   #clear-step2 { display:flex !important; width:100% !important; max-width:none !important; height:auto !important; border:none !important; }
-  #clear-print-btn, #clear-save-btn, #clear-download-btn { display:none !important; }
+  #clear-print-btn, #clear-save-btn { display:none !important; }
 }
 
 
@@ -2510,19 +2510,6 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 #clear-step2 > div > div:first-child {
   overflow: visible !important;
 }
-/* === 全overlay-screen内のタッチ操作を有効化 === */
-.overlay-screen.active, .overlay-screen.active * {
-  touch-action: manipulation !important;
-}
-.overlay-screen.active .menu-panel,
-.overlay-screen.active button,
-.overlay-screen.active select,
-.overlay-screen.active input,
-.overlay-screen.active a {
-  pointer-events: auto !important;
-  touch-action: manipulation !important;
-  -webkit-tap-highlight-color: rgba(0,0,0,0.2) !important;
-}
 /* 保存/印刷ボタンのz-indexと押せるようにする */
 #clear-save-btn, #clear-print-btn {
   pointer-events: auto !important;
@@ -2535,18 +2522,9 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 #clear-step2 {
   touch-action: pan-y !important;
 }
-/* 右コラムのスクロール改善 */
-#clear-step2 > div > div:last-child {
-  touch-action: pan-y !important;
-  -webkit-overflow-scrolling: touch !important;
-}
 /* 履歴画面のz-indexをメニューより上に */
 #scene-history {
   z-index: 400 !important;
-}
-#scene-history .menu-panel {
-  touch-action: pan-y !important;
-  -webkit-overflow-scrolling: touch !important;
 }
 
 </style>
@@ -2620,7 +2598,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <h2 style="color:#000; margin:0 0 5% 0; font-family: 'Press Start 2P', 'MS Gothic', 'Meiryo', sans-serif; text-shadow: 2px 2px 0px rgba(255,255,255,0.3);">メニュー</h2>
 <button class="menu-btn" onclick="startGame()">シミュレーション</button>
 <button class="menu-btn sec" onclick="showScenarioList()">📝 シナリオ設定</button>
-<button class="menu-btn sec" onclick="openHistory()" ontouchstart="event.stopPropagation();">📈 履歴/統計</button>
+<button class="menu-btn sec" onclick="openHistory()">📈 履歴/統計</button>
 <button class="menu-btn sec" onclick="hideMenu()">ゲームに戻る</button>
 </div>
 </div>
@@ -2782,15 +2760,8 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
           <div id="clear-eval-detail" style="display:flex;flex-direction:column;gap:0.6vmin;font-size:1.7vmin;color:#b0bec5;"></div>
         </div>
 
+        <button id="clear-save-btn" onclick="saveClearResult()" style="margin-top:1.2vmin;padding:1.2vmin 3vmin;background:linear-gradient(135deg,#26c6da,#0097a7);color:#fff;border:none;border-radius:1vmin;font-size:2.1vmin;font-weight:900;cursor:pointer;flex-shrink:0;width:100%;box-shadow:0 0.5vmin 1.5vmin rgba(0,151,167,0.45);">💾 結果を端末に保存</button><button id="clear-print-btn" onclick="printClearScreen()" style="margin-top:1.2vmin;padding:1.2vmin 3vmin;background:linear-gradient(135deg,#ffca28,#ff8f00);color:#222;border:none;border-radius:1vmin;font-size:2.1vmin;font-weight:900;cursor:pointer;flex-shrink:0;width:100%;box-shadow:0 0.5vmin 1.5vmin rgba(255,143,0,0.45);">🖨 PDF/印刷（結果を出力）</button><button onclick="confirmExit()" style="margin-top:2vmin;padding:1.5vmin 3vmin;background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff;border:none;border-radius:1vmin;font-size:2.2vmin;font-weight:bold;cursor:pointer;flex-shrink:0;width:100%;box-shadow:0 0.5vmin 1.5vmin rgba(46,125,50,0.5);">メニューへ戻る</button>
       </div>
-    </div>
-    <!-- フッターボタンバー（常に画面下部に固定表示） -->
-    <div style="flex-shrink:0;padding:1vmin 2vmin;background:rgba(0,20,40,0.95);border-top:0.2vmin solid #2a4a6a;display:flex;gap:1vmin;align-items:center;justify-content:center;flex-wrap:wrap;">
-      <button id="clear-save-btn" onclick="saveClearResult()" style="padding:1.2vmin 2vmin;background:linear-gradient(135deg,#26c6da,#0097a7);color:#fff;border:none;border-radius:1vmin;font-size:2.1vmin;font-weight:900;cursor:pointer;box-shadow:0 0.5vmin 1.5vmin rgba(0,151,167,0.45);flex:1;min-width:20vmin;">💾 結果を保存</button>
-      <button id="clear-download-btn" onclick="downloadResultAsImage()" style="padding:1.2vmin 2vmin;background:linear-gradient(135deg,#7c4dff,#6200ea);color:#fff;border:none;border-radius:1vmin;font-size:2.1vmin;font-weight:900;cursor:pointer;box-shadow:0 0.5vmin 1.5vmin rgba(98,0,234,0.45);flex:1;min-width:20vmin;">📥 画像で保存</button>
-      <button id="clear-print-btn" onclick="printClearScreen()" style="padding:1.2vmin 2vmin;background:linear-gradient(135deg,#ffca28,#ff8f00);color:#222;border:none;border-radius:1vmin;font-size:2.1vmin;font-weight:900;cursor:pointer;box-shadow:0 0.5vmin 1.5vmin rgba(255,143,0,0.45);flex:1;min-width:20vmin;">🖨 印刷</button>
-      <button onclick="confirmExit()" style="padding:1.2vmin 2vmin;background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff;border:none;border-radius:1vmin;font-size:2.2vmin;font-weight:bold;cursor:pointer;box-shadow:0 0.5vmin 1.5vmin rgba(46,125,50,0.5);flex:1;min-width:20vmin;">🏠 メニューへ戻る</button>
-    </div>
     </div>
   </div>
 
@@ -3084,14 +3055,25 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   </div>
 </div>
 <div id="scene-history" class="overlay-screen">
-  <div class="menu-panel" style="width:min(96vw,1100px);max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;touch-action:pan-y;">
-    <button class="close-btn" style="position:sticky;top:0;right:0;float:right;z-index:10;background:#c62828;color:#fff;border:2px solid #000;border-radius:50%;width:5vmin;height:5vmin;font-size:3vmin;cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="closeHistory()">×</button>
+  <div class="menu-panel" style="width:min(96vw,1200px);max-height:92vh;overflow:auto;position:relative;">
+    <button class="close-btn" style="position:absolute;top:1vmin;right:1vmin;" onclick="closeHistory()">×</button>
     <h2 style="color:#003366;margin:0 0 1vmin 0;">📈 クリア履歴／統計</h2>
 
     <div style="display:flex;gap:1vmin;flex-wrap:wrap;align-items:center;margin-bottom:1.5vmin;">
       <button class="menu-btn" style="width:auto;" onclick="renderHistory()">更新</button>
       <button class="menu-btn sec" style="width:auto;" onclick="exportHistoryJson()">JSONエクスポート</button>
       <button class="menu-btn warn" style="width:auto;" onclick="clearHistoryAll()">全履歴削除</button>
+      <div style="display:flex;gap:0.5vmin;align-items:center;margin-left:1vmin;">
+        <span style="font-size:80%;color:#333;">レベル:</span>
+        <select id="level-filter" onchange="applyFilters()" style="padding:0.5vmin 1vmin;border-radius:0.5vmin;border:1px solid #ccc;font-size:80%;">
+          <option value="all">全て</option>
+          <option value="S">S級</option>
+          <option value="A">A級</option>
+          <option value="B">B級</option>
+          <option value="C">C級</option>
+          <option value="D">D級</option>
+        </select>
+      </div>
       <div style="margin-left:auto;font-size:70%;color:#333;">
         保存上限：
         <select id="history-limit-select" onchange="setHistoryLimitFromUI()" style="padding:0.5vmin 1vmin;border-radius:0.5vmin;border:1px solid #ccc;">
@@ -3102,11 +3084,16 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       </div>
     </div>
 
-    <h3 style="margin:1.2vmin 0;color:#003366;">■ シナリオ別 統計（B：正答率）</h3>
-    <div id="history-stats" style="background:#fff;border:1px solid #ccc;border-radius:1vmin;padding:1vmin;"></div>
-
-    <h3 style="margin:1.2vmin 0;color:#003366;">■ 履歴（日時）</h3>
-    <div id="history-list" style="background:#fff;border:1px solid #ccc;border-radius:1vmin;padding:1vmin;"></div>
+    <div style="display:flex;gap:2vmin;">
+      <div style="flex:1;">
+        <h3 style="margin:0 0 1vmin 0;color:#003366;font-size:2vmin;">■ シナリオ別 統計</h3>
+        <div id="history-stats" style="background:#fff;border:1px solid #ccc;border-radius:1vmin;padding:1vmin;overflow-y:auto;max-height:65vh;"></div>
+      </div>
+      <div style="flex:1;">
+        <h3 style="margin:0 0 1vmin 0;color:#003366;font-size:2vmin;">■ 履歴 <span id="history-filter-label" style="font-size:80%;color:#666;"></span></h3>
+        <div id="history-list" style="background:#fff;border:1px solid #ccc;border-radius:1vmin;padding:1vmin;overflow-y:auto;max-height:65vh;"></div>
+      </div>
+    </div>
   </div>
 </div>
 <div id="scene-game" class="screen">
@@ -3882,21 +3869,18 @@ window._gameStats = {
   noGasConfirmed: 0        // 滞留ガスなし確認数
 };
 
-// プレイ開始時：リザルト状態と保存状態をリセット
-window._resultMode = false;
-window._resultSaved = false;
-try{ resetSaveButton(); }catch(e){}
-
 if(dangerTimer) clearInterval(dangerTimer);
 dangerTimer = setInterval(updateDanger, 1000);
 updateDangerUI();
 updateSafetyUI();
 renderInventory(); renderVan(); updateHand(); setupDraggable(); spawnNPC();
 if(loopId) cancelAnimationFrame(loopId); loop(); updateHUD();
+
+// 保存済みフラグをリセット
+window.__clearResultSaved = false;
 }
 
 function updateDanger() {
-if(window._resultMode) return;
 if(isPaused) return;
 dangerValue += dangerRate;
 if(dangerValue >= 100) { dangerValue=100; try{ stopCityGasAlarm(); }catch(e){} gameOver("爆発！ゲームオーバー"); }
@@ -4011,12 +3995,37 @@ function completeSafetyMeasures() {
 
     if(safetyValue >= norma){
       isPaused = true;
-      // 結果画面中は進行停止
-      try{ enterResultMode(); }catch(e){}
-      try{ resetSaveButton(); }catch(e){}
+      
+      // 危険度タイマーを停止
+      try{ if(dangerTimer){ clearInterval(dangerTimer); dangerTimer = null; } }catch(e){}
+      
+      // 配達員イベントのタイマーをクリア
+      try{
+        if(window.__deliveryEventState){
+          var st = window.__deliveryEventState;
+          if(st.timerSpawn){ clearTimeout(st.timerSpawn); st.timerSpawn=null; }
+          if(st.timerWarn){ clearTimeout(st.timerWarn); st.timerWarn=null; }
+          if(st.raf){ cancelAnimationFrame(st.raf); st.raf=null; }
+          st.active = false;
+          st.returning = false;
+        }
+      }catch(e){}
+      
       try{ stopCityGasAlarm(); }catch(e){}
       // クリア時刻記録
       try{ if(window._gameStats) window._gameStats.endTime = Date.now(); }catch(e){}
+
+      // 保存ボタンを初期状態に戻す
+      try{
+        var saveBtn = document.getElementById('clear-save-btn');
+        if(saveBtn){
+          saveBtn.textContent = '💾 結果を端末に保存';
+          saveBtn.disabled = false;
+          saveBtn.style.opacity = '1';
+          saveBtn.style.cursor = 'pointer';
+          saveBtn.style.background = 'linear-gradient(135deg,#26c6da,#0097a7)';
+        }
+      }catch(e){}
 
       // 選択肢をシナリオのgasCauseリストと同期
       _syncAnswerSelect();
@@ -4083,16 +4092,36 @@ function submitClearAnswer(){
 
     // PATCH: シナリオNo/名称表示 + 自動保存
     try{ updateClearScenarioTitle(); }catch(e){}
+    
+    // 自動保存を実行（爆発ENDでない場合のみ）
+    try{
+      var explosionOccurred = false;
+      try{
+        explosionOccurred = window._gameStats && window._gameStats.explosionOccurred;
+      }catch(e){}
+      
+      if(!explosionOccurred){
+        // 自動保存実行
+        saveClearResult();
+        
+        // ボタンを「保存済み」状態に変更
+        var saveBtn = document.getElementById('clear-save-btn');
+        if(saveBtn){
+          saveBtn.textContent = '💾 保存済み';
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = '0.6';
+          saveBtn.style.cursor = 'not-allowed';
+          saveBtn.style.background = 'linear-gradient(135deg,#90a4ae,#607d8b)';
+        }
+      }
+    }catch(e){}
+
     // レーダーチャート描画
     _drawRadarChart();
 
     // 画面切り替え
     document.getElementById('clear-step1').style.display = 'none';
     document.getElementById('clear-step2').style.display = 'flex';
-
-    // Step2（結果表示）に切り替わったら自動保存（仕様：回答後に保存）
-    try{ saveClearResult({ auto:true, type:'clear' }); }catch(e){}
-    try{ setSaveButtonSaved(); }catch(e){}
   }catch(e){ console.error(e); }
 
   try{ window.__leakAnswerCorrect = (typeof isCorrect!=="undefined") ? isCorrect : (typeof correct!=="undefined"?correct:null); }catch(e){}
@@ -4297,9 +4326,23 @@ function _drawRadarChart(){
 }
 
 function gameOver(reason) {
-if(window._resultMode) return;
 isPaused = true;
-try{ saveClearResult({ auto:true, type:'gameover', reason: reason }); }catch(e){}
+
+// 危険度タイマーを停止
+try{ if(dangerTimer){ clearInterval(dangerTimer); dangerTimer = null; } }catch(e){}
+
+// 配達員イベントのタイマーをクリア
+try{
+  if(window.__deliveryEventState){
+    var st = window.__deliveryEventState;
+    if(st.timerSpawn){ clearTimeout(st.timerSpawn); st.timerSpawn=null; }
+    if(st.timerWarn){ clearTimeout(st.timerWarn); st.timerWarn=null; }
+    if(st.raf){ cancelAnimationFrame(st.raf); st.raf=null; }
+    st.active = false;
+    st.returning = false;
+  }
+}catch(e){}
+
 try{ if(window._gameStats) window._gameStats.explosionOccurred = true; }catch(e){}
 document.getElementById('boom-reason').textContent = reason;
 document.getElementById('explosion-overlay').classList.add('active');
@@ -4875,67 +4918,20 @@ function areAllBWindowsOpen(){
   }catch(e){ return false; }
 }
 
-
-// ===== Pointer -> app-container local coordinates (rotation/scale safe) =====
-function _getClientXY(e){
-  var cx = e.clientX, cy = e.clientY;
-  if(e.touches && e.touches[0]){ cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
-  return {cx:cx, cy:cy};
-}
-function getAppLocalPoint2(e){
-  var container = document.getElementById('app-container');
-  var rect = container.getBoundingClientRect();
-  var pt = _getClientXY(e);
-  var xr = pt.cx - rect.left;
-  var yr = pt.cy - rect.top;
-
-  // detect 90/270deg rotation from CSS transform matrix
-  var is90=false, is270=false;
-  try{
-    var tf = window.getComputedStyle(container).transform;
-    if(tf && tf !== 'none'){
-      var m = new DOMMatrix(tf);
-      var eps = 0.02;
-      if(Math.abs(m.a) < eps && Math.abs(m.d) < eps){
-        if(m.b > 0 && m.c < 0) is90 = true;      // rotate(90deg)
-        if(m.b < 0 && m.c > 0) is270 = true;     // rotate(-90deg)
-      }
-    }
-  }catch(_e){}
-
-  var x,y;
-  if(is90){
-    // rect.width == containerHeight, rect.height == containerWidth (roughly)
-    x = yr;
-    y = rect.width - xr;
-    // scale to pre-transform CSS pixels
-    x = x * (container.clientWidth / rect.height);
-    y = y * (container.clientHeight / rect.width);
-  }else if(is270){
-    x = rect.height - yr;
-    y = xr;
-    x = x * (container.clientWidth / rect.height);
-    y = y * (container.clientHeight / rect.width);
-  }else{
-    x = xr * (container.clientWidth / rect.width);
-    y = yr * (container.clientHeight / rect.height);
-  }
-
-  return { x:x, y:y, cx:pt.cx, cy:pt.cy, rect:rect };
-}
-
 function updateDetToolPos(e){
   try{
-    var detTool = document.getElementById('detector-tool');
-    if(!detTool) return;
-    var p = getAppLocalPoint2(e);
-    detTool.style.left = (p.x) + 'px';
-    detTool.style.top  = (p.y) + 'px';
-
+    var detTool=document.getElementById('detector-tool');
+    var container=document.getElementById('app-container');
+    if(!detTool||!container) return;
+    var rect=container.getBoundingClientRect();
+    var cx=e.clientX, cy=e.clientY;
+    if(e.touches && e.touches[0]){ cx=e.touches[0].clientX; cy=e.touches[0].clientY; }
+    detTool.style.left=(cx-rect.left)+'px';
+    detTool.style.top=(cy-rect.top)+'px';
     // DETECTOR_HIT_CHECK: hotspot overlap -> red
     try{
       if(typeof updateHotspots2==='function') updateHotspots2();
-      var ax=p.x, ay=p.y;
+      var ax=(cx-rect.left), ay=(cy-rect.top);
       var hit=false;
       if(typeof pointInRect2==='function' && typeof requiredDoorOpen2==='function'){
         if(window.hotspot1 && hotspot1.rect && requiredDoorOpen2(hotspot1) && pointInRect2(ax,ay,hotspot1.rect)) hit=true;
@@ -4943,7 +4939,6 @@ function updateDetToolPos(e){
       }
       detTool.classList.toggle('hit', !!hit);
     }catch(_e){ try{ detTool.classList.remove('hit'); }catch(__e){} }
-
     detTool.style.display='block';
     // auto-hide after a while (only if modes off)
     clearTimeout(detTool.hideTimer);
@@ -4952,11 +4947,10 @@ function updateDetToolPos(e){
         if(!(typeof isDetectorMode!=='undefined' && isDetectorMode) && !(typeof isGasIdMode!=='undefined' && isGasIdMode)){
           detTool.style.display='none';
         }
-      }catch(e){}
-    }, 1200);
-  }catch(e){}
+      }catch(e2){}
+    }, 2200);
+  }catch(err){}
 }
-
 
 function markActiveRoomVentCleared(){
   try{
@@ -4970,9 +4964,10 @@ function handleGasIdAtHotspots(e){
     if(!(typeof isGasIdMode!=='undefined' && isGasIdMode)) return false;
     if(typeof appRect2!=='function' || typeof updateHotspots2!=='function') return false;
 
-    var p=getAppLocalPoint2(e);
-  var cx=p.cx, cy=p.cy;
-  var x=p.x, y=p.y;
+    var a=appRect2();
+    var cx=e.clientX, cy=e.clientY;
+    if(e.touches && e.touches[0]){ cx=e.touches[0].clientX; cy=e.touches[0].clientY; }
+    var x=cx-a.left, y=cy-a.top;
 
     updateHotspots2();
 
@@ -11262,6 +11257,7 @@ try{
   };
 
   const st = { timerSpawn:null, timerWarn:null, raf:null, active:false, returning:false, arrived:false, roomNo:null, curX:105, destX:105, speed:0.040, coolUntil:0 };
+  window.__deliveryEventState = st; // グローバルに公開
   function $(id){ return document.getElementById(id); }
 
   function activeRoomId(){
@@ -12191,7 +12187,7 @@ try{
     window.handleHotspotCheck2.__bplanV3Wrapped = true;
   }
 
-})();
+
 
 
 // =========================
@@ -12757,7 +12753,6 @@ try{
   }
 
   function showDeliveryDanger(){
-    if(window._resultMode || isPaused) return;
     const msg = $('delivery-danger-msg');
     if(msg) msg.textContent = '配達員は着火源となる、エレベーターのスイッチを押してしまった。';
     const ov = $('scene-delivery-danger');
@@ -12781,7 +12776,6 @@ try{
 
   function scheduleDelivery(nextDelay){
     clearTimers();
-    if(window._resultMode || isPaused) return;
     if(!isEntranceActive()) return;
     if(phase !== 'idle') return;
 
@@ -12804,7 +12798,6 @@ try{
   }
 
   function spawnDelivery(){
-    if(window._resultMode || isPaused) return;
     const npc = $('delivery-npc');
     if(!npc) return;
 
@@ -13184,31 +13177,8 @@ try{
 <script>
 /* ===== スマホ スクロール防止 & タッチ改善 (Safari/iOS対応) ===== */
 (function(){
-  // overlay内のスクロール可能要素かどうかを判定
-  function isScrollableOverlay(el){
-    while(el && el !== document.body){
-      // overlay-screen内でoverflowがscroll/autoの要素はスクロール許可
-      if(el.classList && el.classList.contains('overlay-screen') && el.classList.contains('active')) return true;
-      var style = window.getComputedStyle ? window.getComputedStyle(el) : el.currentStyle;
-      if(style){
-        var ov = style.overflowY || style.overflow || '';
-        if((ov === 'auto' || ov === 'scroll') && el.scrollHeight > el.clientHeight){
-          // このスクロール可能要素がoverlay-screen内にあるかチェック
-          var parent = el.parentElement;
-          while(parent){
-            if(parent.classList && parent.classList.contains('overlay-screen') && parent.classList.contains('active')) return true;
-            parent = parent.parentElement;
-          }
-        }
-      }
-      el = el.parentElement;
-    }
-    return false;
-  }
-
-  // touchmove防止（ページスクロール無効化）ただしoverlay内スクロールは許可
+  // touchmove防止（ページスクロール無効化）
   document.body.addEventListener('touchmove', function(e){
-    if(isScrollableOverlay(e.target)) return; // overlay内のスクロールは許可
     e.preventDefault();
   }, { passive: false });
 
@@ -13220,9 +13190,8 @@ try{
     lastTap = now;
   }, { passive: false });
 
-  // iOS Safariのバウンス防止（overlay内スクロールは許可）
+  // iOS Safariのバウンス防止
   document.documentElement.addEventListener('touchmove', function(e){
-    if(isScrollableOverlay(e.target)) return;
     e.preventDefault();
   }, { passive: false });
 
@@ -13238,45 +13207,6 @@ try{
   window.addEventListener('resize', onResize);
 })();
 
-
-
-
-// ===== Result Mode / Save Guard (AUTO-SAVE @ Step2) =====
-window._resultMode = false;     // Step2(結果)表示中フラグ
-window._resultSaved = false;    // 1プレイで保存済みか
-
-function enterResultMode(){
-  window._resultMode = true;
-  try{ isPaused = true; }catch(e){}
-  // 配達員などのタイマー停止（存在すれば）
-  try{ if(typeof clearTimers === 'function') clearTimers(); }catch(e){}
-  try{ if(typeof stopCityGasAlarm === 'function') stopCityGasAlarm(); }catch(e){}
-}
-
-function exitResultMode(){
-  window._resultMode = false;
-  window._resultSaved = false;
-}
-
-function setSaveButtonSaved(){
-  const btn = document.getElementById('clear-save-btn');
-  if(!btn) return;
-  btn.disabled = true;
-  btn.innerHTML = '✅ 保存済み';
-  btn.style.background = 'linear-gradient(135deg,#2e7d32,#43a047)';
-  btn.style.opacity = '0.85';
-  btn.style.cursor = 'default';
-}
-
-function resetSaveButton(){
-  const btn = document.getElementById('clear-save-btn');
-  if(!btn) return;
-  btn.disabled = false;
-  btn.innerHTML = '💾 結果を保存';
-  btn.style.opacity = '';
-  btn.style.cursor = 'pointer';
-  btn.style.background = 'linear-gradient(135deg,#26c6da,#0097a7)';
-}
 
 // === PATCH: Clear screen extras (scenario title / print / history / save) ===
 function updateClearScenarioTitle(){
@@ -13312,15 +13242,14 @@ function getHistoryLimit(){
   return (isNaN(v) ? 500 : v);
 }
 
-function saveClearResult(opts){
-  opts = opts || {};
-  // 連打・多重保存ガード
-  if(window._resultSaved){
-    try{ setSaveButtonSaved(); }catch(e){}
-    return;
-  }
-
+function saveClearResult(){
   try{
+    // 保存済みフラグをチェック
+    if(window.__clearResultSaved){
+      try{ showSystemMsg('既に保存済みです'); }catch(e){}
+      return;
+    }
+    
     var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
     var no = null;
     try{
@@ -13328,224 +13257,102 @@ function saveClearResult(opts){
       else if(typeof currentScenarioIndex !== 'undefined' && currentScenarioIndex !== null) no = currentScenarioIndex + 1;
     }catch(e){}
 
-    // セッションID（同一プレイ重複を防止）
-    var sessionId = null;
-    try{ sessionId = (window._gameStats && window._gameStats.startTime) ? window._gameStats.startTime : null; }catch(e){}
-    if(!sessionId) sessionId = Date.now();
-
     var scenarioName = (sc && sc.name) ? String(sc.name).trim() : '';
     var correctCause = (sc && sc.gasCause) ? String(sc.gasCause) : '';
     var sel = document.getElementById('clear-answer-select');
     var playerAnswer = (sel && sel.value) ? String(sel.value).trim() : '';
     var gradeEl = document.getElementById('clear-grade-badge');
     var grade = (gradeEl && gradeEl.textContent) ? String(gradeEl.textContent).trim() : '';
+    
+    var totalPoints = 0;
+    var scores = {safety:0, comm:0, speed:0, density:0, customer:0};
+    try{
+      var glabel = document.getElementById('clear-grade-label');
+      if(glabel){
+        var match = glabel.textContent.match(/(\d+)/);
+        if(match) totalPoints = parseInt(match[1]);
+      }
+      var stats = window._gameStats || {};
+      var windowCount = 0;
+      try{
+        var sm = safetyMeasures.windows;
+        for(var k in sm){ if(sm[k]) windowCount++; }
+      }catch(e){}
+      if(windowCount >= 1) scores.safety += 25;
+      if(windowCount >= 3) scores.safety += 15;
+      if(!stats.explosionOccurred) scores.safety += 30;
+      if(stats.alarmsPlaced >= 1) scores.safety += 15;
+      if(stats.signsPlaced >= 1) scores.safety += 15;
+      scores.safety = Math.min(100, scores.safety);
+      scores.comm = 60;
+      scores.speed = 50;
+      if(stats.startTime && stats.endTime){
+        var elapsed = (stats.endTime - stats.startTime) / 1000;
+        if(elapsed < 120) scores.speed = 100;
+        else if(elapsed < 240) scores.speed = 80;
+        else if(elapsed < 480) scores.speed = 60;
+        else if(elapsed < 900) scores.speed = 40;
+        else scores.speed = 20;
+      }
+      if(stats.noGasConfirmed >= 1) scores.density += 30;
+      if(stats.noGasConfirmed >= 3) scores.density += 20;
+      if(stats.pressureTestDone) scores.density += 30;
+      if(stats.meterClosedDone) scores.density += 20;
+      scores.density = Math.min(100, scores.density);
+      var totalComm = 0;
+      try{totalComm = (stats.commCount.reporter||0)+(stats.commCount.alarmB||0)+(stats.commCount.manager||0);}catch(e){}
+      var hasAlarmB = sc && (sc.alarm && sc.alarm !== 'なし');
+      var hasManager = sc && (sc.alarmEntry && sc.alarmEntry !== 'なし');
+      var maxComm = 1 + (hasAlarmB ? 1 : 0) + (hasManager ? 1 : 0);
+      scores.customer = Math.min(100, Math.round(totalComm / maxComm * 100));
+    }catch(e){}
 
     var record = {
-      sessionId: sessionId,
-      type: opts.type || 'clear',
-      reason: opts.reason || '',
       at: new Date().toISOString(),
       scenarioNo: no,
       scenarioName: scenarioName,
       playerAnswer: playerAnswer,
       correctCause: correctCause,
       isCorrect: (playerAnswer && correctCause) ? (playerAnswer === correctCause) : null,
-      grade: grade
+      grade: grade,
+      totalPoints: totalPoints,
+      scores: scores
     };
 
     var key = 'gasGame_clearHistory';
     var list = [];
     try{ list = JSON.parse(localStorage.getItem(key) || '[]'); if(!Array.isArray(list)) list = []; }catch(e){ list = []; }
-
-    // 同一セッションの同typeが既にある場合は追加しない
-    try{
-      if(list.some(function(r){ return r && r.sessionId === sessionId && r.type === record.type; })){
-        window._resultSaved = true;
-        try{ setSaveButtonSaved(); }catch(e){}
-        return;
-      }
-    }catch(e){}
-
     list.unshift(record);
 
     var limit = getHistoryLimit();
     if(limit > 0) list = list.slice(0, limit);
 
     localStorage.setItem(key, JSON.stringify(list));
-
-    // 保存済みに固定
-    window._resultSaved = true;
-    try{ setSaveButtonSaved(); }catch(e){}
-    try{ showSystemMsg('✅ 結果を履歴に保存しました'); }catch(e){}
+    
+    // 保存成功フラグを設定
+    window.__clearResultSaved = true;
+    
+    // ボタンを無効化
+    try{
+      var saveBtn = document.getElementById('clear-save-btn');
+      if(saveBtn){
+        saveBtn.textContent = '💾 保存済み';
+        saveBtn.disabled = true;
+        saveBtn.style.opacity = '0.6';
+        saveBtn.style.cursor = 'not-allowed';
+        saveBtn.style.background = 'linear-gradient(135deg,#90a4ae,#607d8b)';
+      }
+    }catch(e){}
+    
+    try{ showSystemMsg('✅ 結果を保存しました'); }catch(e){}
   }catch(e){
     console.error(e);
-  }
-}
-
-
-/* === 画像としてダウンロード機能 === */
-function downloadResultAsImage(){
-  try{
-    var btn = document.getElementById('clear-download-btn');
-    if(btn){ btn.innerHTML = '⏳ 生成中...'; btn.disabled = true; }
-
-    var step2 = document.getElementById('clear-step2');
-    if(!step2){ alert('結果画面が見つかりません'); return; }
-
-    // Canvas を使って結果画面のスクリーンショットを生成
-    var canvas = document.createElement('canvas');
-    var w = 1200, h = 800;
-    canvas.width = w;
-    canvas.height = h;
-    var ctx = canvas.getContext('2d');
-
-    // 背景
-    var grad = ctx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, '#0d1b2a');
-    grad.addColorStop(1, '#1a2a3a');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-
-    // ヘッダー
-    ctx.fillStyle = '#1565c0';
-    ctx.fillRect(0, 0, w, 50);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px "Meiryo", sans-serif';
-    ctx.fillText('📋 シミュレーション結果', 20, 34);
-
-    // 日時
-    ctx.fillStyle = '#90caf9';
-    ctx.font = '14px "Meiryo", sans-serif';
-    ctx.fillText(new Date().toLocaleString(), w - 250, 34);
-
-    // シナリオ情報
-    var scenTitle = document.getElementById('clear-scenario-title');
-    ctx.fillStyle = '#ffeb3b';
-    ctx.font = 'bold 18px "Meiryo", sans-serif';
-    ctx.fillText('📁 シナリオ: ' + (scenTitle ? scenTitle.textContent : ''), 20, 80);
-
-    // 漏洩系統
-    var correctCause = document.getElementById('clear-correct-cause');
-    var judgeIcon = document.getElementById('clear-judge-icon');
-    ctx.fillStyle = '#ffd54f';
-    ctx.font = 'bold 18px "Meiryo", sans-serif';
-    ctx.fillText('漏洩系統: ' + (correctCause ? correctCause.textContent : '') + ' ' + (judgeIcon ? judgeIcon.textContent : ''), 20, 110);
-
-    // 正誤バッジ
-    var correctBadge = document.getElementById('clear-correct-badge');
-    if(correctBadge){
-      ctx.fillStyle = '#4caf50';
-      ctx.font = 'bold 16px "Meiryo", sans-serif';
-      ctx.fillText(correctBadge.textContent, w - 250, 80);
-    }
-
-    // レーダーチャートをコピー
-    var radarCanvas = document.getElementById('clear-radar-chart');
-    if(radarCanvas){
-      try{
-        var rSize = 380;
-        var rx = 30, ry = 140;
-        ctx.drawImage(radarCanvas, rx, ry, rSize, rSize);
-      }catch(e){ console.error('radar copy error:', e); }
-    }
-
-    // ランク
-    var gradeBadge = document.getElementById('clear-grade-badge');
-    var gradeLabel = document.getElementById('clear-grade-label');
-    if(gradeBadge){
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 48px "Meiryo", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(gradeBadge.textContent, 220, 570);
-      if(gradeLabel){
-        ctx.fillStyle = '#90caf9';
-        ctx.font = '16px "Meiryo", sans-serif';
-        ctx.fillText(gradeLabel.textContent, 220, 600);
-      }
-      ctx.textAlign = 'left';
-    }
-
-    // 評価詳細
-    var evalDetail = document.getElementById('clear-eval-detail');
-    if(evalDetail){
-      var items = evalDetail.children;
-      ctx.fillStyle = '#90caf9';
-      ctx.font = 'bold 16px "Meiryo", sans-serif';
-      ctx.fillText('📊 評価項目詳細', 460, 160);
-      ctx.font = '14px "Meiryo", sans-serif';
-      var ey = 185;
-      for(var i = 0; i < items.length && ey < h - 40; i++){
-        var text = items[i].textContent || '';
-        ctx.fillStyle = '#b0bec5';
-        // 長いテキストを折り返し
-        var maxWidth = w - 490;
-        var words = text;
-        if(ctx.measureText(words).width > maxWidth){
-          var line1 = '', line2 = '';
-          for(var c = 0; c < words.length; c++){
-            if(ctx.measureText(line1 + words[c]).width < maxWidth) line1 += words[c];
-            else line2 += words[c];
-          }
-          ctx.fillText(line1, 460, ey);
-          ey += 20;
-          if(line2 && ey < h - 40){ ctx.fillText(line2, 460, ey); ey += 20; }
-        } else {
-          ctx.fillText(words, 460, ey);
-          ey += 22;
-        }
-      }
-    }
-
-    // シナリオ解説
-    var desc = document.getElementById('clear-description');
-    if(desc && desc.textContent){
-      ctx.fillStyle = '#90caf9';
-      ctx.font = 'bold 16px "Meiryo", sans-serif';
-      var descY = 620;
-      ctx.fillText('シナリオ解説:', 20, descY);
-      ctx.fillStyle = '#cfd8dc';
-      ctx.font = '13px "Meiryo", sans-serif';
-      var descText = desc.textContent.substring(0, 300);
-      var descLines = descText.split('\n');
-      descY += 22;
-      for(var dl = 0; dl < descLines.length && descY < h - 10; dl++){
-        var dline = descLines[dl];
-        if(ctx.measureText(dline).width > w - 40){
-          var half = Math.floor(dline.length / 2);
-          ctx.fillText(dline.substring(0, half), 20, descY); descY += 18;
-          if(descY < h - 10){ ctx.fillText(dline.substring(half), 20, descY); descY += 18; }
-        } else {
-          ctx.fillText(dline, 20, descY); descY += 18;
-        }
-      }
-    }
-
-    // ダウンロード
-    canvas.toBlob(function(blob){
-      if(!blob){ alert('画像生成に失敗しました'); return; }
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      var now = new Date();
-      a.download = 'ガスシミュ結果_' + now.getFullYear() + (now.getMonth()+1) + now.getDate() + '_' + now.getHours() + now.getMinutes() + '.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
-      if(btn){ btn.innerHTML = '✅ 保存完了！'; btn.disabled = false; setTimeout(function(){ btn.innerHTML = '📥 画像で保存'; }, 2000); }
-    }, 'image/png');
-
-  }catch(e){
-    console.error('downloadResultAsImage error:', e);
-    alert('画像の生成に失敗しました: ' + e.message);
-    var btn2 = document.getElementById('clear-download-btn');
-    if(btn2){ btn2.innerHTML = '📥 画像で保存'; btn2.disabled = false; }
+    try{ alert('保存に失敗しました（容量上限の可能性）'); }catch(e2){}
   }
 }
 
 function openHistory(){
   try{
-    // メニューを先に閉じる（メニューが重なって履歴画面が見えなくなるバグ修正）
     try{ hideMenu(); }catch(e){}
     var s = document.getElementById('scene-history');
     if(s) s.classList.add('active');
@@ -13555,6 +13362,9 @@ function openHistory(){
       if(v !== '0' && v !== '500' && v !== '2000') v = '500';
       sel.value = v;
     }
+    window._selectedScenario = null;
+    var levelFilter = document.getElementById('level-filter');
+    if(levelFilter) levelFilter.value = 'all';
     renderHistory();
   }catch(e){ console.error(e); }
 }
@@ -13589,8 +13399,40 @@ function _esc(s){
 
 function renderHistory(){
   var list = loadHistory();
+  window._fullHistoryList = list;
+  window._selectedScenario = window._selectedScenario || null;
   renderStats(calcScenarioStats(list));
-  renderHistoryList(list);
+  applyFilters();
+}
+
+function applyFilters(){
+  var list = window._fullHistoryList || loadHistory();
+  var filtered = list;
+  var levelFilter = document.getElementById('level-filter');
+  if(levelFilter && levelFilter.value !== 'all'){
+    var targetLevel = levelFilter.value;
+    filtered = filtered.filter(function(r){return r.grade === targetLevel;});
+  }
+  if(window._selectedScenario !== null){
+    filtered = filtered.filter(function(r){return r.scenarioNo === window._selectedScenario;});
+  }
+  var label = document.getElementById('history-filter-label');
+  if(label){
+    var parts = [];
+    if(levelFilter && levelFilter.value !== 'all') parts.push(levelFilter.value + '級');
+    if(window._selectedScenario !== null) parts.push('No.' + window._selectedScenario);
+    label.textContent = parts.length > 0 ? '(' + parts.join(', ') + ')' : '';
+  }
+  renderHistoryList(filtered);
+}
+
+function selectScenario(scenarioNo){
+  if(window._selectedScenario === scenarioNo){
+    window._selectedScenario = null;
+  } else {
+    window._selectedScenario = scenarioNo;
+  }
+  applyFilters();
 }
 
 // B：正答率（漏洩系統の正誤）
@@ -13615,20 +13457,23 @@ function calcScenarioStats(list){
 function renderStats(stats){
   var box = document.getElementById('history-stats');
   if(!box) return;
-  if(!stats || stats.length===0){ box.textContent = '履歴がありません。'; return; }
-
+  if(!stats || stats.length===0){box.textContent = '履歴がありません。'; return;}
   var h = '';
   for(var i=0;i<stats.length;i++){
     var s = stats[i];
     var correctRate = s.attempts ? Math.round((s.correct / s.attempts) * 100) : 0;
-    var last = s.lastAt ? (new Date(s.lastAt).toLocaleString()) : '-';
-    h += '<div style="padding:0.8vmin;border-bottom:1px solid #eee;display:flex;gap:1vmin;align-items:center;">'
-      + '<div style="width:8vmin;font-weight:900;color:#003366;">No.' + s.scenarioNo + '</div>'
-      + '<div style="flex:1;font-weight:900;color:#111;">' + _esc(s.name || '（名称未設定）') + '</div>'
-      + '<div style="width:16vmin;color:#333;">回数：' + s.attempts + '</div>'
-      + '<div style="width:18vmin;color:#333;">正答率：' + correctRate + '%</div>'
-      + '<div style="width:28vmin;color:#333;">最終：' + _esc(last) + '</div>'
-      + '</div>';
+    var isSelected = (window._selectedScenario === s.scenarioNo);
+    var bgColor = isSelected ? '#e3f2fd' : 'transparent';
+    var borderColor = isSelected ? '#42a5f5' : '#eee';
+    h += '<div onclick="selectScenario(' + s.scenarioNo + ')" style="padding:0.8vmin;border-bottom:2px solid ' + borderColor + ';background:' + bgColor + ';cursor:pointer;">'
+      + '<div style="display:flex;gap:1vmin;align-items:center;">'
+      + '<div style="width:6vmin;font-weight:900;color:#003366;">No.' + s.scenarioNo + '</div>'
+      + '<div style="flex:1;font-weight:700;color:#111;">' + _esc(s.name || '(名称未設定)') + '</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:1vmin;margin-top:0.4vmin;font-size:85%;">'
+      + '<div style="color:#666;">回数：<b>' + s.attempts + '</b></div>'
+      + '<div style="color:#666;">正答率：<b>' + correctRate + '%</b></div>'
+      + '</div></div>';
   }
   box.innerHTML = h;
 }
@@ -13636,22 +13481,48 @@ function renderStats(stats){
 function renderHistoryList(list){
   var box = document.getElementById('history-list');
   if(!box) return;
-  if(!list || list.length===0){ box.textContent = '履歴がありません。'; return; }
-
+  if(!list || list.length===0){box.textContent = '履歴がありません。'; return;}
+  function scoreToGrade(score){
+    if(score >= 85) return 'A';
+    if(score >= 70) return 'B';
+    if(score >= 55) return 'C';
+    if(score >= 40) return 'D';
+    return 'E';
+  }
+  function gradeColor(grade){
+    if(grade === 'A') return '#2e7d32';
+    if(grade === 'B') return '#66bb6a';
+    if(grade === 'C') return '#ffa726';
+    if(grade === 'D') return '#ff6b6b';
+    return '#ef5350';
+  }
   var maxShow = 300;
   var h = '';
   for(var i=0;i<list.length && i<maxShow;i++){
     var r = list[i];
-    var dt = r.at ? (new Date(r.at).toLocaleString()) : '-';
+    var dt = r.at ? (new Date(r.at).toLocaleString('ja-JP', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})) : '-';
     var label = 'No.' + (r.scenarioNo || '-') + '：' + (r.scenarioName || '');
     var judge = (r.isCorrect === null) ? '判定なし' : (r.isCorrect ? '正解' : '不正解');
-    var color = (r.isCorrect === true) ? '#2e7d32' : ((r.isCorrect === false) ? '#c62828' : '#555');
-    h += '<div style="padding:0.8vmin;border-bottom:1px solid #eee;">'
-      + '<div style="font-size:80%;color:#666;">' + _esc(dt) + '</div>'
-      + '<div style="font-weight:900;color:#003366;">' + _esc(label) + '</div>'
-      + '<div style="color:#111;">回答：' + _esc(r.playerAnswer||'') + ' ／ 正解：' + _esc(r.correctCause||'') + '</div>'
-      + '<div style="font-weight:900;color:' + color + ';">' + _esc(judge) + (r.grade ? (' ／ ランク：' + _esc(r.grade)) : '') + '</div>'
-      + '</div>';
+    var judgeColor = (r.isCorrect === true) ? '#2e7d32' : ((r.isCorrect === false) ? '#c62828' : '#555');
+    var totalPt = r.totalPoints || 0;
+    var rankBadge = r.grade || '-';
+    var rankColor = gradeColor(rankBadge);
+    var scores = r.scores || {safety:0,comm:0,speed:0,density:0,customer:0};
+    var evalLabels = {safety:'安全意識',comm:'社内情報共有',speed:'迅速な調査',density:'調査の密度',customer:'お客さま対応'};
+    var evalHtml = '';
+    for(var key in evalLabels){
+      var sc = scores[key] || 0;
+      var gr = scoreToGrade(sc);
+      var col = gradeColor(gr);
+      evalHtml += '<span style="display:inline-block;margin-right:1vmin;font-size:85%;"><span style="color:#666;">' + evalLabels[key] + ':</span><b style="color:' + col + ';">' + gr + '</b></span>';
+    }
+    h += '<div style="padding:1vmin;border-bottom:1px solid #ddd;margin-bottom:0.8vmin;">'
+      + '<div style="text-align:left;font-size:85%;color:#666;margin-bottom:0.3vmin;">' + _esc(dt) + '</div>'
+      + '<div style="text-align:left;font-weight:700;color:#003366;margin-bottom:0.3vmin;">' + _esc(label) + '</div>'
+      + '<div style="text-align:left;margin-bottom:0.3vmin;"><span style="font-size:90%;color:#333;">総合ポイント: <b style="font-size:110%;color:#003366;">' + totalPt + 'pt</b></span><span style="margin-left:1.5vmin;font-size:85%;color:#666;">ランク: </span><span style="display:inline-block;width:2.5vmin;height:2.5vmin;line-height:2.5vmin;text-align:center;border-radius:0.3vmin;background:' + rankColor + ';color:#fff;font-weight:900;font-size:85%;">' + rankBadge + '</span></div>'
+      + '<div style="text-align:left;margin-bottom:0.3vmin;line-height:1.6;">' + evalHtml + '</div>'
+      + '<div style="text-align:left;font-size:85%;color:#444;">回答：' + _esc(r.playerAnswer||'') + ' / 正解：' + _esc(r.correctCause||'') + '</div>'
+      + '<div style="text-align:left;font-weight:700;color:' + judgeColor + ';font-size:90%;margin-top:0.2vmin;">' + _esc(judge) + '</div></div>';
   }
   box.innerHTML = h;
 }
