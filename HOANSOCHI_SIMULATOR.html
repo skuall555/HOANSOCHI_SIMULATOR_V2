@@ -4871,6 +4871,30 @@ function mgrDoorClick() {
         }
     } catch (e) {}
 
+    try {
+        if (typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive &&
+            typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod === '管理会社へ電話連絡') {
+
+            if (typeof _mgmtCompanyResolved !== 'undefined' && _mgmtCompanyResolved) {
+                // 管理会社との通話済み → 管理人室に聞くフローに合流
+                showSystemMsg('管理会社の手配で管理人が来た。鍵を開けてくれる。');
+                setTimeout(function () {
+                    try { openCommWindow('normal', 'manager'); } catch (e1) {}
+                    try {
+                        if (typeof commLogs !== 'undefined' && commLogs.manager && commLogs.manager.length === 0) {
+                            try { addReporterMsg('管理会社から連絡を受けました。どのようなご用件でしょうか？'); } catch (e2) {}
+                        }
+                    } catch (e3) {}
+                }, 450);
+            } else {
+                // 未連絡 → 緊急連絡先を表示
+                var code = (typeof _mgmtPhoneCode !== 'undefined') ? _mgmtPhoneCode : '????';
+                showSystemMsg('現在は不在にしております。緊急連絡先：' + code);
+            }
+            return;
+        }
+    } catch (e2) {}
+
     showSystemMsg('施錠されている。応答はない。');
 }
 
@@ -9131,18 +9155,22 @@ var reporterRoom = 9; // 初期：台所
 var residentBRoom = 5; // 初期：居住者B宅の廊下
 var MANAGER_IMG_URL = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E7%AE%A1%E7%90%86%E4%BA%BA.png';
 var TANTOU_IMG_URL = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E4%B8%80%E5%A0%B1.png';
+var KANRISHA_IMG_URL = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E7%AE%A1%E7%90%86%E4%BC%9A%E7%A4%BE.png';
+var _mgmtPhoneCode = String(Math.floor(1000 + Math.random() * 9000)); // ランダム4桁
+var _mgmtCompanyResolved = false; // 管理会社との会話で入室許可が得られたか
 var commContext = { mode:'normal', doorId:null, awaitingId:false, partner:'reporter' };
 
-// 会話ログを相手ごとに分離（通報者/居住者B/管理人/通信担当者）
-var commLogs = { reporter: [], alarmB: [], manager: [], tantou: [] };
+// 会話ログを相手ごとに分離（通報者/居住者B/管理人/通信担当者/管理会社）
+var commLogs = { reporter: [], alarmB: [], manager: [], tantou: [], kanrisha: [] };
 
-function _commPartnerKey(){ return (commContext && commContext.partner==='alarmB') ? 'alarmB' : ((commContext && commContext.partner==='manager') ? 'manager' : ((commContext && commContext.partner==='tantou') ? 'tantou' : 'reporter')); }
+function _commPartnerKey(){ return (commContext && commContext.partner==='alarmB') ? 'alarmB' : ((commContext && commContext.partner==='manager') ? 'manager' : ((commContext && commContext.partner==='tantou') ? 'tantou' : ((commContext && commContext.partner==='kanrisha') ? 'kanrisha' : 'reporter'))); }
 function resetCommHistoryFor(partnerKey){ try{ if(commLogs[partnerKey]) commLogs[partnerKey]=[]; }catch(e){} }
-function resetCommHistory(){ try{ resetCommHistoryFor('reporter'); resetCommHistoryFor('alarmB'); resetCommHistoryFor('manager'); resetCommHistoryFor('tantou'); }catch(e){} }
+function resetCommHistory(){ try{ resetCommHistoryFor('reporter'); resetCommHistoryFor('alarmB'); resetCommHistoryFor('manager'); resetCommHistoryFor('tantou'); resetCommHistoryFor('kanrisha'); _mgmtCompanyResolved=false; _mgmtPhoneCode=String(Math.floor(1000+Math.random()*9000)); }catch(e){} }
 
 function _commAvatarSrcFor(partnerKey){
   if(partnerKey==='manager') return MANAGER_IMG_URL;
   if(partnerKey==='tantou') return TANTOU_IMG_URL;
+  if(partnerKey==='kanrisha') return KANRISHA_IMG_URL;
   // ※居住者Bの画像は ALARM_RESIDENT_IMG_URL を差し替えてください
   if(partnerKey==='alarmB') return (typeof ALARM_RESIDENT_IMG_URL!=='undefined') ? ALARM_RESIDENT_IMG_URL : 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png';
   return (customData && customData['resident']) ? customData['resident'] : 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png';
@@ -9393,12 +9421,12 @@ function openCommWindow(mode, partner){
     if(b) b.src=imgSrc;
     if(a) a.src=imgSrc;
     if(c) c.src=imgSrc;
-    var whoName = (key==='alarmB') ? '居住者B' : ((key==='manager') ? '管理人' : ((key==='tantou') ? '通信担当者' : '通報者'));
+    var whoName = (key==='alarmB') ? '居住者B' : ((key==='manager') ? '管理人' : ((key==='tantou') ? '通信担当者' : ((key==='kanrisha') ? '管理会社' : '通報者')));
     try{ if(a) a.alt = whoName; }catch(ea){}
     try{ if(b) b.alt = whoName; }catch(eb){}
     try{ if(c) c.alt = whoName; }catch(ec){}
     var hint=document.querySelector('#comm-window .comm-hint');
-    if(hint){ hint.textContent = (key==='alarmB') ? '居住者Bと会話できます。' : ((key==='manager') ? '管理人と会話できます。' : ((key==='tantou') ? '通信担当者と会話できます。' : '通報者と会話できます。')); }
+    if(hint){ hint.textContent = (key==='alarmB') ? '居住者Bと会話できます。' : ((key==='manager') ? '管理人と会話できます。' : ((key==='tantou') ? '通信担当者と会話できます。' : ((key==='kanrisha') ? '管理会社と会話できます。' : '通報者と会話できます。'))); }
     try{ _tantouUpdateReportPanel(); }catch(e){}
   }catch(e){}
   try{ renderCommHistory(); }catch(e2){}
@@ -9411,7 +9439,7 @@ function openCommWindow(mode, partner){
       if(commContext.mode==='knock'){
         addReporterMsg('どちら様ですか？');
       } else {
-        if(commContext.partner==='manager') addReporterMsg('はい、どちらさまでしょうか？'); else if(commContext.partner==='alarmB') addReporterMsg('警報器が鳴って困っています…。'); else if(commContext.partner==='tantou') addReporterMsg('こちら通信担当です。状況を教えてください。'); else addReporterMsg('来てくださってありがとうございます。');
+        if(commContext.partner==='manager') addReporterMsg('はい、どちらさまでしょうか？'); else if(commContext.partner==='alarmB') addReporterMsg('警報器が鳴って困っています…。'); else if(commContext.partner==='tantou') addReporterMsg('こちら通信担当です。状況を教えてください。'); else if(commContext.partner==='kanrisha') addReporterMsg('お電話ありがとうございます。○○管理会社です。どのようなご用件でしょうか？'); else addReporterMsg('来てくださってありがとうございます。');
       }
     }
 
@@ -9506,12 +9534,33 @@ function generateCommReply(userText){
     try{ return window._tantouGenerateReply(raw); }catch(e){ return '状況を確認しました。'; }
   }
 
+  /* 管理会社 */
+  if(commContext && commContext.partner==='kanrisha'){
+    // 入/鍵/不在/いな/はい → 入室手配
+    if(_commContainsAny(t,['入','はい','鍵','かぎ','不在','いな'])){
+      try{ _mgmtCompanyResolved = true; }catch(er){}
+      return '承知しました。現地の管理人に連絡を取り、お部屋の鍵を開けるよう手配いたします。少々お待ちください。';
+    }
+    // 漏/緊急/警報/管理 → 警報器鳴動の件
+    if(_commContainsAny(t,['漏','緊急','警報','管理','ろう'])){
+      return '都市ガス警報器が鳴動しているのですね。大変危険ですので、すぐに担当者に連絡して対応いたします。鍵の手配も必要でしょうか？';
+    }
+    // ガス → 要件確認
+    if(t.includes('ガス') || t.includes('gas') || t.includes('Gas')){
+      return 'ガスに関するご要件ですね。どのような状況かもう少し詳しくお聞かせください。';
+    }
+    return 'はい、ご用件をお聞かせください。';
+  }
+
   if (commContext && commContext.partner === 'manager') {
     try { if (typeof owned !== 'undefined' && owned.has('カード_鍵')) return '早く向かいましょう。'; } catch (e0) {}
 
     try {
+      var _mgmtOk = (typeof _mgmtCompanyResolved !== 'undefined' && _mgmtCompanyResolved &&
+                     typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod === '管理会社へ電話連絡');
       if (!(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive &&
-            typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod === '管理人室に聞く')) {
+            typeof alarmEntryMethod !== 'undefined' &&
+            (alarmEntryMethod === '管理人室に聞く' || _mgmtOk))) {
         return '応答はない。';
       }
     } catch (e1) {
@@ -10059,6 +10108,12 @@ function _commInferStanceFromHs1(){
     { id:'t_fire',     text:'消防や警察の応援は必要だろうか？',             resolved:'消防、警察の応援も検討しよう。',     keys:['消防','警察'] }
   ];
 
+  /* ===== 管理会社 思考定義 ===== */
+  THOUGHTS_MAP.kanrisha = [
+    { id:'k_purpose',  text:'何の用だろう？',                              resolved:'ガス関連の用件だと分かった。',        keys:['ガス','gas','Gas'] },
+    { id:'k_urgent',   text:'緊急要件か？',                               resolved:'警報器鳴動の緊急案件と把握した。',    keys:['緊急','警報','入','はい','鍵','かぎ','不在','いな','管理人'] }
+  ];
+
   /* グローバルに公開（外部スクリプトからアクセス可能にする） */
   window.THOUGHTS_MAP = THOUGHTS_MAP;
 
@@ -10452,6 +10507,8 @@ function playScenarioWithoutOverwrite(){
 function resetCommHistory(){
   try{ var h=document.getElementById('comm-history'); if(h) h.innerHTML=''; }catch(e){}
   try{ var cw=document.getElementById('comm-window'); if(cw) cw.classList.remove('active'); }catch(e){}
+  try{ if(typeof resetCommHistoryFor==='function'){ resetCommHistoryFor('reporter'); resetCommHistoryFor('alarmB'); resetCommHistoryFor('manager'); resetCommHistoryFor('tantou'); resetCommHistoryFor('kanrisha'); } }catch(e){}
+  try{ _mgmtCompanyResolved=false; _mgmtPhoneCode=String(Math.floor(1000+Math.random()*9000)); }catch(e){}
 }
 
 var _menuBgmTimer = null;
@@ -14586,8 +14643,18 @@ function __applySafetyAwarenessRules(labels, values){
       if(!_dialStr) return;
       initAudio();
       playRingOut();
+      var dialedStr = _dialStr; // capture before close
       setTimeout(function(){
         closeTelPanel();
+        // 管理会社への電話かチェック
+        try{
+          if(typeof _mgmtPhoneCode !== 'undefined' && dialedStr === _mgmtPhoneCode &&
+             typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive &&
+             typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod === '管理会社へ電話連絡'){
+            try{ openCommWindow('normal', 'kanrisha'); }catch(e3){}
+            return;
+          }
+        }catch(e4){}
         try{ openCommWindow('normal'); }catch(e2){}
       }, 2000);
     } catch(e){}
