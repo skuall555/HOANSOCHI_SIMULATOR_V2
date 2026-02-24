@@ -1986,7 +1986,55 @@ body.vent-running #vent-overlay .vent-progress-container{ display:block; }
 #room-basement .b-meter{ pointer-events:auto; }
 #room-basement .b-meter .gas-meter-art{ position:absolute !important; inset:0 !important; width:100% !important; height:100% !important; cursor:pointer; pointer-events:auto; }
 
-
+/* ===== 入店アニメーション オーバーレイ ===== */
+#shop-entry-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 700; display: none; flex-direction: column;
+  align-items: center; justify-content: center; pointer-events: auto;
+}
+#shop-entry-overlay.active { display: flex !important; }
+#shop-entry-bg { position: absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; }
+#shop-entry-msg {
+  position: relative; z-index: 1;
+  background: rgba(0,0,0,0.82); color: #fff;
+  font-size: 3.5vmin; font-weight: bold;
+  padding: 2.5vmin 6vmin; border-radius: 1vmin;
+  letter-spacing: 0.15em;
+}
+/* ===== 焼き鳥屋 / ラーメン屋 共通 ===== */
+#room-yakitori, #room-ramen-shop { background: #ddd; }
+.shop-wall { position: absolute; top:0; left:0; width:100%; height:85%; z-index:0; }
+.shop-floor { position: absolute; bottom:0; left:0; width:100%; height:15%; background:#3a3a3a; border-top:0.5vmin solid #000; z-index:1; }
+/* 換気扇 */
+.ventfan-unit { position: absolute; left:7%; top:12%; width:16%; z-index:3; pointer-events:none; }
+.ventfan-housing {
+  width:100%; aspect-ratio:1; background:#555; border-radius:50%;
+  border:0.6vmin solid #333; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:inset 0 0 1vmin rgba(0,0,0,0.5); position:relative;
+}
+.ventfan-blades {
+  width:80%; height:80%;
+  background: conic-gradient(#777 0deg 60deg, #bbb 60deg 120deg, #777 120deg 180deg, #bbb 180deg 240deg, #777 240deg 300deg, #bbb 300deg 360deg);
+  border-radius:50%; animation: ventfan-spin 0.28s linear infinite;
+}
+@keyframes ventfan-spin { to { transform: rotate(360deg); } }
+.ventfan-center {
+  position:absolute; width:22%; height:22%; background:#333; border-radius:50%;
+  top:50%; left:50%; transform:translate(-50%,-50%); z-index:2;
+}
+.ventfan-label { text-align:center; font-size:1.4vmin; color:#444; margin-top:0.4vmin; font-weight:bold; background:rgba(255,255,255,0.6); border-radius:0.3vmin; padding:0 0.5vmin; }
+/* 換気扇スイッチ */
+.fan-switch-unit { position:absolute; left:8%; top:58%; width:7%; z-index:10; cursor:pointer; pointer-events:auto; }
+.fan-switch-box { background:#e0e0e0; border:0.3vmin solid #999; border-radius:0.8vmin; padding:0.8vmin 0.5vmin; display:flex; flex-direction:column; align-items:center; gap:0.4vmin; box-shadow:0 0.3vmin 0.8vmin rgba(0,0,0,0.3); }
+.fan-switch-label { font-size:1.2vmin; font-weight:bold; color:#333; white-space:nowrap; text-align:center; }
+.fan-switch-toggle { width:2.5vmin; height:5vmin; background:linear-gradient(to bottom,#4caf50,#388e3c); border-radius:0.3vmin; border:0.2vmin solid #333; display:flex; align-items:flex-start; justify-content:center; padding-top:0.2vmin; }
+.fan-switch-toggle::after { content:'|'; color:#fff; font-size:1.8vmin; font-weight:bold; line-height:1; }
+/* 点検口（店舗内） */
+.shop-hatch-wrap { position:absolute; bottom:12%; left:42%; width:16%; height:10%; z-index:5; pointer-events:auto; }
+/* 調理器具 */
+.shop-appliance { position:absolute; right:5%; bottom:15%; width:30%; height:70%; display:flex; align-items:flex-end; z-index:3; }
+.shop-appliance img { width:100%; height:100%; object-fit:contain; object-position:bottom; }
 
 /* === PATCH: 1F/2F共用部 階段の設置高さ（下から30%） ===
    - 対象: room-corridor1 / room-corridor2 の .stairs-zone
@@ -3589,6 +3637,79 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 </div>
 
 </div>
+
+<!-- 焼き鳥屋 (room 13) -->
+<div id="room-yakitori" class="room">
+  <div class="shop-wall" style="background:#fff9c4;"></div>
+  <div class="shop-floor"></div>
+  <div class="guide-sign" style="top:75%; left:1%;">◀ 地下街へ戻る</div>
+  <!-- 換気扇ユニット（作動済み） -->
+  <div class="ventfan-unit">
+    <div class="ventfan-housing">
+      <div class="ventfan-blades"></div>
+      <div class="ventfan-center"></div>
+    </div>
+    <div class="ventfan-label">換気扇</div>
+  </div>
+  <!-- 換気扇スイッチ（ON状態・操作禁止） -->
+  <div class="fan-switch-unit" onclick="clickFanSwitch()" title="換気扇スイッチ（操作禁止）">
+    <div class="fan-switch-box">
+      <div class="fan-switch-label">換気扇<br>SW</div>
+      <div class="fan-switch-toggle"></div>
+    </div>
+  </div>
+  <!-- 点検口 -->
+  <div class="shop-hatch-wrap">
+    <div class="hatch-3d-wrapper">
+      <div class="hatch-hole custom-hatch-in">配管</div>
+      <div class="hatch-lid ps-door custom-hatch" id="hatch-yakitori" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false">点検口</div>
+    </div>
+  </div>
+  <!-- 焼き物器（右側） -->
+  <div class="shop-appliance">
+    <img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E7%84%BC%E3%81%8D%E9%B3%A5%E5%B1%8B%E5%8E%A8%E6%88%BF.png" alt="焼き物器">
+  </div>
+</div>
+
+<!-- ラーメン屋 (room 14) -->
+<div id="room-ramen-shop" class="room">
+  <div class="shop-wall" style="background:#e3f2fd;"></div>
+  <div class="shop-floor"></div>
+  <div class="guide-sign" style="top:75%; left:1%;">◀ 地下街へ戻る</div>
+  <!-- 換気扇ユニット（作動済み） -->
+  <div class="ventfan-unit">
+    <div class="ventfan-housing">
+      <div class="ventfan-blades"></div>
+      <div class="ventfan-center"></div>
+    </div>
+    <div class="ventfan-label">換気扇</div>
+  </div>
+  <!-- 換気扇スイッチ（ON状態・操作禁止） -->
+  <div class="fan-switch-unit" onclick="clickFanSwitch()" title="換気扇スイッチ（操作禁止）">
+    <div class="fan-switch-box">
+      <div class="fan-switch-label">換気扇<br>SW</div>
+      <div class="fan-switch-toggle"></div>
+    </div>
+  </div>
+  <!-- 点検口 -->
+  <div class="shop-hatch-wrap">
+    <div class="hatch-3d-wrapper">
+      <div class="hatch-hole custom-hatch-in">配管</div>
+      <div class="hatch-lid ps-door custom-hatch" id="hatch-ramen-shop" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false">点検口</div>
+    </div>
+  </div>
+  <!-- 茹で面器（右側） -->
+  <div class="shop-appliance">
+    <img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3%E5%B1%8B%E5%8E%A8%E6%88%BF.png" alt="茹で面器">
+  </div>
+</div>
+
+<!-- 入店アニメーション オーバーレイ -->
+<div id="shop-entry-overlay">
+  <img id="shop-entry-bg" src="" alt="">
+  <div id="shop-entry-msg">〇〇屋へ入店中・・・</div>
+</div>
+
 <div id="room-corridor1" class="room corridor-bg">
 <div class="cor-floor"></div>
 <div class="stairs-zone st-left"><div class="stairs-steps"></div><div class="st-label">▲<br>2F</div></div>
@@ -3990,7 +4111,7 @@ window.onload = function() {
 try { const saved = JSON.parse(document.getElementById('saved-assets').textContent); customData = saved; } catch(e) {}
 };
 
-const LOCATIONS = ["駐車場", "前面道路", "1F エントランス", "1F 共用廊下", "2F 共用廊下", "101号室 廊下", "トイレ", "脱衣所", "浴室", "台所", "寝室"];
+const LOCATIONS = ["駐車場", "前面道路", "1F エントランス", "1F 共用廊下", "2F 共用廊下", "101号室 廊下", "トイレ", "脱衣所", "浴室", "台所", "寝室", "階段", "地下街", "焼き鳥屋", "ラーメン屋"];
 const SPEED = 1.0; const JUMP = 15; const G = 0.8;
 let state = { room:0, x:30, y:15, vy:0, grounded:true, inventory:[], vanStock:[], equipped:null, npcs:[], itemCounts:{}, placedItems:[] };
 let input = { l:false, r:false, j:false };
@@ -4898,6 +5019,42 @@ function mgrDoorClick() {
     showSystemMsg('施錠されている。応答はない。');
 }
 
+/* ===== 飲食店入店アニメーション ===== */
+function enterShop(shopId) {
+  if(transitionCooldown || isPaused) return;
+  transitionCooldown = true;
+  var imgUrl, roomName, roomNum;
+  if(shopId === 'yakitori'){
+    imgUrl = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E7%84%BC%E3%81%8D%E9%B3%A5%E5%B1%8B%E8%83%8C%E6%99%AF.png';
+    roomName = '焼き鳥屋'; roomNum = 13;
+  } else {
+    imgUrl = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3%E5%B1%8B%E8%83%8C%E6%99%AF.png';
+    roomName = 'ラーメン屋'; roomNum = 14;
+  }
+  var overlay = document.getElementById('shop-entry-overlay');
+  var bg      = document.getElementById('shop-entry-bg');
+  var msg     = document.getElementById('shop-entry-msg');
+  if(overlay && bg && msg){
+    bg.src = imgUrl;
+    msg.textContent = roomName + 'へ入店中・・・';
+    overlay.classList.add('active');
+    try{ playAudio('se_door', SE.door); }catch(e){}
+    setTimeout(function(){
+      overlay.classList.remove('active');
+      changeRoom(roomNum, 85);
+      transitionCooldown = false;
+    }, 3000);
+  } else {
+    changeRoom(roomNum, 85);
+    transitionCooldown = false;
+  }
+}
+
+/* 換気扇スイッチ → 爆発END */
+function clickFanSwitch() {
+  try{ badEnd('調査範囲内では、電気スイッチの操作は厳禁'); }catch(e){}
+}
+
 function openTalk() {
 document.getElementById('scene-talk').classList.add('active');
 const talkImg = document.getElementById('talk-char-img');
@@ -5529,6 +5686,8 @@ if(state.room===0) { changeRoom(1, 95); moved=true; }
 else if(state.room===2) { changeRoom(1, 50); moved=true; }
 else if(state.room===11) { changeRoom(2, 90); moved=true; } // 階段からエントランスへ
 else if(state.room===12) { changeRoom(11, 50); moved=true; } // 地下街から階段へ
+else if(state.room===13) { changeRoom(12, 28); moved=true; } // 焼き鳥屋→地下街
+else if(state.room===14) { changeRoom(12, 72); moved=true; } // ラーメン屋→地下街
 else if(state.room===5) {
 var d=(currentApartmentOwner==='B' && alarmResidentRoom)?alarmResidentRoom:residentRoom;
 changeRoom(entryFloor, (d === 1 || d === 3 ? 15 : 85));
@@ -5546,7 +5705,7 @@ if(state.room===1) { changeRoom(0, 5); moved=true; }
 else if(state.room===2) { changeRoom(11, 10); moved=true; } // エントランスから階段へ
 else if(state.room >= 3 && state.room <= 4) { state.x = 100; }
 else if(state.room===5) { changeRoom(9, 5); moved=true; }
-else if(state.room===11 || state.room===12) { state.x = 100; } // 階段と地下街は右端に行けない
+else if(state.room===11 || state.room===12 || state.room===13 || state.room===14) { state.x = 100; } // 階段・地下街・店舗は右端に行けない
 else { state.x = 100; }
 }
 if(moved) { input.l = false; input.r = false; }
@@ -5568,7 +5727,13 @@ else if(state.room===11) {
   if(state.x > 58 && state.x < 92) icon="🔼"; // 上の階段（1F共用部へ）left: 60%, width: 30% → 60% 〜 90%
   else if(state.x > 25 && state.x < 59) icon="🔽"; // 下の階段（地下へ）left: 27%, width: 30% → 27% 〜 57%
 }
-else if(state.room===12 && state.x > 10 && state.x < 30) icon="🔼"; // 地下街から階段へ
+else if(state.room===12) {
+  if(state.x > 22 && state.x < 40) icon="🚪"; // 焼き鳥屋入口
+  else if(state.x > 63 && state.x < 83) icon="🚪"; // ラーメン屋入口
+  else if(state.x > 5 && state.x < 22) icon="🔼"; // 地下街から階段へ
+}
+else if(state.room===13 && state.x < 10) icon="🚪"; // 焼き鳥屋→地下街
+else if(state.room===14 && state.x < 10) icon="🚪"; // ラーメン屋→地下街
 else if(state.room===3) {
 if(state.x<15) icon="🔼"; else if(state.x>85) icon="🔽";
 if(roomOpened && residentRoom <= 2) {
@@ -5695,12 +5860,25 @@ if(state.room===11) {
     }
   }
 }
-// 地下街から階段へ
-else if(state.room===12 && state.x > 10 && state.x < 30) { 
-  changeRoom(11, 30); 
-  didWarp=true; 
+// 地下街
+else if(state.room===12) {
+  if(state.x > 22 && state.x < 40) {
+    enterShop('yakitori'); input.j=false; return;
+  } else if(state.x > 63 && state.x < 83) {
+    enterShop('ramen'); input.j=false; return;
+  } else if(state.x > 5 && state.x < 22) {
+    changeRoom(11, 30); didWarp=true;
+  }
 }
-else if(state.room===2 && state.x > 75) { 
+// 焼き鳥屋から地下街へ
+else if(state.room===13 && state.x < 10) {
+  changeRoom(12, 28); didWarp=true;
+}
+// ラーメン屋から地下街へ
+else if(state.room===14 && state.x < 10) {
+  changeRoom(12, 72); didWarp=true;
+}
+else if(state.room===2 && state.x > 75) {
   // エントランスから階段へ（右端移動で自動遷移するので、ここでは何もしない）
   // アイコンは🚪になっているが、実際の遷移は右端移動で行う
 }
@@ -5817,6 +5995,8 @@ if(r===3) document.getElementById('room-corridor1').classList.add('active');
 if(r===4) document.getElementById('room-corridor2').classList.add('active');
 if(r===11) document.getElementById('room-stairs').classList.add('active');
 if(r===12) document.getElementById('room-basement').classList.add('active');
+if(r===13) document.getElementById('room-yakitori').classList.add('active');
+if(r===14) document.getElementById('room-ramen-shop').classList.add('active');
 
 // 居住者B宅の場合は専用の部屋を使用
 var isResidentB = (currentApartmentOwner === 'B');
