@@ -2031,10 +2031,11 @@ body.vent-running #vent-overlay .vent-progress-container{ display:block; }
 .fan-switch-toggle { width:2.5vmin; height:5vmin; background:linear-gradient(to bottom,#4caf50,#388e3c); border-radius:0.3vmin; border:0.2vmin solid #333; display:flex; align-items:flex-start; justify-content:center; padding-top:0.2vmin; }
 .fan-switch-toggle::after { content:'|'; color:#fff; font-size:1.8vmin; font-weight:bold; line-height:1; }
 /* 点検口（店舗内） */
-.shop-hatch-wrap { position:absolute; bottom:12%; left:42%; width:16%; height:10%; z-index:5; pointer-events:auto; }
+.shop-hatch-wrap { position:absolute; bottom:2%; left:42%; width:16%; height:10%; z-index:5; pointer-events:auto; }
 /* 調理器具 */
 .shop-appliance { position:absolute; right:5%; bottom:15%; width:30%; height:70%; display:flex; align-items:flex-end; z-index:3; }
 .shop-appliance img { width:100%; height:100%; object-fit:contain; object-position:bottom; }
+.shop-appliance.large { width:36%; height:84%; }
 
 /* === PATCH: 1F/2F共用部 階段の設置高さ（下から30%） ===
    - 対象: room-corridor1 / room-corridor2 の .stairs-zone
@@ -3698,8 +3699,8 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       <div class="hatch-lid ps-door custom-hatch" id="hatch-ramen-shop" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false">点検口</div>
     </div>
   </div>
-  <!-- 茹で面器（右側） -->
-  <div class="shop-appliance">
+  <!-- 茹で面器（右側・1.2倍サイズ） -->
+  <div class="shop-appliance large">
     <img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3%E5%B1%8B%E5%8E%A8%E6%88%BF.png" alt="茹で面器">
   </div>
 </div>
@@ -4602,6 +4603,8 @@ function _drawRadarChart(){
     var hasManager = sc && (sc.alarmEntry && sc.alarmEntry !== 'なし');
     var maxComm = 1 + (hasAlarmB ? 1 : 0) + (hasManager ? 1 : 0);
     score5 = Math.min(100, Math.round(totalComm / maxComm * 100));
+    // 店主許可なしメーター閉止ペナルティ
+    try{ score5 = Math.max(0, score5 - (typeof _shopGasPenalty !== 'undefined' ? _shopGasPenalty : 0)); }catch(ep){}
 
     var scores = [score1, score2, score3, score4, score5];
     var labels = ['安全意識','社内情報共有','迅速な調査','調査の密度','お客さま対応'];
@@ -5043,7 +5046,7 @@ function enterShop(shopId) {
       overlay.classList.remove('active');
       changeRoom(roomNum, 85);
       transitionCooldown = false;
-    }, 3000);
+    }, 2000);
   } else {
     changeRoom(roomNum, 85);
     transitionCooldown = false;
@@ -9084,6 +9087,16 @@ function resumeLoopSafe(){
   try{
     if(typeof closeMeterGas==='function'){
       closeMeterGas=function(){
+        // 店舗メーター（5=焼き鳥屋, 6=ラーメン屋）許可なし閉止ペナルティ
+        try{
+          if(selectedMeterId===5 && !_yakitoriGasOk){
+            _shopGasPenalty = (_shopGasPenalty||0) + 10;
+            showSystemMsg('お客さま対応力が減少した（焼き鳥屋店主の許可なくガスを閉止しました）');
+          } else if(selectedMeterId===6 && !_ramenGasOk){
+            _shopGasPenalty = (_shopGasPenalty||0) + 10;
+            showSystemMsg('お客さま対応力が減少した（ラーメン屋店主の許可なくガスを閉止しました）');
+          }
+        }catch(ep){}
         meterStatus[selectedMeterId]=true;
         updateMeterVisual(selectedMeterId);
         document.getElementById('meter-modal').classList.remove('active');
@@ -9336,21 +9349,28 @@ var residentBRoom = 5; // 初期：居住者B宅の廊下
 var MANAGER_IMG_URL = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E7%AE%A1%E7%90%86%E4%BA%BA.png';
 var TANTOU_IMG_URL = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E4%B8%80%E5%A0%B1.png';
 var KANRISHA_IMG_URL = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E7%AE%A1%E7%90%86%E4%BC%9A%E7%A4%BE.png';
+var YAKITORI_MASTER_IMG = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E7%84%BC%E3%81%8D%E9%B3%A5%E5%BA%97%E4%B8%BB.png';
+var RAMEN_MASTER_IMG = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3%E5%BA%97%E4%B8%BB.png';
 var _mgmtPhoneCode = String(Math.floor(1000 + Math.random() * 9000)); // ランダム4桁
 var _mgmtCompanyResolved = false; // 管理会社との会話で入室許可が得られたか
+var _yakitoriGasOk = false; // 焼き鳥屋店主がガス止めを許可したか
+var _ramenGasOk = false;    // ラーメン屋店主がガス止めを許可したか
+var _shopGasPenalty = 0;    // 店主許可なしメーター閉止ペナルティ（%）
 var commContext = { mode:'normal', doorId:null, awaitingId:false, partner:'reporter' };
 
-// 会話ログを相手ごとに分離（通報者/居住者B/管理人/通信担当者/管理会社）
-var commLogs = { reporter: [], alarmB: [], manager: [], tantou: [], kanrisha: [] };
+// 会話ログを相手ごとに分離（通報者/居住者B/管理人/通信担当者/管理会社/店主）
+var commLogs = { reporter: [], alarmB: [], manager: [], tantou: [], kanrisha: [], yakitoriMaster: [], ramenMaster: [] };
 
-function _commPartnerKey(){ return (commContext && commContext.partner==='alarmB') ? 'alarmB' : ((commContext && commContext.partner==='manager') ? 'manager' : ((commContext && commContext.partner==='tantou') ? 'tantou' : ((commContext && commContext.partner==='kanrisha') ? 'kanrisha' : 'reporter'))); }
+function _commPartnerKey(){ return (commContext && commContext.partner==='alarmB') ? 'alarmB' : ((commContext && commContext.partner==='manager') ? 'manager' : ((commContext && commContext.partner==='tantou') ? 'tantou' : ((commContext && commContext.partner==='kanrisha') ? 'kanrisha' : ((commContext && commContext.partner==='yakitoriMaster') ? 'yakitoriMaster' : ((commContext && commContext.partner==='ramenMaster') ? 'ramenMaster' : 'reporter'))))); }
 function resetCommHistoryFor(partnerKey){ try{ if(commLogs[partnerKey]) commLogs[partnerKey]=[]; }catch(e){} }
-function resetCommHistory(){ try{ resetCommHistoryFor('reporter'); resetCommHistoryFor('alarmB'); resetCommHistoryFor('manager'); resetCommHistoryFor('tantou'); resetCommHistoryFor('kanrisha'); _mgmtCompanyResolved=false; _mgmtPhoneCode=String(Math.floor(1000+Math.random()*9000)); }catch(e){} }
+function resetCommHistory(){ try{ resetCommHistoryFor('reporter'); resetCommHistoryFor('alarmB'); resetCommHistoryFor('manager'); resetCommHistoryFor('tantou'); resetCommHistoryFor('kanrisha'); resetCommHistoryFor('yakitoriMaster'); resetCommHistoryFor('ramenMaster'); _mgmtCompanyResolved=false; _mgmtPhoneCode=String(Math.floor(1000+Math.random()*9000)); _yakitoriGasOk=false; _ramenGasOk=false; _shopGasPenalty=0; }catch(e){} }
 
 function _commAvatarSrcFor(partnerKey){
   if(partnerKey==='manager') return MANAGER_IMG_URL;
   if(partnerKey==='tantou') return TANTOU_IMG_URL;
   if(partnerKey==='kanrisha') return KANRISHA_IMG_URL;
+  if(partnerKey==='yakitoriMaster') return YAKITORI_MASTER_IMG;
+  if(partnerKey==='ramenMaster') return RAMEN_MASTER_IMG;
   // ※居住者Bの画像は ALARM_RESIDENT_IMG_URL を差し替えてください
   if(partnerKey==='alarmB') return (typeof ALARM_RESIDENT_IMG_URL!=='undefined') ? ALARM_RESIDENT_IMG_URL : 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png';
   return (customData && customData['resident']) ? customData['resident'] : 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png';
@@ -9531,6 +9551,19 @@ function updateTalkButtonVisibility(){
   try{
     var btn=document.getElementById('talk-btn');
     if(!btn) return;
+    // 焼き鳥屋・ラーメン屋では店主ボタンを表示
+    if(typeof state!=='undefined' && state.room===13){
+      btn.style.display='flex';
+      commContext.partner='yakitoriMaster';
+      try{ var im0=document.getElementById('talk-icon-img'); if(im0) im0.src=YAKITORI_MASTER_IMG; }catch(e0){}
+      return;
+    }
+    if(typeof state!=='undefined' && state.room===14){
+      btn.style.display='flex';
+      commContext.partner='ramenMaster';
+      try{ var im0b=document.getElementById('talk-icon-img'); if(im0b) im0b.src=RAMEN_MASTER_IMG; }catch(e0b){}
+      return;
+    }
     // 修正：通報者と居住者Bそれぞれの現在位置で緑ボタン表示
     var show=false;
     if(currentApartmentOwner==='B'){
@@ -9601,12 +9634,12 @@ function openCommWindow(mode, partner){
     if(b) b.src=imgSrc;
     if(a) a.src=imgSrc;
     if(c) c.src=imgSrc;
-    var whoName = (key==='alarmB') ? '居住者B' : ((key==='manager') ? '管理人' : ((key==='tantou') ? '通信担当者' : ((key==='kanrisha') ? '管理会社' : '通報者')));
+    var whoName = (key==='alarmB') ? '居住者B' : ((key==='manager') ? '管理人' : ((key==='tantou') ? '通信担当者' : ((key==='kanrisha') ? '管理会社' : ((key==='yakitoriMaster') ? '焼き鳥屋店主' : ((key==='ramenMaster') ? 'ラーメン屋店主' : '通報者')))));
     try{ if(a) a.alt = whoName; }catch(ea){}
     try{ if(b) b.alt = whoName; }catch(eb){}
     try{ if(c) c.alt = whoName; }catch(ec){}
     var hint=document.querySelector('#comm-window .comm-hint');
-    if(hint){ hint.textContent = (key==='alarmB') ? '居住者Bと会話できます。' : ((key==='manager') ? '管理人と会話できます。' : ((key==='tantou') ? '通信担当者と会話できます。' : ((key==='kanrisha') ? '管理会社と会話できます。' : '通報者と会話できます。'))); }
+    if(hint){ hint.textContent = (key==='alarmB') ? '居住者Bと会話できます。' : ((key==='manager') ? '管理人と会話できます。' : ((key==='tantou') ? '通信担当者と会話できます。' : ((key==='kanrisha') ? '管理会社と会話できます。' : ((key==='yakitoriMaster') ? '焼き鳥屋店主と会話できます。' : ((key==='ramenMaster') ? 'ラーメン屋店主と会話できます。' : '通報者と会話できます。'))))); }
     try{ _tantouUpdateReportPanel(); }catch(e){}
   }catch(e){}
   try{ renderCommHistory(); }catch(e2){}
@@ -9619,7 +9652,7 @@ function openCommWindow(mode, partner){
       if(commContext.mode==='knock'){
         addReporterMsg('どちら様ですか？');
       } else {
-        if(commContext.partner==='manager') addReporterMsg('はい、どちらさまでしょうか？'); else if(commContext.partner==='alarmB') addReporterMsg('警報器が鳴って困っています…。'); else if(commContext.partner==='tantou') addReporterMsg('こちら通信担当です。状況を教えてください。'); else if(commContext.partner==='kanrisha') addReporterMsg('お電話ありがとうございます。○○管理会社です。どのようなご用件でしょうか？'); else addReporterMsg('来てくださってありがとうございます。');
+        if(commContext.partner==='manager') addReporterMsg('はい、どちらさまでしょうか？'); else if(commContext.partner==='alarmB') addReporterMsg('警報器が鳴って困っています…。'); else if(commContext.partner==='tantou') addReporterMsg('こちら通信担当です。状況を教えてください。'); else if(commContext.partner==='kanrisha') addReporterMsg('お電話ありがとうございます。○○管理会社です。どのようなご用件でしょうか？'); else if(commContext.partner==='yakitoriMaster') addReporterMsg('なんの用だ。急いで言え。'); else if(commContext.partner==='ramenMaster') addReporterMsg('はい、何でしょうか？'); else addReporterMsg('来てくださってありがとうございます。');
       }
     }
 
@@ -9730,6 +9763,42 @@ function generateCommReply(userText){
       return 'ガスに関するご要件ですね。どのような状況かもう少し詳しくお聞かせください。';
     }
     return 'はい、ご用件をお聞かせください。';
+  }
+
+  /* 焼き鳥屋店主 */
+  if(commContext && commContext.partner==='yakitoriMaster'){
+    // 全思考解決済み → ガスOK
+    if(typeof window._thoughtAllResolved==='function' && window._thoughtAllResolved('yakitoriMaster')){
+      if(!_yakitoriGasOk){
+        _yakitoriGasOk = true;
+        try{ showSystemMsg('焼き鳥屋店主からガス止めの許可を得ました。'); }catch(e){}
+      }
+      return '分かった。ガス止めていいよ。早くしろ。';
+    }
+    // キーワード別返答（未解決時）
+    if(_commContainsAny(t,['ガス','gas','Gas'])) return 'ガス屋か。今は用はない。忙しいんだ。';
+    if(_commContainsAny(t,['止','閉','しめ'])) return '危険じゃないならガスは止めない。客が来てるんだ。';
+    if(_commContainsAny(t,['反応','検知','漏','見'])) return '反応があったからって、うちには関係ないだろ。';
+    if(_commContainsAny(t,['警報','滞留','流入','爆発','危険'])) return 'まさか爆発なんてしないだろう。大げさなことを言うな。';
+    return '急いで言え。何の用だ。';
+  }
+
+  /* ラーメン屋店主 */
+  if(commContext && commContext.partner==='ramenMaster'){
+    // 全思考解決済み → ガスOK
+    if(typeof window._thoughtAllResolved==='function' && window._thoughtAllResolved('ramenMaster')){
+      if(!_ramenGasOk){
+        _ramenGasOk = true;
+        try{ showSystemMsg('ラーメン屋店主からガス止めの許可を得ました。'); }catch(e){}
+      }
+      return '承知しました。ガスを止めていただいても大丈夫です。お気をつけて。';
+    }
+    // キーワード別返答（未解決時）
+    if(_commContainsAny(t,['ガス','gas','Gas'])) return 'ガス屋さんか。何事だろうか。';
+    if(_commContainsAny(t,['止','閉','しめ'])) return '営業中だからガス止めは厳しいですね…';
+    if(_commContainsAny(t,['反応','検知','漏','見'])) return 'ガス漏れですか？それは危険ですね…';
+    if(_commContainsAny(t,['警報','滞留','流入','爆発','危険'])) return 'まさかガス爆発の危険があるのですか…！';
+    return 'はい、何でしょうか？';
   }
 
   if (commContext && commContext.partner === 'manager') {
@@ -10294,6 +10363,21 @@ function _commInferStanceFromHs1(){
     { id:'k_urgent',   text:'緊急要件か？',                               resolved:'警報器鳴動の緊急案件と把握した。',    keys:['緊急','警報','入','はい','鍵','かぎ','不在','いな','管理人'] }
   ];
 
+  /* ===== 焼き鳥屋店主 思考定義（4つ全て解決でガス止めOK） ===== */
+  THOUGHTS_MAP.yakitoriMaster = [
+    { id:'yk1', text:'この忙しい時に誰だ？',            resolved:'ガス屋か。今は用はない。',           keys:['ガス'] },
+    { id:'yk2', text:'ガスを止めろなんて言わないよな？', resolved:'危険じゃないならガスは止めない。',  keys:['止','閉'] },
+    { id:'yk3', text:'どこにもガスの反応なんてねえよ！', resolved:'反応があったからなんだってんだ。',  keys:['反応','検','見'] },
+    { id:'yk4', text:'どうせ危険な状況じゃないんだろ。', resolved:'まさか爆発なんてしないだろう。',    keys:['警報','滞留','流入'] }
+  ];
+
+  /* ===== ラーメン屋店主 思考定義（3つ全て解決でガス止めOK） ===== */
+  THOUGHTS_MAP.ramenMaster = [
+    { id:'rm1', text:'営業中に誰だろう？',                    resolved:'ガス屋さんか。何事だろうか。',         keys:['ガス'] },
+    { id:'rm2', text:'ガス止め...はないよな？',               resolved:'営業中だからガス止めは厳しい。',       keys:['止','閉'] },
+    { id:'rm3', text:'まさかガス漏れしてるなんてことないよな。', resolved:'ガス漏れ？危険だな...',            keys:['反応','検','見'] }
+  ];
+
   /* グローバルに公開（外部スクリプトからアクセス可能にする） */
   window.THOUGHTS_MAP = THOUGHTS_MAP;
 
@@ -10422,6 +10506,14 @@ function _commInferStanceFromHs1(){
     _activePartner = null;
     var bubble = document.getElementById('comm-thought-bubble');
     if(bubble){ bubble.textContent = '…'; bubble.classList.remove('resolved','fading'); }
+  };
+
+  // 全思考解決チェック（店舗ガス止めOK判定用）
+  window._thoughtAllResolved = function(partner){
+    var ps = _getState(partner);
+    var thoughts = THOUGHTS_MAP[partner] || [];
+    if(!thoughts.length) return false;
+    return thoughts.every(function(t){ return !!ps.resolved[t.id]; });
   };
 
   // キーワード判定
