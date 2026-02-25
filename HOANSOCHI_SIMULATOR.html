@@ -9839,11 +9839,35 @@ function generateCommReply(userText){
   // 保安措置：居住者への注意喚起（削除済み - 別の方法で実装予定）
 
     if(commContext && commContext.partner==='alarmB' && !(commContext.awaitingId)){
+    // 避難/移動は共通
     if(_commContainsAny(t,['避難','移動'])){
       _commShowMoveSelect();
       return 'どこに移動（または避難）すればいい？下のリストから選んでね。';
     }
-    return 'ごめんなさい。気が動転して何も考えられないわ。ここにいていいの？';
+    // B宅台所窓・警報状態の判定
+    var _bAlarmActive = !!(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive);
+    var _bKitchenOpen = false;
+    try{
+      var _bkw = document.getElementById('kitchen-window-b');
+      _bKitchenOpen = !!(_bkw && typeof _isWindowOpen === 'function' && _isWindowOpen(_bkw));
+    }catch(_bwe){}
+
+    if(_bAlarmActive && !_bKitchenOpen){
+      // モード1：台所窓未開・警報鳴動中
+      if(_commContainsAny(t,['警報','止','鳴'])) return '【警報器】早く警報を止めてちょうだい。ガスは使ってないのよ。';
+      if(t.includes('どこ')) return '【どこで】台所よ。';
+      if(_commContainsAny(t,['入','調査'])) return '【入室可否】どうぞどこでも調査して。';
+      if(t.includes('台所')) return '【臭気について】台所で急に鳴りだしたけど、臭いは分からないわ。';
+      return 'ごめんなさい。気が動転して何も考えられないわ。';
+    } else {
+      // モード2：台所窓開放・警報停止後
+      if(_commContainsAny(t,['警報','止','鳴'])) return '【警報器】ありがとう。鳴りやんだみたいね。助かったわ。';
+      if(t.includes('どこ')) return '【どこで】台所よ。';
+      if(_commContainsAny(t,['入','調査'])) return '【入室可否】どうぞどこでも調査して。';
+      if(t.includes('台所')) return '【臭気について】台所で急に鳴りだしたけど、臭いは分からないわ。';
+      if(_commContainsAny(t,['原因','漏'])) return '【原因について】分かったわ。引き続き調査をお願いね。';
+      return 'ごめんなさい。気が動転して何も考えられないわ。';
+    }
   }
 
       if(commContext && commContext.partner==='alarmB' && commContext.mode==='knock' && commContext.awaitingId){
