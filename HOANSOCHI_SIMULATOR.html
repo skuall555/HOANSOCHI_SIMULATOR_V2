@@ -2346,6 +2346,28 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   background: rgba(220,235,255,0.08);
 }
 
+/* === 風アニメーション（前面道路） === */
+@keyframes windMoveRight{0%{background-position:0 0;}100%{background-position:200px 20px;}}
+@keyframes windMoveLeft{0%{background-position:0 0;}100%{background-position:-200px 20px;}}
+.street-wind-overlay{position:absolute;inset:0;pointer-events:none;z-index:163;opacity:0;transition:opacity 0.4s;}
+.street-wind-overlay.wind-right{
+  opacity:1;
+  background-image:repeating-linear-gradient(176deg, rgba(255,255,255,0) 0 28px, rgba(255,255,255,0.18) 28px 30px, rgba(255,255,255,0) 30px 60px);
+  background-size:200px 200px;
+  animation:windMoveRight 0.7s linear infinite;
+}
+.street-wind-overlay.wind-left{
+  opacity:1;
+  background-image:repeating-linear-gradient(184deg, rgba(255,255,255,0) 0 28px, rgba(255,255,255,0.18) 28px 30px, rgba(255,255,255,0) 30px 60px);
+  background-size:200px 200px;
+  animation:windMoveLeft 0.7s linear infinite;
+}
+/* 風向き表示バナー */
+#wind-direction-banner{position:absolute;top:4%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.55);color:#fff;font-size:1.6vmin;padding:0.5vmin 1.5vmin;border-radius:2vmin;z-index:164;pointer-events:none;white-space:nowrap;display:none;}
+#room-street.wind-active #wind-direction-banner{display:block;}
+
+/* === 設置済み排風機アイコン === */
+#fan-placed-icon{display:none;position:absolute;bottom:32%;width:6%;aspect-ratio:1;z-index:50;pointer-events:none;}
 
 /* =========================
    PARKING TREES + SIGNBOARD PATCH
@@ -3258,10 +3280,10 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         </select>
       </div><div class="scenario-field" draggable="true" data-field="leak1">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="漏れ箇所１">反応箇所１箇所目</span></label>
-        <select id="sc-leak1"><option value="脱衣所">脱衣所</option><option value="浴室">浴室</option><option value="廊下">廊下</option><option value="1F共用部">1F共用部</option><option value="2F共用部">2F共用部</option><option value="台所">台所</option><option value="台所天井">台所天井</option><option value="トイレ天井">トイレ天井</option><option value="脱衣所天井">脱衣所天井</option><option value="浴室天井">浴室天井</option><option value="寝室">寝室</option><option value="前面道路">前面道路</option></select>
+        <select id="sc-leak1"><option value="脱衣所">脱衣所</option><option value="浴室">浴室</option><option value="廊下">廊下</option><option value="1F共用部">1F共用部</option><option value="2F共用部">2F共用部</option><option value="台所">台所</option><option value="台所天井">台所天井</option><option value="トイレ天井">トイレ天井</option><option value="脱衣所天井">脱衣所天井</option><option value="浴室天井">浴室天井</option><option value="寝室">寝室</option><option value="前面道路">前面道路</option><option value="B1F共用部">B1F共用部</option><option value="焼き鳥屋天井">焼き鳥屋天井</option><option value="焼き鳥屋">焼き鳥屋</option><option value="ラーメン屋天井">ラーメン屋天井</option><option value="ラーメン屋">ラーメン屋</option></select>
       </div><div class="scenario-field" draggable="true" data-field="leak2">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="漏れ箇所２">反応箇所２箇所目<br>※１を見つけた後に出現する。</span></label>
-        <select id="sc-leak2"><option value="なし">なし</option><option value="脱衣所">脱衣所</option><option value="浴室">浴室</option><option value="廊下">廊下</option><option value="1F共用部">1F共用部</option><option value="2F共用部">2F共用部</option><option value="台所">台所</option><option value="寝室">寝室</option><option value="前面道路">前面道路</option></select>
+        <select id="sc-leak2"><option value="なし">なし</option><option value="脱衣所">脱衣所</option><option value="浴室">浴室</option><option value="廊下">廊下</option><option value="1F共用部">1F共用部</option><option value="2F共用部">2F共用部</option><option value="台所">台所</option><option value="寝室">寝室</option><option value="前面道路">前面道路</option><option value="B1F共用部">B1F共用部</option><option value="焼き鳥屋天井">焼き鳥屋天井</option><option value="焼き鳥屋">焼き鳥屋</option><option value="ラーメン屋天井">ラーメン屋天井</option><option value="ラーメン屋">ラーメン屋</option></select>
       </div><div class="scenario-field" draggable="true" data-field="alarm">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="警報器鳴動時間">警報器鳴動までの時間<br>※１を見つけた後からカウント<br>※ただし、２の濃度測定後はこれに関係せず鳴動</span></label>
         <select id="sc-alarm"><option value="なし">なし</option><option value="100">100</option><option value="200">200</option><option value="300">300</option><option value="400">400</option><option value="500">500</option><option value="600">600</option></select>
@@ -3514,7 +3536,10 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       <img class="street-tree outdoor-tree" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E8%A1%97%E8%B7%AF%E6%A8%B9.png" data-normal-src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E8%A1%97%E8%B7%AF%E6%A8%B9.png" data-snow-src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%9E%AF%E3%82%8C%E6%9C%A8.png" alt="街路樹">
     </div>
 </div>
-<div class="house-1">戸建て</div><div class="mansion" style="border: none; background: transparent;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%81%88%E3%81%BE%E3%81%A8%E3%81%86%E6%94%B9%E9%80%A0.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="bldg-3"><div class="b-window"></div><div class="b-window"></div><div class="b-window"></div></div><div class="house-4">戸建て②</div><div class="asphalt" style="background-image: url(&quot;https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%81%93%E8%B7%AF.png&quot;); background-size: cover; background-position: center center;"></div><div class="npc" style="left: 75.6%;"><div class="npc-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%AD%A9%E8%A1%8C%E8%80%85_2.gif" style="width:100%; height:100%; object-fit:contain;"></div></div></div>
+<div class="house-1">戸建て</div><div class="mansion" style="border: none; background: transparent;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%81%88%E3%81%BE%E3%81%A8%E3%81%86%E6%94%B9%E9%80%A0.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="bldg-3"><div class="b-window"></div><div class="b-window"></div><div class="b-window"></div></div><div class="house-4">戸建て②</div><div class="asphalt" style="background-image: url(&quot;https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%81%93%E8%B7%AF.png&quot;); background-size: cover; background-position: center center;"></div><div class="npc" style="left: 75.6%;"><div class="npc-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%AD%A9%E8%A1%8C%E8%80%85_2.gif" style="width:100%; height:100%; object-fit:contain;"></div></div>
+<div id="street-wind-overlay" class="street-wind-overlay"></div>
+<div id="fan-placed-icon" style="display:none;position:absolute;bottom:32%;width:6%;aspect-ratio:1;z-index:50;pointer-events:none;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%8E%92%E9%A2%A8%E6%A9%9F_%E8%BB%8A%E4%B8%A1.png" style="width:100%;height:100%;object-fit:contain;"></div>
+</div>
 
 <div id="room-entrance" class="room">
 <div class="ent-wall"></div><div class="ent-floor"></div>
@@ -5898,14 +5923,14 @@ changeRoom(5, 5); didWarp=true;
 else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom <= 2) {
   if((alarmResidentRoom===1 && state.x>5 && state.x<30) || (alarmResidentRoom===2 && state.x>70 && state.x<95)) {
   if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive && typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod !== '在宅している' && !alarmBVentilated){
-  if(state.equipped==='fan'){
-    alarmBVentilated=true;
-    try{ playAudio('se_item', SE.item); }catch(e){}
-    try{ showSystemMsg('排風機を使用して濃度を下げた。'); }catch(e2){}
+  // ②：反応箇所の濃度が10%LEL未満なら排風なしで入室可能
+  var _eDoorLel = 0;
+  try{ _eDoorLel = typeof getLel1==='function' ? getLel1() : 0; }catch(_el){}
+  if(_eDoorLel >= 10){
+    try{ badEnd('ガスが滞留している空間に入室する場合は、排風機を使用して濃度を下げてから入室しましょう。'); }catch(e3){}
     return;
   }
-  try{ badEnd('ガスが滞留している空間に入室する場合は、排風機を使用して濃度を下げてから入室しましょう。'); }catch(e3){}
-  return;
+  // 濃度10%未満のため排風なしで入室可能（fall through）
 }
   entryFloor = 3;
   currentApartmentOwner='B';
@@ -5925,14 +5950,14 @@ changeRoom(5, 5); didWarp=true;
 else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom >= 3) {
   if((alarmResidentRoom===3 && state.x>5 && state.x<30) || (alarmResidentRoom===4 && state.x>70 && state.x<95)) {
   if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive && typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod !== '在宅している' && !alarmBVentilated){
-  if(state.equipped==='fan'){
-    alarmBVentilated=true;
-    try{ playAudio('se_item', SE.item); }catch(e){}
-    try{ showSystemMsg('排風機を使用して濃度を下げた。'); }catch(e2){}
+  // ②：反応箇所の濃度が10%LEL未満なら排風なしで入室可能
+  var _eDoorLel = 0;
+  try{ _eDoorLel = typeof getLel1==='function' ? getLel1() : 0; }catch(_el){}
+  if(_eDoorLel >= 10){
+    try{ badEnd('ガスが滞留している空間に入室する場合は、排風機を使用して濃度を下げてから入室しましょう。'); }catch(e3){}
     return;
   }
-  try{ badEnd('ガスが滞留している空間に入室する場合は、排風機を使用して濃度を下げてから入室しましょう。'); }catch(e3){}
-  return;
+  // 濃度10%未満のため排風なしで入室可能（fall through）
 }
   entryFloor = 4;
   currentApartmentOwner='B';
@@ -15184,6 +15209,239 @@ window._tantouGenerateReply = function(rawText){
     if(btn) btn.click();
   };
 })();
+</script>
+
+
+<script id="patch-new-features">
+/* ====================================================================
+   PATCH: ①反応箇所追加 / ③風 / ④排風機設置フロー
+   ==================================================================== */
+(function(){
+'use strict';
+
+/* ------------------------------------------------------------------ */
+/* ① leakToRoomId2 / spotCandidates2 / ensureLeakOptions パッチ       */
+/* ------------------------------------------------------------------ */
+(function(){
+  // leakToRoomId2 を拡張
+  if(typeof window.leakToRoomId2 === 'function' && !window.leakToRoomId2.__patched){
+    var _orig = window.leakToRoomId2;
+    window.leakToRoomId2 = function(leak){
+      if(leak==='B1F共用部')    return 'room-basement';
+      if(leak==='焼き鳥屋天井') return 'room-yakitori';
+      if(leak==='焼き鳥屋')     return 'room-yakitori';
+      if(leak==='ラーメン屋天井') return 'room-ramen-shop';
+      if(leak==='ラーメン屋')   return 'room-ramen-shop';
+      return _orig.apply(this, arguments);
+    };
+    window.leakToRoomId2.__patched = true;
+  }
+
+  // spotCandidates2 を拡張
+  if(typeof window.spotCandidates2 === 'function' && !window.spotCandidates2.__patched){
+    var _origSC = window.spotCandidates2;
+    window.spotCandidates2 = function(leak){
+      if(leak==='B1F共用部')     return ['床と壁の境目','床下点検口内部'];
+      if(leak==='焼き鳥屋天井') return ['天井付近'];
+      if(leak==='ラーメン屋天井') return ['天井付近'];
+      if(leak==='焼き鳥屋')     return ['床と壁の境目','床下点検口内部'];
+      if(leak==='ラーメン屋')   return ['床と壁の境目','床下点検口内部'];
+      return _origSC.apply(this, arguments);
+    };
+    window.spotCandidates2.__patched = true;
+  }
+
+  // ensureLeakOptions を拡張（動的生成時用）
+  if(typeof window.ensureLeakOptions === 'function' && !window.ensureLeakOptions.__patched){
+    var _origELO = window.ensureLeakOptions;
+    window.ensureLeakOptions = function(){
+      _origELO.apply(this, arguments);
+      var extra = ['B1F共用部','焼き鳥屋天井','焼き鳥屋','ラーメン屋天井','ラーメン屋'];
+      ['sc-leak1','sc-leak2'].forEach(function(selId){
+        var sel = document.getElementById(selId);
+        if(!sel) return;
+        var existing = Array.from(sel.options).map(function(o){ return o.value; });
+        extra.forEach(function(v){
+          if(existing.indexOf(v) < 0){
+            var o = document.createElement('option');
+            o.value = v; o.textContent = v;
+            sel.appendChild(o);
+          }
+        });
+      });
+    };
+    window.ensureLeakOptions.__patched = true;
+  }
+})();
+
+/* ------------------------------------------------------------------ */
+/* ③ 風向き（前面道路）                                               */
+/* ------------------------------------------------------------------ */
+(function(){
+  // ゲーム開始時にランダムで決定
+  window._windDirection = (Math.random() < 0.5) ? 'right' : 'left';
+
+  function applyWindOverlay(){
+    var el = document.getElementById('street-wind-overlay');
+    if(!el) return;
+    el.classList.remove('wind-right','wind-left');
+    el.classList.add(window._windDirection === 'right' ? 'wind-right' : 'wind-left');
+  }
+
+  // DOM準備後に適用
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', applyWindOverlay);
+  } else {
+    setTimeout(applyWindOverlay, 100);
+  }
+
+  // initGame フック: ゲーム再開始時にも風向きを再抽選
+  var _windInitHooked = false;
+  function hookInitGameForWind(){
+    if(_windInitHooked || typeof initGame !== 'function') return;
+    var _orig = initGame;
+    initGame = function(){
+      window._windDirection = (Math.random() < 0.5) ? 'right' : 'left';
+      applyWindOverlay();
+      // 排風機状態もリセット
+      window._fanPlaced = false;
+      window._fanPlacedRoom = null;
+      window._fanPlacedX = 50;
+      window._fanPlacementMode = false;
+      var fi = document.getElementById('fan-placed-icon');
+      if(fi) fi.style.display = 'none';
+      return _orig.apply(this, arguments);
+    };
+    _windInitHooked = true;
+  }
+  setTimeout(hookInitGameForWind, 300);
+})();
+
+/* ------------------------------------------------------------------ */
+/* ④ 排風機設置フロー                                                  */
+/* ------------------------------------------------------------------ */
+(function(){
+  // 状態変数
+  window._fanPlaced       = false;
+  window._fanPlacedRoom   = null;
+  window._fanPlacedX      = 50;   // 0-100 % (room幅に対する位置)
+  window._fanPlacementMode= false;
+
+  // 設置済みアイコンを表示
+  function showFanIcon(xPct){
+    var fi = document.getElementById('fan-placed-icon');
+    if(!fi) return;
+    fi.style.left = xPct + '%';
+    fi.style.display = 'block';
+  }
+
+  // 排風機の設置位置が「前面道路の風下」かを判定
+  function isFanOnDownwind(){
+    if(window._fanPlacedRoom !== 1) return false; // room 1 = 前面道路のみ
+    var dir = window._windDirection;
+    // 風が右へ流れる: 風下=右側(x>50)
+    // 風が左へ流れる: 風下=左側(x<50)
+    if(dir === 'right') return window._fanPlacedX > 50;
+    return window._fanPlacedX < 50;
+  }
+
+  // 設置タップハンドラ
+  function onFanPlaceTap(e){
+    if(!window._fanPlacementMode) return;
+    // コミュニケーション窓やモーダル上のタップは無視
+    try{
+      var t = e.target;
+      if(t && (t.closest('#comm-window') || t.closest('#msg-box') || t.closest('.modal-overlay'))){
+        return;
+      }
+    }catch(_){}
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    window._fanPlacementMode = false;
+
+    // タップ座標 → room内のX%を計算
+    var appEl = document.getElementById('app-container');
+    var rect = appEl ? appEl.getBoundingClientRect() : {left:0, width:window.innerWidth};
+    var cx = (e.clientX !== undefined) ? e.clientX
+           : (e.touches && e.touches[0]) ? e.touches[0].clientX : rect.left + rect.width/2;
+    var xPct = Math.max(0, Math.min(100, (cx - rect.left) / rect.width * 100));
+
+    window._fanPlaced     = true;
+    window._fanPlacedRoom = (typeof state !== 'undefined') ? state.room : null;
+    window._fanPlacedX    = xPct;
+
+    // room-streetにいる場合のみアイコン表示
+    if(window._fanPlacedRoom === 1) showFanIcon(xPct);
+
+    try{ showSystemMsg('排風機を設置しました。もう一度使用すると排風を開始します。'); }catch(_){}
+
+    // リスナー除去
+    document.removeEventListener('click',    onFanPlaceTap, {capture:true});
+    document.removeEventListener('touchstart', onFanPlaceTap, {capture:true});
+  }
+
+  // メインの排風機起動関数（selectItemから呼ばれる部分を置き換え）
+  window._fanActivate = function(){
+    if(window._fanPlacementMode) return; // 既に設置待ち中
+
+    if(!window._fanPlaced){
+      // フェーズ1: 設置位置を決める
+      window._fanPlacementMode = true;
+      try{ showSystemMsg('排風機を設置してください。（画面をタッチして設置位置を選んでください）'); }catch(_){}
+      document.addEventListener('click',     onFanPlaceTap, {capture:true, once:true});
+      document.addEventListener('touchstart', onFanPlaceTap, {capture:true, once:true, passive:false});
+      return;
+    }
+
+    // フェーズ2: 排風機を起動 → 設置位置を検証
+    if(!isFanOnDownwind()){
+      // 設置位置不正 → 爆発END
+      try{ badEnd('排風機は屋外の風下に設置してください。'); }catch(e){}
+      return;
+    }
+
+    // 正常：既存の排風モード開始
+    try{ startVentMode(); }catch(e2){
+      try{ showSystemMsg('排風を開始します。'); }catch(_){}
+    }
+  };
+
+  // selectItem('fan') の fan ブランチをパッチ
+  // selectItem は既存のまま。ただし startVentMode 呼び出し箇所を _fanActivate に差し替える
+  if(typeof window.selectItem === 'function' && !window.selectItem.__fanPatched){
+    var _origSI = window.selectItem;
+    window.selectItem = function(key){
+      if(key === 'fan'){
+        // バン（駐車場・room0）での格納はそのまま既存処理へ
+        if(typeof state !== 'undefined' && state.room === 0 &&
+           typeof ITEMS_DEF !== 'undefined' && ITEMS_DEF['fan'] && ITEMS_DEF['fan'].type === 'coll'){
+          return _origSI.apply(this, arguments);
+        }
+        // 装備切り替え
+        if(typeof state !== 'undefined' && state.equipped === key){
+          // 既に装備中 → 起動
+          window._fanActivate();
+        } else {
+          // 新規装備
+          if(typeof state !== 'undefined') state.equipped = key;
+          if(typeof isDetectorMode !== 'undefined' && (isDetectorMode || isPlacementMode || isVentMode)){
+            try{ stopMode(); }catch(_){}
+          }
+          // 排風機装備時はすぐ設置フローへ
+          window._fanActivate();
+        }
+        try{ updateHand(); renderInventory(); }catch(_){}
+        return;
+      }
+      return _origSI.apply(this, arguments);
+    };
+    window.selectItem.__fanPatched = true;
+  }
+})();
+
+})(); // end outer IIFE
 </script>
 
 </div></div></body></html>
