@@ -9849,7 +9849,15 @@ function generateCommReply(userText){
     var _bKitchenOpen = false;
     try{
       var _bkw = document.getElementById('kitchen-window-b');
-      _bKitchenOpen = !!(_bkw && typeof _isWindowOpen === 'function' && _isWindowOpen(_bkw));
+      if(_bkw){
+        // display:none の非アクティブ室内でも正確に取得するため inline style を優先参照
+        var _bkwTr = (_bkw.style && _bkw.style.transform) ? _bkw.style.transform
+                   : (window.getComputedStyle(_bkw).transform || '');
+        var _bkwM = _bkwTr.match(/translateX\(([-0-9.]+)px\)/);
+        var _bkwTx = _bkwM ? Math.abs(parseFloat(_bkwM[1])) : 0;
+        var _bkwMax = parseFloat((_bkw.dataset && _bkw.dataset.maxSlide) || '80') || 80;
+        _bKitchenOpen = _bkwTx >= (_bkwMax * 0.02); // 2%以上開いていれば開放とみなす
+      }
     }catch(_bwe){}
 
     if(_bAlarmActive && !_bKitchenOpen){
