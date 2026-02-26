@@ -12375,6 +12375,8 @@ try{
   };
   // 外部から CONTEXTS にコンテキストを追加できるように公開
   window.__btContexts = CONTEXTS;
+  // btState を外部から参照できるように公開
+  window.__btState = btState;
 
   // 状況突破の状態
   const btState = {
@@ -16388,9 +16390,9 @@ window._tantouGenerateReply = function(rawText){
   var _pfPrevRoom = -1;
   setInterval(function(){
     try{
-      if(!_keisatsuAccepted && window.btState && window.btState.cleared && window.btState.cleared.keisatsu)
+      if(!_keisatsuAccepted && window.__btState && window.__btState.cleared && window.__btState.cleared.keisatsu)
         _keisatsuAccepted = true;
-      if(!_shoboAccepted && window.btState && window.btState.cleared && window.btState.cleared.shobo)
+      if(!_shoboAccepted && window.__btState && window.__btState.cleared && window.__btState.cleared.shobo)
         _shoboAccepted = true;
       var room = getRoom();
       if(_keisatsuAccepted && !_keisatsuMsgShown && room===1 && room!==_pfPrevRoom){
