@@ -15428,7 +15428,8 @@ window._tantouGenerateReply = function(rawText){
     document.body.appendChild(overlay);
 
     function closeModal(){ try{ document.body.removeChild(overlay); }catch(_){} }
-    overlay.addEventListener('click', function(e){ e.stopPropagation(); }, true);
+    // バブルフェーズでのみ伝播を止める（captureは使わない＝ボタンへのイベントが届くように）
+    overlay.addEventListener('click', function(e){ e.stopPropagation(); });
     btnYes.addEventListener('click', function(e){ e.stopPropagation(); closeModal(); onYes(); });
     btnNo.addEventListener('click',  function(e){ e.stopPropagation(); closeModal(); onNo(); });
   }
@@ -15442,11 +15443,14 @@ window._tantouGenerateReply = function(rawText){
         var room = (typeof state !== 'undefined') ? state.room : null;
         if(room === 1){
           // 前面道路 → 設置モード開始（手には持たない）
-          window._fanPlacementActive = true;
-          try{
-            var modeMsg = document.getElementById('mode-msg');
-            if(modeMsg) modeMsg.textContent = '排風機設置モード：設置場所をクリック';
-          }catch(_){}
+          // ※selectItem を呼んだクリックイベントが即座に捕捉されないよう setTimeout で遅延
+          setTimeout(function(){
+            window._fanPlacementActive = true;
+            try{
+              var modeMsg = document.getElementById('mode-msg');
+              if(modeMsg) modeMsg.textContent = '排風機設置モード：設置場所をクリック';
+            }catch(_){}
+          }, 80);
         } else {
           if(window._fanPlaced){
             // 設置済み → 排風起動
