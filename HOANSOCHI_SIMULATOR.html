@@ -12375,8 +12375,6 @@ try{
   };
   // 外部から CONTEXTS にコンテキストを追加できるように公開
   window.__btContexts = CONTEXTS;
-  // btState を外部から参照できるように公開
-  window.__btState = btState;
 
   // 状況突破の状態
   const btState = {
@@ -12386,6 +12384,8 @@ try{
     missionSolved: {}, // contextId -> boolean[]
     missionSubmitted: {}, // contextId -> missionIdx -> cardId[]
   };
+  // btState を外部から参照できるように公開（宣言後に設定）
+  window.__btState = btState;
 
   function $(id){ return document.getElementById(id); }
 
