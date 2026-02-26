@@ -2371,7 +2371,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 #comm-heartbeat-canvas.active{display:block!important;}
 
 /* === 設置済み排風機アイコン === */
-#fan-placed-icon{display:none;position:absolute;top:82%;width:18%;aspect-ratio:1;z-index:50;pointer-events:none;transform:translateX(-50%);}
+#fan-placed-icon{display:none;position:absolute;top:72%;width:18%;aspect-ratio:1;z-index:50;pointer-events:none;transform:translateX(-50%);}
 
 /* =========================
    PARKING TREES + SIGNBOARD PATCH
@@ -3557,7 +3557,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 </div>
 <div class="house-1">戸建て</div><div class="mansion" style="border: none; background: transparent;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%81%88%E3%81%BE%E3%81%A8%E3%81%86%E6%94%B9%E9%80%A0.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="bldg-3"><div class="b-window"></div><div class="b-window"></div><div class="b-window"></div></div><div class="house-4">戸建て②</div><div class="asphalt" style="background-image: url(&quot;https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%81%93%E8%B7%AF.png&quot;); background-size: cover; background-position: center center;"></div><div class="npc" style="left: 75.6%;"><div class="npc-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%AD%A9%E8%A1%8C%E8%80%85_2.gif" style="width:100%; height:100%; object-fit:contain;"></div></div>
 <div id="street-wind-overlay" class="street-wind-overlay"></div>
-<div id="fan-placed-icon" style="display:none;position:absolute;top:82%;width:18%;aspect-ratio:1;z-index:50;pointer-events:none;transform:translateX(-50%);"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%8E%92%E9%A2%A8%E6%A9%9F_%E8%BB%8A%E4%B8%A1.png" style="width:100%;height:100%;object-fit:contain;"></div>
+<div id="fan-placed-icon" style="display:none;position:absolute;top:72%;width:18%;aspect-ratio:1;z-index:50;pointer-events:none;transform:translateX(-50%);"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%8E%92%E9%A2%A8%E6%A9%9F_%E8%BB%8A%E4%B8%A1.png" style="width:100%;height:100%;object-fit:contain;"></div>
 </div>
 
 <div id="room-entrance" class="room">
@@ -10022,7 +10022,7 @@ function generateCommReply(userText){
   var out=[];
   try{ out = out.concat(_commExtendedReplies(raw)); }catch(e){}
   if(out && out.length){
-    try{window._commDecStress&&window._commDecStress('reporter',25);}catch(_){}
+    try{window._commDecStress&&window._commDecStress('reporter',13);}catch(_){}
     return out.join('\n');
   }
 
@@ -10036,7 +10036,7 @@ function generateCommReply(userText){
     _rReply=_when+'に、'+_what+'。';
   }
   else if(t.includes('どの程度') || t.includes('どの')){ _rReply=(activeScenario && activeScenario.degree) ? String(activeScenario.degree) : '時々ふわっと感じるくらい。'; }
-  if(_rReply){ try{window._commDecStress&&window._commDecStress('reporter',25);}catch(_){} return _rReply; }
+  if(_rReply){ try{window._commDecStress&&window._commDecStress('reporter',13);}catch(_){} return _rReply; }
 
   return 'すみません、分かりません…ただ今は'+((activeScenario && activeScenario.leak1)?String(activeScenario.leak1):'')+'のあたりが気になります。';
 }
@@ -11097,7 +11097,7 @@ try{
     { id:'カード_制限', name:'カード_制限', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E5%88%B6%E9%99%90.png', desc:'入手条件：シミュレーション中に初めて、前面道路の歩行者をクリックする。' },
     { id:'カード_広範囲', name:'カード_広範囲', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E5%BA%83%E7%AF%84%E5%9B%B2.png', desc:'入手条件：シミュレーション中に初めて、検知器モードで反応箇所２をクリックする。' },
     { id:'カード_滞留ガス', name:'カード_滞留ガス', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E6%BB%9E%E7%95%99%E3%82%AC%E3%82%B9.png', desc:'入手条件：シミュレーション中に初めて、警報器が鳴りだす。' },
-    { id:'カード_要救助者の介護', name:'カード_要救助者の介護', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E8%A6%81%E6%95%91%E5%8A%A9%E8%80%85%E3%81%AE%E4%BB%8B%E8%AD%B7.png', desc:'入手条件：警報器鳴動後に居住者B宅のドアをクリックする。' },
+    { id:'カード_要救助者の介護', name:'カード_要救助者の介護', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E8%A6%81%E6%95%91%E5%8A%A9%E8%80%85%E3%81%AE%E4%BB%8B%E8%AD%B7.png', desc:'入手条件：「警報器鳴動宅の入室方法」が「在宅している」以外の場合のみ、警報器鳴動後に居住者B宅のドアをクリックする。' },
     { id:'カード_避難指示', name:'カード_避難指示', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E9%81%BF%E9%9B%A3%E6%8C%87%E7%A4%BA.png', desc:'入手条件：1F共用部・2F共用部のドアを3箇所以上クリックする。' },
     { id:'カード_火災警戒区域の設定', name:'カード_火災警戒区域の設定', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AB%E7%81%BD%E8%AD%A6%E6%88%92%E5%8C%BA%E5%9F%9F%E3%81%AE%E8%A8%AD%E5%AE%9A.png', desc:'入手条件：警報器鳴動後に前面道路へ向かう。' },
     { id:'カード_現場広報活動', name:'カード_現場広報活動', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%8F%BE%E5%A0%B4%E5%BA%83%E5%A0%B1%E6%B4%BB%E5%8B%95.png', desc:'入手条件：警報器鳴動100秒後に前面道路へ出現する野次馬をクリックする。' }
@@ -15460,7 +15460,7 @@ window._tantouGenerateReply = function(rawText){
   window._fanPlacementActive = false;
 
   /* --- 設置済みアイコン（落下アニメーション付き） --- */
-  var FAN_ROAD_TOP = 82; /* 道路面 top% — 建物底辺 bottom:15% ≈ top:85% の少し上 */
+  var FAN_ROAD_TOP = 72; /* 道路面 top% — 建物底辺 bottom:15% ≈ top:85% より 13% 上 */
   function showFanIcon(xPct, startTopPct){
     var el = document.getElementById('fan-placed-icon');
     if(!el) return;
@@ -15941,14 +15941,16 @@ window._tantouGenerateReply = function(rawText){
     window._tantouGenerateReply.__shoboHooked = true;
   }
 
-  /* ---- カード_要救助者の介護: 警報後に居住者B宅ドアクリック ---- */
+  /* ---- カード_要救助者の介護: 警報後に居住者B宅ドアクリック
+         「警報器鳴動宅の入室方法」が「在宅している」以外の場合のみ付与 ---- */
   var _kaigoAwarded = false;
   function hookDoorForKaigo(){
     if(typeof window.openDoorModal !== 'function' || window.openDoorModal.__kaigoHooked) return;
     var _orig = window.openDoorModal;
     window.openDoorModal = function(id){
       try{
-        if(!_kaigoAwarded && window._cityGasAlarmActive){
+        if(!_kaigoAwarded && window._cityGasAlarmActive
+           && (typeof window.alarmEntryMethod === 'undefined' || window.alarmEntryMethod !== '在宅している')){
           var alarmRoom = window.alarmResidentRoom;
           // alarmRoom は数値 or 文字列。id は数値
           if(alarmRoom && String(id) === String(alarmRoom)){
@@ -16004,7 +16006,7 @@ window._tantouGenerateReply = function(rawText){
 
     var el = document.createElement('div');
     el.id = 'yakaji-npc';
-    el.style.cssText = 'position:absolute;bottom:15%;left:20%;width:6%;height:25%;z-index:55;cursor:pointer;';
+    el.style.cssText = 'position:absolute;bottom:15%;right:0%;width:15%;height:62.5%;z-index:55;cursor:pointer;';
     el.innerHTML = '<img src="'+YAKAJI_IMG+'" style="width:100%;height:100%;object-fit:contain;" alt="野次馬">';
     street.appendChild(el);
     _yakajiEl = el;
@@ -16013,8 +16015,7 @@ window._tantouGenerateReply = function(rawText){
       if(_kohoAwarded) return;
       _kohoAwarded = true;
       try{ window.__awardCard && window.__awardCard('カード_現場広報活動'); }catch(e){}
-      el.remove(); _yakajiEl = null;
-      stopKensouBGM();
+      /* 画像・BGMはクリック後も維持（消えないようにする） */
     });
 
     startKensouBGM();
