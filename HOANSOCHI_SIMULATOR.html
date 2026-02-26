@@ -2371,7 +2371,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 #comm-heartbeat-canvas.active{display:block!important;}
 
 /* === 設置済み排風機アイコン === */
-#fan-placed-icon{display:none;position:absolute;bottom:32%;width:18%;aspect-ratio:1;z-index:50;pointer-events:none;}
+#fan-placed-icon{display:none;position:absolute;top:82%;width:18%;aspect-ratio:1;z-index:50;pointer-events:none;transform:translateX(-50%);}
 
 /* =========================
    PARKING TREES + SIGNBOARD PATCH
@@ -3557,7 +3557,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 </div>
 <div class="house-1">戸建て</div><div class="mansion" style="border: none; background: transparent;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%81%88%E3%81%BE%E3%81%A8%E3%81%86%E6%94%B9%E9%80%A0.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="bldg-3"><div class="b-window"></div><div class="b-window"></div><div class="b-window"></div></div><div class="house-4">戸建て②</div><div class="asphalt" style="background-image: url(&quot;https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%81%93%E8%B7%AF.png&quot;); background-size: cover; background-position: center center;"></div><div class="npc" style="left: 75.6%;"><div class="npc-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%AD%A9%E8%A1%8C%E8%80%85_2.gif" style="width:100%; height:100%; object-fit:contain;"></div></div>
 <div id="street-wind-overlay" class="street-wind-overlay"></div>
-<div id="fan-placed-icon" style="display:none;position:absolute;bottom:32%;width:18%;aspect-ratio:1;z-index:50;pointer-events:none;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%8E%92%E9%A2%A8%E6%A9%9F_%E8%BB%8A%E4%B8%A1.png" style="width:100%;height:100%;object-fit:contain;"></div>
+<div id="fan-placed-icon" style="display:none;position:absolute;top:82%;width:18%;aspect-ratio:1;z-index:50;pointer-events:none;transform:translateX(-50%);"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%8E%92%E9%A2%A8%E6%A9%9F_%E8%BB%8A%E4%B8%A1.png" style="width:100%;height:100%;object-fit:contain;"></div>
 </div>
 
 <div id="room-entrance" class="room">
@@ -9259,11 +9259,12 @@ function resumeLoopSafe(){
 
 /* =============================================================
    前面道路（room 1）設置アイテム等速落下パッチ
-   cone / alm / fire を前面道路に置いたとき道路上まで落下する
+   cone / alm / fire / sign を前面道路に置いたとき道路上まで落下する
+   道路面: bottom:15%（建物底辺）= top:85% 付近
+   item は translate(-50%,-50%) で center 配置なので center を top:82% に
    ============================================================= */
 (function(){
-  /* 道路面 top% — fan-placed-icon の bottom:32% に合わせて top=68% */
-  var ROAD_TOP_PCT = 68;
+  var ROAD_TOP_PCT = 82;  /* 建物底辺 bottom:15% ≈ top:85%、中心は少し上 */
 
   /* アイテムの実際の y を placedItems 配列から更新する */
   function updateStoredY(itemId, newY){
@@ -9281,16 +9282,16 @@ function resumeLoopSafe(){
     createPlacedItemElement = function(item){
       _origCreate2(item);
       try{
-        if(item.room !== 1) return;                        // 前面道路のみ
-        if(['cone','alm','fire'].indexOf(item.type) < 0) return;  // 対象アイテムのみ
+        if(item.room !== 1) return;                               // 前面道路のみ
+        if(['cone','alm','fire','sign'].indexOf(item.type) < 0) return;  // 対象アイテム
         var el = document.getElementById(item.id);
         if(!el) return;
         var startTop = parseFloat(el.style.top) || ROAD_TOP_PCT;
-        if(startTop >= ROAD_TOP_PCT){ return; }            // すでに道路以下なら不要
+        if(startTop >= ROAD_TOP_PCT){ return; }                   // すでに道路以下
 
         /* 等速落下アニメーション（distance に比例した duration） */
-        var dist = ROAD_TOP_PCT - startTop;               // 落下距離 %
-        var dur  = Math.round(dist * 6);                  // 6ms / 1% ≒ 等速
+        var dist = ROAD_TOP_PCT - startTop;
+        var dur  = Math.round(dist * 6);                          // 6ms / 1% ≒ 等速
         el.style.transition = 'top ' + dur + 'ms linear';
         requestAnimationFrame(function(){
           el.style.top = ROAD_TOP_PCT + '%';
@@ -15458,12 +15459,29 @@ window._tantouGenerateReply = function(rawText){
   window._fanPlacedX         = 50;
   window._fanPlacementActive = false;
 
-  /* --- 設置済みアイコン --- */
-  function showFanIcon(xPct){
+  /* --- 設置済みアイコン（落下アニメーション付き） --- */
+  var FAN_ROAD_TOP = 82; /* 道路面 top% — 建物底辺 bottom:15% ≈ top:85% の少し上 */
+  function showFanIcon(xPct, startTopPct){
     var el = document.getElementById('fan-placed-icon');
     if(!el) return;
-    el.style.left    = (xPct - 9) + '%';
+    /* transform:translateX(-50%) で水平中央合わせ */
+    el.style.left       = xPct + '%';
+    el.style.bottom     = '';          // bottom を無効化（top 基準に統一）
+    el.style.transition = 'none';
+    var from = (startTopPct != null && startTopPct < FAN_ROAD_TOP)
+                 ? startTopPct : FAN_ROAD_TOP;
+    el.style.top    = from + '%';
     el.style.display = 'block';
+    /* 等速落下 */
+    if(from < FAN_ROAD_TOP){
+      var dur = Math.round((FAN_ROAD_TOP - from) * 6);
+      requestAnimationFrame(function(){
+        el.style.transition = 'top ' + dur + 'ms linear';
+        requestAnimationFrame(function(){
+          el.style.top = FAN_ROAD_TOP + '%';
+        });
+      });
+    }
   }
   function hideFanIcon(){
     var el = document.getElementById('fan-placed-icon');
@@ -15597,8 +15615,9 @@ window._tantouGenerateReply = function(rawText){
       }catch(_){}
 
       var appEl = document.getElementById('app-container');
-      var rect  = appEl ? appEl.getBoundingClientRect() : {left:0, width:window.innerWidth};
-      var xPct  = (e.clientX - rect.left) / rect.width * 100;
+      var rect  = appEl ? appEl.getBoundingClientRect() : {left:0, width:window.innerWidth, top:0, height:window.innerHeight};
+      var xPct  = (e.clientX - rect.left) / rect.width  * 100;
+      var yPct  = (e.clientY - rect.top)  / rect.height * 100;
       var isDownwind = (window._windDirection === 'right') ? (xPct > 50) : (xPct < 50);
 
       showFanModal(isDownwind,
@@ -15608,7 +15627,7 @@ window._tantouGenerateReply = function(rawText){
             window._fanPlaced     = true;
             window._fanPlacedRoom = 1;
             window._fanPlacedX    = xPct;
-            showFanIcon(xPct);
+            showFanIcon(xPct, yPct);  /* クリック位置から道路面へ落下 */
             try{ showSystemMsg('排風機を風下に設置しました。'); }catch(_){}
           } else {
             setTimeout(function(){ try{ badEnd('排風機を風上に設置してしまいました。'); }catch(_){} }, 80);
