@@ -1440,7 +1440,7 @@ pointer-events: none;
 /* =========================
    ADD: 状況突破（Breakthrough）画面
    ========================= */
-#scene-breakthrough{ z-index: 10080; }
+#scene-breakthrough{ z-index: 10080; position: fixed !important; top:0; left:0; width:100%; height:100%; }
 .bt-wrap{
   width: min(94vw, 1100px);
   height: min(92vh, 760px);
@@ -2371,7 +2371,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 #comm-heartbeat-canvas.active{display:block!important;}
 
 /* === 設置済み排風機アイコン === */
-#fan-placed-icon{display:none;position:absolute;bottom:32%;width:6%;aspect-ratio:1;z-index:50;pointer-events:none;}
+#fan-placed-icon{display:none;position:absolute;bottom:32%;width:18%;aspect-ratio:1;z-index:50;pointer-events:none;}
 
 /* =========================
    PARKING TREES + SIGNBOARD PATCH
@@ -3557,7 +3557,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 </div>
 <div class="house-1">戸建て</div><div class="mansion" style="border: none; background: transparent;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%81%88%E3%81%BE%E3%81%A8%E3%81%86%E6%94%B9%E9%80%A0.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="bldg-3"><div class="b-window"></div><div class="b-window"></div><div class="b-window"></div></div><div class="house-4">戸建て②</div><div class="asphalt" style="background-image: url(&quot;https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%81%93%E8%B7%AF.png&quot;); background-size: cover; background-position: center center;"></div><div class="npc" style="left: 75.6%;"><div class="npc-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%AD%A9%E8%A1%8C%E8%80%85_2.gif" style="width:100%; height:100%; object-fit:contain;"></div></div>
 <div id="street-wind-overlay" class="street-wind-overlay"></div>
-<div id="fan-placed-icon" style="display:none;position:absolute;bottom:32%;width:6%;aspect-ratio:1;z-index:50;pointer-events:none;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%8E%92%E9%A2%A8%E6%A9%9F_%E8%BB%8A%E4%B8%A1.png" style="width:100%;height:100%;object-fit:contain;"></div>
+<div id="fan-placed-icon" style="display:none;position:absolute;bottom:32%;width:18%;aspect-ratio:1;z-index:50;pointer-events:none;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%8E%92%E9%A2%A8%E6%A9%9F_%E8%BB%8A%E4%B8%A1.png" style="width:100%;height:100%;object-fit:contain;"></div>
 </div>
 
 <div id="room-entrance" class="room">
@@ -12710,7 +12710,7 @@ try{
       if(hdDiv) hdDiv.textContent = '状況突破' + (ctx.type ? '\u3000' + ctx.type : '');
     }catch(e){}
     try{ $('bt-title').textContent = ctx.title; }catch(e){}
-    try{ $('bt-info').textContent  = ctx.info || ''; }catch(e){}
+    try{ $('bt-info').textContent  = 'カードをドラッグする項目をクリックして選択してください。'; }catch(e){}
 
     renderMissions(ctx);
     renderHand();
@@ -12723,7 +12723,7 @@ try{
     try{ var sc=document.getElementById('scene-breakthrough'); if(sc) sc.classList.remove('bt-dragging'); }catch(e){}
     try{ closeOverlay('scene-breakthrough'); }catch(e2){}
     try{ if(typeof window.isPaused!=='undefined'){ window.isPaused = false; } }catch(e3){}
-    try{ if(typeof window.loop==='function'){ window.loop(); } }catch(e4){}
+    try{ if(typeof window.loopId!=='undefined'){ cancelAnimationFrame(window.loopId); } if(typeof window.loop==='function'){ window.loop(); } }catch(e4){}
   }
   window.closeBreakthroughUI = closeBreakthroughUI;
 
@@ -15388,89 +15388,174 @@ window._tantouGenerateReply = function(rawText){
 })();
 
 /* ------------------------------------------------------------------ */
-/* ④ 排風機設置フロー（カラーコーン方式）                               */
+/* ④ 排風機設置フロー V3                                                */
 /* ------------------------------------------------------------------ */
 (function(){
-  window._fanPlaced     = false;
-  window._fanPlacedRoom = null;
-  window._fanPlacedX    = 50;
+  window._fanPlaced          = false;
+  window._fanPlacedRoom      = null;
+  window._fanPlacedX         = 50;
+  window._fanPlacementActive = false;
+
+  function showFanIcon(xPct){
+    var el = document.getElementById('fan-placed-icon');
+    if(!el) return;
+    el.style.left    = (xPct - 9) + '%';
+    el.style.display = 'block';
+  }
+
+  function hideFanIcon(){
+    var el = document.getElementById('fan-placed-icon');
+    if(el) el.style.display = 'none';
+  }
+
+  function showFanModal(isDownwind, onYes, onNo){
+    var label = isDownwind ? '風下' : '風上';
+    var overlay = document.createElement('div');
+    overlay.id = 'fan-confirm-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:1.5vmin;padding:3vmin 4vmin;box-shadow:0 2vmin 6vmin rgba(0,0,0,0.5);text-align:center;font-size:2.5vmin;font-family:sans-serif;max-width:80vw;';
+    box.innerHTML = '<p style="margin:0 0 2vmin;font-weight:bold;">排風機を<span style="color:#d32f2f;">' + label + '</span>に設置します。</p>';
+    var btnYes = document.createElement('button');
+    btnYes.textContent = 'はい';
+    btnYes.style.cssText = 'margin:0.8vmin;padding:1.2vmin 3vmin;font-size:2.2vmin;background:#1565c0;color:#fff;border:none;border-radius:1vmin;cursor:pointer;';
+    var btnNo = document.createElement('button');
+    btnNo.textContent = 'いいえ';
+    btnNo.style.cssText = 'margin:0.8vmin;padding:1.2vmin 3vmin;font-size:2.2vmin;background:#757575;color:#fff;border:none;border-radius:1vmin;cursor:pointer;';
+    box.appendChild(btnYes);
+    box.appendChild(btnNo);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    function closeModal(){ try{ document.body.removeChild(overlay); }catch(_){} }
+    overlay.addEventListener('click', function(e){ e.stopPropagation(); }, true);
+    btnYes.addEventListener('click', function(e){ e.stopPropagation(); closeModal(); onYes(); });
+    btnNo.addEventListener('click',  function(e){ e.stopPropagation(); closeModal(); onNo(); });
+  }
 
   // selectItem('fan') パッチ
   function patchFanSelect(){
-    if(typeof window.selectItem !== 'function' || window.selectItem.__fanV2) return;
+    if(typeof window.selectItem !== 'function' || window.selectItem.__fanV3) return;
     var _orig = window.selectItem;
     window.selectItem = function(key){
       if(key === 'fan'){
-        if(window._fanPlaced){
-          // 設置済み → 排風起動
-          try{ startVentMode(); }catch(e){ try{ showSystemMsg('排風を開始します。'); }catch(_){} }
+        var room = (typeof state !== 'undefined') ? state.room : null;
+        if(room === 1){
+          // 前面道路 → 設置モード開始（手には持たない）
+          window._fanPlacementActive = true;
+          try{
+            var modeMsg = document.getElementById('mode-msg');
+            if(modeMsg) modeMsg.textContent = '排風機設置モード：設置場所をクリック';
+          }catch(_){}
         } else {
-          // 未設置 → 設置モード開始
-          try{ startPlacementMode('fan'); }catch(e){}
+          if(window._fanPlaced){
+            // 設置済み → 排風起動
+            try{ startVentMode(); }catch(e){ try{ showSystemMsg('排風を開始します。'); }catch(_){} }
+          } else {
+            // 前面道路以外かつ未設置
+            try{ showSystemMsg('屋外に排風機を設置して下さい。'); }catch(_){}
+          }
         }
-        try{ updateHand(); renderInventory(); }catch(_){}
         return;
       }
       return _orig.apply(this, arguments);
     };
-    window.selectItem.__fanV2 = true;
+    window.selectItem.__fanV3 = true;
   }
 
-  // 設置クリックを捕捉して位置を検証
+  // 設置クリックを捕捉
   document.addEventListener('click', function(e){
     try{
-      if(typeof isPlacementMode === 'undefined' || !isPlacementMode) return;
-      if(typeof placementType === 'undefined' || placementType !== 'fan') return;
+      if(!window._fanPlacementActive) return;
+      // モーダル自身のクリックは無視
+      if(e.target && typeof e.target.closest === 'function' && e.target.closest('#fan-confirm-overlay')) return;
 
-      // placed-fan のクリック（除去） → 通常ハンドラに任せてフラグだけリセット
-      var els = document.elementsFromPoint(e.clientX, e.clientY);
-      for(var i=0; i<els.length; i++){
-        if(els[i].classList && els[i].classList.contains('placed-item') && els[i].dataset.type === 'fan'){
-          window._fanPlaced = false; window._fanPlacedRoom = null;
-          return;
-        }
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      window._fanPlacementActive = false;
+      try{
+        var modeMsg = document.getElementById('mode-msg');
+        if(modeMsg) modeMsg.textContent = '';
+      }catch(_){}
 
-      // 設置位置を検証
-      var room = (typeof state !== 'undefined') ? state.room : null;
       var appEl = document.getElementById('app-container');
       var rect  = appEl ? appEl.getBoundingClientRect() : {left:0, width:window.innerWidth};
       var xPct  = (e.clientX - rect.left) / rect.width * 100;
-      var isDownwindRoom = (room === 1);
-      var isDownwindSide = (window._windDirection === 'right') ? (xPct > 50) : (xPct < 50);
+      var isDownwind = (window._windDirection === 'right') ? (xPct > 50) : (xPct < 50);
 
-      if(!isDownwindRoom || !isDownwindSide){
-        // 不正位置 → badEnd
-        e.preventDefault(); e.stopPropagation();
-        if(typeof isPlacementMode !== 'undefined') isPlacementMode = false;
-        if(typeof placementType   !== 'undefined') placementType   = null;
-        try{ document.getElementById('mode-msg').textContent = ''; }catch(_){}
-        setTimeout(function(){ try{ badEnd('排風機は前面道路の風下側に設置してください。'); }catch(_){} }, 80);
-        return;
-      }
-
-      // 正常設置
-      window._fanPlaced     = true;
-      window._fanPlacedRoom = room;
-      window._fanPlacedX    = xPct;
-      // 通常ハンドラが itemCounts を消費するので補充
-      if(typeof state !== 'undefined' && state.itemCounts){
-        if(!(state.itemCounts['fan'] > 0)) state.itemCounts['fan'] = 1;
-      }
+      showFanModal(isDownwind,
+        function(){
+          // はい
+          if(isDownwind){
+            window._fanPlaced     = true;
+            window._fanPlacedRoom = 1;
+            window._fanPlacedX    = xPct;
+            showFanIcon(xPct);
+            try{ showSystemMsg('排風機を風下に設置しました。'); }catch(_){}
+          } else {
+            setTimeout(function(){ try{ badEnd('排風機を風上に設置してしまいました。'); }catch(_){} }, 80);
+          }
+        },
+        function(){
+          // いいえ
+          try{ showSystemMsg('設置をキャンセルしました。'); }catch(_){}
+        }
+      );
     }catch(_){}
   }, {capture:true});
 
+  // initGame でリセット
   setTimeout(function(){
     patchFanSelect();
-    if(typeof initGame === 'function' && !initGame.__fanV2Reset){
+    if(typeof initGame === 'function' && !initGame.__fanV3Reset){
       var _og = initGame;
       initGame = function(){
-        window._fanPlaced = false; window._fanPlacedRoom = null; window._fanPlacedX = 50;
+        window._fanPlaced          = false;
+        window._fanPlacedRoom      = null;
+        window._fanPlacedX         = 50;
+        window._fanPlacementActive = false;
+        try{ var modeMsg = document.getElementById('mode-msg'); if(modeMsg) modeMsg.textContent = ''; }catch(_){}
+        hideFanIcon();
         return _og.apply(this, arguments);
       };
-      initGame.__fanV2Reset = true;
+      initGame.__fanV3Reset = true;
     }
   }, 500);
+})();
+
+/* ------------------------------------------------------------------ */
+/* ④-b 排風時クリック黄色い円エフェクト                                  */
+/* ------------------------------------------------------------------ */
+(function(){
+  document.addEventListener('click', function(e){
+    try{
+      if(window.__ventStage !== 'select') return;
+      // 黄色い半透明の大きな円を表示してフェードアウト
+      var circle = document.createElement('div');
+      var size = Math.min(window.innerWidth, window.innerHeight) * 0.28;
+      circle.style.cssText = [
+        'position:fixed',
+        'pointer-events:none',
+        'z-index:25000',
+        'border-radius:50%',
+        'background:rgba(255,220,0,0.35)',
+        'border:0.5vmin solid rgba(255,180,0,0.6)',
+        'width:' + size + 'px',
+        'height:' + size + 'px',
+        'left:' + (e.clientX - size/2) + 'px',
+        'top:' + (e.clientY - size/2) + 'px',
+        'transition:opacity 0.8s ease-out',
+        'opacity:1'
+      ].join(';');
+      document.body.appendChild(circle);
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          circle.style.opacity = '0';
+          setTimeout(function(){ try{ document.body.removeChild(circle); }catch(_){} }, 850);
+        });
+      });
+    }catch(_){}
+  }, {capture:true});
 })();
 
 /* ------------------------------------------------------------------ */
