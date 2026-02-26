@@ -9257,6 +9257,51 @@ function resumeLoopSafe(){
   }catch(e){}
 })();
 
+/* =============================================================
+   前面道路（room 1）設置アイテム等速落下パッチ
+   cone / alm / fire を前面道路に置いたとき道路上まで落下する
+   ============================================================= */
+(function(){
+  /* 道路面 top% — fan-placed-icon の bottom:32% に合わせて top=68% */
+  var ROAD_TOP_PCT = 68;
+
+  /* アイテムの実際の y を placedItems 配列から更新する */
+  function updateStoredY(itemId, newY){
+    try{
+      var owner = (typeof currentApartmentOwner !== 'undefined') ? (currentApartmentOwner || 'A') : 'A';
+      var arr = (aptState && aptState[owner] && aptState[owner].placedItems) ? aptState[owner].placedItems : [];
+      for(var i=0; i<arr.length; i++){
+        if(arr[i].id === itemId){ arr[i].y = newY; break; }
+      }
+    }catch(_){}
+  }
+
+  if(typeof createPlacedItemElement === 'function'){
+    var _origCreate2 = createPlacedItemElement;
+    createPlacedItemElement = function(item){
+      _origCreate2(item);
+      try{
+        if(item.room !== 1) return;                        // 前面道路のみ
+        if(['cone','alm','fire'].indexOf(item.type) < 0) return;  // 対象アイテムのみ
+        var el = document.getElementById(item.id);
+        if(!el) return;
+        var startTop = parseFloat(el.style.top) || ROAD_TOP_PCT;
+        if(startTop >= ROAD_TOP_PCT){ return; }            // すでに道路以下なら不要
+
+        /* 等速落下アニメーション（distance に比例した duration） */
+        var dist = ROAD_TOP_PCT - startTop;               // 落下距離 %
+        var dur  = Math.round(dist * 6);                  // 6ms / 1% ≒ 等速
+        el.style.transition = 'top ' + dur + 'ms linear';
+        requestAnimationFrame(function(){
+          el.style.top = ROAD_TOP_PCT + '%';
+        });
+        /* 格納 y も更新（再描画時に正しい位置に置かれるよう） */
+        setTimeout(function(){ updateStoredY(item.id, ROAD_TOP_PCT); }, dur + 50);
+      }catch(_){}
+    };
+  }
+})();
+
 /* ===============================
    改良 v6.15：全画面表示ボタン（タイトル左下） - Safari/iOS対応強化版
    =============================== */
@@ -12715,6 +12760,23 @@ try{
     renderMissions(ctx);
     renderHand();
 
+    // コミュニケーションウィンドウ等の stacking context から脱出するため
+    // #scene-breakthrough を body 直下に移動して確実に最前面に表示する
+    try{
+      var scBt = document.getElementById('scene-breakthrough');
+      if(scBt && scBt.parentElement !== document.body){
+        document.body.appendChild(scBt);
+      }
+      if(scBt){
+        scBt.style.position = 'fixed';
+        scBt.style.zIndex   = '999999';
+        scBt.style.top      = '0';
+        scBt.style.left     = '0';
+        scBt.style.width    = '100%';
+        scBt.style.height   = '100%';
+      }
+    }catch(_){}
+
     openOverlay('scene-breakthrough');
   }
   window.openBreakthrough = openBreakthrough;
@@ -15388,7 +15450,7 @@ window._tantouGenerateReply = function(rawText){
 })();
 
 /* ------------------------------------------------------------------ */
-/* ④ 排風機設置フロー V3                                                */
+/* ④ 排風機設置フロー V3.1（UI非表示 + 黄色カーソル円）                  */
 /* ------------------------------------------------------------------ */
 (function(){
   window._fanPlaced          = false;
@@ -15396,18 +15458,60 @@ window._tantouGenerateReply = function(rawText){
   window._fanPlacedX         = 50;
   window._fanPlacementActive = false;
 
+  /* --- 設置済みアイコン --- */
   function showFanIcon(xPct){
     var el = document.getElementById('fan-placed-icon');
     if(!el) return;
     el.style.left    = (xPct - 9) + '%';
     el.style.display = 'block';
   }
-
   function hideFanIcon(){
     var el = document.getElementById('fan-placed-icon');
     if(el) el.style.display = 'none';
   }
 
+  /* --- カーソル追従の黄色い円 --- */
+  var _fanCursorEl = null;
+  function moveFanCursor(e){
+    if(!_fanCursorEl) return;
+    var cx = e.touches ? e.touches[0].clientX : e.clientX;
+    var cy = e.touches ? e.touches[0].clientY : e.clientY;
+    var appEl = document.getElementById('app-container');
+    var rect  = appEl ? appEl.getBoundingClientRect() : {left:0, top:0};
+    _fanCursorEl.style.left    = (cx - rect.left) + 'px';
+    _fanCursorEl.style.top     = (cy - rect.top)  + 'px';
+    _fanCursorEl.style.display = 'block';
+  }
+  function showFanCursor(){
+    _fanCursorEl = document.createElement('div');
+    _fanCursorEl.id = 'fan-cursor-circle';
+    _fanCursorEl.style.cssText = [
+      'position:absolute',
+      'pointer-events:none',
+      'z-index:98000',
+      'border-radius:50%',
+      'width:12vmin',
+      'height:12vmin',
+      'background:rgba(255,220,0,0.35)',
+      'border:0.6vmin solid rgba(255,180,0,0.85)',
+      'transform:translate(-50%,-50%)',
+      'display:none'
+    ].join(';');
+    var appEl = document.getElementById('app-container');
+    if(appEl) appEl.appendChild(_fanCursorEl);
+    document.addEventListener('mousemove', moveFanCursor, true);
+    document.addEventListener('touchmove', moveFanCursor, {capture:true, passive:true});
+  }
+  function hideFanCursor(){
+    document.removeEventListener('mousemove', moveFanCursor, true);
+    document.removeEventListener('touchmove', moveFanCursor, true);
+    if(_fanCursorEl){
+      try{ _fanCursorEl.parentElement.removeChild(_fanCursorEl); }catch(_){}
+      _fanCursorEl = null;
+    }
+  }
+
+  /* --- 確認モーダル --- */
   function showFanModal(isDownwind, onYes, onNo){
     var label = isDownwind ? '風下' : '風上';
     var overlay = document.createElement('div');
@@ -15428,13 +15532,13 @@ window._tantouGenerateReply = function(rawText){
     document.body.appendChild(overlay);
 
     function closeModal(){ try{ document.body.removeChild(overlay); }catch(_){} }
-    // バブルフェーズでのみ伝播を止める（captureは使わない＝ボタンへのイベントが届くように）
+    // バブルフェーズのみ stopPropagation（ボタンへのイベントを遮断しない）
     overlay.addEventListener('click', function(e){ e.stopPropagation(); });
     btnYes.addEventListener('click', function(e){ e.stopPropagation(); closeModal(); onYes(); });
     btnNo.addEventListener('click',  function(e){ e.stopPropagation(); closeModal(); onNo(); });
   }
 
-  // selectItem('fan') パッチ
+  /* --- selectItem('fan') パッチ --- */
   function patchFanSelect(){
     if(typeof window.selectItem !== 'function' || window.selectItem.__fanV3) return;
     var _orig = window.selectItem;
@@ -15443,13 +15547,20 @@ window._tantouGenerateReply = function(rawText){
         var room = (typeof state !== 'undefined') ? state.room : null;
         if(room === 1){
           // 前面道路 → 設置モード開始（手には持たない）
-          // ※selectItem を呼んだクリックイベントが即座に捕捉されないよう setTimeout で遅延
+          // ※selectItem を呼んだクリックが即座に捕捉されないよう 80ms 遅延
           setTimeout(function(){
             window._fanPlacementActive = true;
-            try{
-              var modeMsg = document.getElementById('mode-msg');
-              if(modeMsg) modeMsg.textContent = '排風機設置モード：設置場所をクリック';
-            }catch(_){}
+            // カラーコーンと同じ UI 非表示
+            try{ startPlacementMode('fan'); }catch(_){}
+            // mode-msg を上書き（startPlacementMode のパッチより後に設定）
+            setTimeout(function(){
+              try{
+                var modeMsg = document.getElementById('mode-msg');
+                if(modeMsg) modeMsg.textContent = '排風機設置モード：設置場所をクリック';
+              }catch(_){}
+            }, 0);
+            // 黄色カーソル円を表示
+            showFanCursor();
           }, 80);
         } else {
           if(window._fanPlaced){
@@ -15467,7 +15578,7 @@ window._tantouGenerateReply = function(rawText){
     window.selectItem.__fanV3 = true;
   }
 
-  // 設置クリックを捕捉
+  /* --- 設置クリックを捕捉 --- */
   document.addEventListener('click', function(e){
     try{
       if(!window._fanPlacementActive) return;
@@ -15477,6 +15588,9 @@ window._tantouGenerateReply = function(rawText){
       e.preventDefault();
       e.stopPropagation();
       window._fanPlacementActive = false;
+      // カーソル円を消してUIを復元
+      hideFanCursor();
+      try{ stopMode(); }catch(_){}
       try{
         var modeMsg = document.getElementById('mode-msg');
         if(modeMsg) modeMsg.textContent = '';
@@ -15508,7 +15622,7 @@ window._tantouGenerateReply = function(rawText){
     }catch(_){}
   }, {capture:true});
 
-  // initGame でリセット
+  /* --- initGame でリセット --- */
   setTimeout(function(){
     patchFanSelect();
     if(typeof initGame === 'function' && !initGame.__fanV3Reset){
@@ -15518,6 +15632,7 @@ window._tantouGenerateReply = function(rawText){
         window._fanPlacedRoom      = null;
         window._fanPlacedX         = 50;
         window._fanPlacementActive = false;
+        hideFanCursor();
         try{ var modeMsg = document.getElementById('mode-msg'); if(modeMsg) modeMsg.textContent = ''; }catch(_){}
         hideFanIcon();
         return _og.apply(this, arguments);
@@ -15566,8 +15681,12 @@ window._tantouGenerateReply = function(rawText){
 /* ⑤ 心拍アニメーション & ストレス管理 & ガスOKポップアップ              */
 /* ------------------------------------------------------------------ */
 (function(){
-  /* ストレス初期値 */
-  var _stressInit = {yakitoriMaster:100, ramenMaster:100, reporter:80, alarmB:60, manager:50};
+  /* ストレス初期値
+     reporter / alarmB は「不安」から始まる（表示上は興奮にならない）が、
+     初期値を 100 に保つことで平静化に必要なキーワード数を変えない */
+  var _stressInit = {yakitoriMaster:100, ramenMaster:100, reporter:100, alarmB:100, manager:50};
+  /* 興奮（赤）を表示しないパートナー → 不安（橙）止まり */
+  var _noExcited  = {reporter:true, alarmB:true};
   window._commStress = {};
 
   function getStress(p){
@@ -15576,15 +15695,16 @@ window._tantouGenerateReply = function(rawText){
     return window._commStress[p];
   }
 
-  /* ストレスラベル更新 */
-  function updateStressLabel(stress){
+  /* ストレスラベル更新
+     partner を渡すと _noExcited パートナーは「興奮」を表示しない */
+  function updateStressLabel(stress, partner){
     try{
       var s  = document.getElementById('comm-stress-status');
       var ind= document.getElementById('comm-stress-indicator');
       var lbl= document.getElementById('comm-stress-label');
       if(!s || !ind || !lbl) return;
       var color, text;
-      if(stress > 60){ color='#e53935'; text='興奮'; }
+      if(!_noExcited[partner] && stress > 60){ color='#e53935'; text='興奮'; }
       else if(stress > 25){ color='#fb8c00'; text='不安'; }
       else { color='#43a047'; text='平静'; }
       ind.style.color  = color;
@@ -15599,7 +15719,7 @@ window._tantouGenerateReply = function(rawText){
     var cur = Math.max(0, getStress(partner) - amount);
     window._commStress[partner] = cur;
     _hbStress = cur;
-    updateStressLabel(cur);
+    updateStressLabel(cur, partner);
     if(cur <= 0){
       if(partner === 'yakitoriMaster' && !window._yakitoriGasOk){
         window._yakitoriGasOk = true;
@@ -15671,7 +15791,7 @@ window._tantouGenerateReply = function(rawText){
     _hbPhase  = 0;
     _hbActive = true;
     _hbCanvas.style.display = 'block';
-    updateStressLabel(_hbStress);
+    updateStressLabel(_hbStress, partner);
     if(_hbRAF) cancelAnimationFrame(_hbRAF);
     drawHB();
   }
