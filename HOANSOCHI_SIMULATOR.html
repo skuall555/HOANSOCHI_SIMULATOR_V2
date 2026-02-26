@@ -3044,7 +3044,10 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         <div class="comm-avatar" style="width:100%;aspect-ratio:1;max-height:32vh;border:2px solid #ccc;border-radius:1vmin;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img id="comm-avatar-img" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png" alt="通報者" style="width:100%;height:100%;object-fit:contain;"></div>
         <div class="comm-hint" style="font-size:70%;color:#333;background:#e1f5fe;border:1px solid #81d4fa;border-radius:1vmin;padding:1vmin;width:100%;box-sizing:border-box;">通報者と会話できます。</div>
         <!-- 心拍アニメーション -->
-        <canvas id="comm-heartbeat-canvas" width="200" height="48" style="width:100%;height:6vmin;max-height:36px;display:none;border-radius:1vmin;background:#111;"></canvas>
+        <div id="comm-stress-status" style="display:none;width:100%;font-size:62%;text-align:center;margin-bottom:0.3vmin;box-sizing:border-box;line-height:1.4;">
+          <span style="color:#555;">相手の精神状態... </span><span id="comm-stress-indicator" style="font-size:115%;">●</span> <span id="comm-stress-label" style="font-weight:bold;"></span>
+        </div>
+        <canvas id="comm-heartbeat-canvas" width="200" height="80" style="width:100%;height:10vmin;max-height:60px;display:none;border-radius:1vmin;background:#111;"></canvas>
         <div id="tantou-report-panel" style="display:none;width:100%;background:#fff8e1;border:1px solid #ffe082;border-radius:1vmin;padding:1vmin;font-size:65%;box-sizing:border-box;margin-top:0.5vmin;">
           <div style="font-weight:bold;color:#e65100;margin-bottom:0.5vmin;">📋 報告状況</div>
           <div style="margin:0.3vmin 0;">★到着時の事故発生　<span id="tantou-stat-a">0</span>%</div>
@@ -9810,7 +9813,10 @@ function generateCommReply(userText){
   if(commContext && commContext.partner==='yakitoriMaster'){
     var _yok = window._yakitoriGasOk || false;
     var _yreply;
-    if(_commContainsAny(t,['止','閉','しめ'])){
+    if(_commContainsAny(t,['避難','移動'])){
+      if(_yok){ try{_commShowMoveSelect();}catch(_){} _yreply='分かった。どこへ行けばいい？'; }
+      else { _yreply='店を離れるわけにはいかない。'; }
+    } else if(_commContainsAny(t,['止','閉','しめ'])){
       _yreply = _yok ? '危ないんだろ。早くガス止めてくれ。' : 'いま止められねえよ。営業終了まで待っとれ。';
     } else if(_commContainsAny(t,['警報','滞留','流入','事故','着火'])){
       _yreply = _yok ? 'そんな危険なのか。避難の必要あるなら言ってくれ。' : '脅してんのか？ガスは止めないし警報も聞こえん。';
@@ -9835,7 +9841,10 @@ function generateCommReply(userText){
   if(commContext && commContext.partner==='ramenMaster'){
     var _rok = window._ramenGasOk || false;
     var _rreply;
-    if(_commContainsAny(t,['止','閉','しめ'])){
+    if(_commContainsAny(t,['避難','移動'])){
+      if(_rok){ try{_commShowMoveSelect();}catch(_){} _rreply='分かりました。どこへ避難すればよいですか？'; }
+      else { _rreply='まだお客さんがいるので移動できません。'; }
+    } else if(_commContainsAny(t,['止','閉','しめ'])){
       _rreply = _rok ? 'ガスは止めてください。' : 'いまはガス止め厳しいです。お客さんいるので。';
     } else if(_commContainsAny(t,['警報','滞留','流入','事故','着火'])){
       _rreply = _rok ? '危険な場合は教えてください。避難しますので。' : 'うちの警報器は鳴ってませんが、確かに現在の状況は危険そうですね。';
@@ -9917,18 +9926,22 @@ function generateCommReply(userText){
 
     if(_bAlarmActive && !_bKitchenOpen){
       // モード1：台所窓未開・警報鳴動中
-      if(_commContainsAny(t,['警報','止','鳴'])) return '【警報器】早く警報を止めてちょうだい。ガスは使ってないのよ。';
-      if(t.includes('どこ')) return '【どこで】台所よ。';
-      if(_commContainsAny(t,['入','調査'])) return '【入室可否】どうぞどこでも調査して。';
-      if(t.includes('台所')) return '【臭気について】台所で急に鳴りだしたけど、臭いは分からないわ。';
+      var _bReply1 = null;
+      if(_commContainsAny(t,['警報','止','鳴'])) _bReply1 = '【警報器】早く警報を止めてちょうだい。ガスは使ってないのよ。';
+      else if(t.includes('どこ'))               _bReply1 = '【どこで】台所よ。';
+      else if(_commContainsAny(t,['入','調査'])) _bReply1 = '【入室可否】どうぞどこでも調査して。';
+      else if(t.includes('台所'))               _bReply1 = '【臭気について】台所で急に鳴りだしたけど、臭いは分からないわ。';
+      if(_bReply1){ try{window._commDecStress&&window._commDecStress('alarmB',20);}catch(_){} return _bReply1; }
       return 'ごめんなさい。気が動転して何も考えられないわ。';
     } else {
       // モード2：台所窓開放・警報停止後
-      if(_commContainsAny(t,['警報','止','鳴'])) return '【警報器】ありがとう。鳴りやんだみたいね。助かったわ。';
-      if(t.includes('どこ')) return '【どこで】台所よ。';
-      if(_commContainsAny(t,['入','調査'])) return '【入室可否】どうぞどこでも調査して。';
-      if(t.includes('台所')) return '【臭気について】台所で急に鳴りだしたけど、臭いは分からないわ。';
-      if(_commContainsAny(t,['原因','漏'])) return '【原因について】分かったわ。引き続き調査をお願いね。';
+      var _bReply2 = null;
+      if(_commContainsAny(t,['警報','止','鳴'])) _bReply2 = '【警報器】ありがとう。鳴りやんだみたいね。助かったわ。';
+      else if(t.includes('どこ'))               _bReply2 = '【どこで】台所よ。';
+      else if(_commContainsAny(t,['入','調査'])) _bReply2 = '【入室可否】どうぞどこでも調査して。';
+      else if(t.includes('台所'))               _bReply2 = '【臭気について】台所で急に鳴りだしたけど、臭いは分からないわ。';
+      else if(_commContainsAny(t,['原因','漏'])) _bReply2 = '【原因について】分かったわ。引き続き調査をお願いね。';
+      if(_bReply2){ try{window._commDecStress&&window._commDecStress('alarmB',20);}catch(_){} return _bReply2; }
       return 'ごめんなさい。気が動転して何も考えられないわ。';
     }
   }
@@ -9961,27 +9974,22 @@ function generateCommReply(userText){
 
   var out=[];
   try{ out = out.concat(_commExtendedReplies(raw)); }catch(e){}
-  if(out && out.length) return out.join('\n');
+  if(out && out.length){
+    try{window._commDecStress&&window._commDecStress('reporter',25);}catch(_){}
+    return out.join('\n');
+  }
 
   // fallback（最低限）
-  if(t.includes('どこ')){ return (activeScenario && activeScenario.where) ? String(activeScenario.where) : '部屋の中のあたり。'; }
-// 「なに/何」の判定を追加
-if (t.includes('なに') || t.includes('何')) {
-    return (activeScenario && activeScenario.what) ? String(activeScenario.what) : 'ぼーっとしていた。';
-}
-
-// 既存の「どんなとき」の判定
-if (t.includes('どんなとき') || t.includes('どんな時') || t.includes('なに') || t.includes('何')) {
-    // 1. 「いつ」の情報を取得（なければデフォルト）
-    const when = (activeScenario && activeScenario.when) ? String(activeScenario.when) : '普段どおり過ごしていたとき';
-
-    // 2. 「なに」の情報を取得（なければデフォルト）
-    const what = (activeScenario && activeScenario.what) ? String(activeScenario.what) : 'ぼーっとしていた';
-
-    // 3. 組み合わせて文章に
-    return `${when}に、${what}。`;
-}
-  if(t.includes('どの程度') || t.includes('どの')){ return (activeScenario && activeScenario.degree) ? String(activeScenario.degree) : '時々ふわっと感じるくらい。'; }
+  var _rReply=null;
+  if(t.includes('どこ')){ _rReply=(activeScenario && activeScenario.where) ? String(activeScenario.where) : '部屋の中のあたり。'; }
+  else if(t.includes('なに') || t.includes('何')){ _rReply=(activeScenario && activeScenario.what) ? String(activeScenario.what) : 'ぼーっとしていた。'; }
+  else if(t.includes('どんなとき') || t.includes('どんな時')){
+    var _when=(activeScenario&&activeScenario.when)?String(activeScenario.when):'普段どおり過ごしていたとき';
+    var _what=(activeScenario&&activeScenario.what)?String(activeScenario.what):'ぼーっとしていた';
+    _rReply=_when+'に、'+_what+'。';
+  }
+  else if(t.includes('どの程度') || t.includes('どの')){ _rReply=(activeScenario && activeScenario.degree) ? String(activeScenario.degree) : '時々ふわっと感じるくらい。'; }
+  if(_rReply){ try{window._commDecStress&&window._commDecStress('reporter',25);}catch(_){} return _rReply; }
 
   return 'すみません、分かりません…ただ今は'+((activeScenario && activeScenario.leak1)?String(activeScenario.leak1):'')+'のあたりが気になります。';
 }
@@ -15440,11 +15448,30 @@ window._tantouGenerateReply = function(rawText){
     return window._commStress[p];
   }
 
+  /* ストレスラベル更新 */
+  function updateStressLabel(stress){
+    try{
+      var s  = document.getElementById('comm-stress-status');
+      var ind= document.getElementById('comm-stress-indicator');
+      var lbl= document.getElementById('comm-stress-label');
+      if(!s || !ind || !lbl) return;
+      var color, text;
+      if(stress > 60){ color='#e53935'; text='興奮'; }
+      else if(stress > 25){ color='#fb8c00'; text='不安'; }
+      else { color='#43a047'; text='平静'; }
+      ind.style.color  = color;
+      lbl.textContent  = text;
+      lbl.style.color  = color;
+      s.style.display  = 'block';
+    }catch(_){}
+  }
+
   /* 公開: ストレス減算 */
   window._commDecStress = function(partner, amount){
     var cur = Math.max(0, getStress(partner) - amount);
     window._commStress[partner] = cur;
     _hbStress = cur;
+    updateStressLabel(cur);
     if(cur <= 0){
       if(partner === 'yakitoriMaster' && !window._yakitoriGasOk){
         window._yakitoriGasOk = true;
@@ -15516,6 +15543,7 @@ window._tantouGenerateReply = function(rawText){
     _hbPhase  = 0;
     _hbActive = true;
     _hbCanvas.style.display = 'block';
+    updateStressLabel(_hbStress);
     if(_hbRAF) cancelAnimationFrame(_hbRAF);
     drawHB();
   }
@@ -15524,6 +15552,7 @@ window._tantouGenerateReply = function(rawText){
     _hbActive = false;
     if(_hbRAF){ cancelAnimationFrame(_hbRAF); _hbRAF = null; }
     if(_hbCanvas) _hbCanvas.style.display = 'none';
+    try{ document.getElementById('comm-stress-status').style.display = 'none'; }catch(_){}
   }
 
   var _hbPartners = ['yakitoriMaster','ramenMaster','reporter','alarmB','manager'];
