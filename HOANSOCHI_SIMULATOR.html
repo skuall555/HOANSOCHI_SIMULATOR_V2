@@ -9813,7 +9813,10 @@ function generateCommReply(userText){
   if(commContext && commContext.partner==='yakitoriMaster'){
     var _yok = window._yakitoriGasOk || false;
     var _yreply;
-    if(_commContainsAny(t,['止','閉','しめ'])){
+    if(_commContainsAny(t,['避難','移動'])){
+      if(_yok){ try{_commShowMoveSelect();}catch(_){} _yreply='分かった。どこへ行けばいい？'; }
+      else { _yreply='店を離れるわけにはいかない。'; }
+    } else if(_commContainsAny(t,['止','閉','しめ'])){
       _yreply = _yok ? '危ないんだろ。早くガス止めてくれ。' : 'いま止められねえよ。営業終了まで待っとれ。';
     } else if(_commContainsAny(t,['警報','滞留','流入','事故','着火'])){
       _yreply = _yok ? 'そんな危険なのか。避難の必要あるなら言ってくれ。' : '脅してんのか？ガスは止めないし警報も聞こえん。';
@@ -9838,7 +9841,10 @@ function generateCommReply(userText){
   if(commContext && commContext.partner==='ramenMaster'){
     var _rok = window._ramenGasOk || false;
     var _rreply;
-    if(_commContainsAny(t,['止','閉','しめ'])){
+    if(_commContainsAny(t,['避難','移動'])){
+      if(_rok){ try{_commShowMoveSelect();}catch(_){} _rreply='分かりました。どこへ避難すればよいですか？'; }
+      else { _rreply='まだお客さんがいるので移動できません。'; }
+    } else if(_commContainsAny(t,['止','閉','しめ'])){
       _rreply = _rok ? 'ガスは止めてください。' : 'いまはガス止め厳しいです。お客さんいるので。';
     } else if(_commContainsAny(t,['警報','滞留','流入','事故','着火'])){
       _rreply = _rok ? '危険な場合は教えてください。避難しますので。' : 'うちの警報器は鳴ってませんが、確かに現在の状況は危険そうですね。';
