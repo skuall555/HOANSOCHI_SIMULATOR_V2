@@ -16395,11 +16395,11 @@ window._tantouGenerateReply = function(rawText){
       if(!_shoboAccepted && window.__btState && window.__btState.cleared && window.__btState.cleared.shobo)
         _shoboAccepted = true;
       var room = getRoom();
-      if(_keisatsuAccepted && !_keisatsuMsgShown && room===1 && room!==_pfPrevRoom){
+      if(_keisatsuAccepted && !_keisatsuMsgShown && room===1){
         _keisatsuMsgShown = true;
         showPoliceArrivalMsg();
       }
-      if(_shoboAccepted && !_shoboMsgShown && room===1 && room!==_pfPrevRoom){
+      if(_shoboAccepted && !_shoboMsgShown && room===1){
         _shoboMsgShown = true;
         showFireArrivalMsg();
       }
