@@ -2352,19 +2352,23 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 .street-wind-overlay{position:absolute;inset:0;pointer-events:none;z-index:163;opacity:0;transition:opacity 0.4s;}
 .street-wind-overlay.wind-right{
   opacity:1;
-  background-image:repeating-linear-gradient(176deg, rgba(255,255,255,0) 0 28px, rgba(255,255,255,0.18) 28px 30px, rgba(255,255,255,0) 30px 60px);
-  background-size:200px 200px;
-  animation:windMoveRight 0.7s linear infinite;
+  background-image:repeating-linear-gradient(176deg, rgba(255,255,255,0) 0 80px, rgba(255,255,255,0.06) 80px 83px, rgba(255,255,255,0) 83px 160px);
+  background-size:400px 400px;
+  animation:windMoveRight 1.0s linear infinite;
 }
 .street-wind-overlay.wind-left{
   opacity:1;
-  background-image:repeating-linear-gradient(184deg, rgba(255,255,255,0) 0 28px, rgba(255,255,255,0.18) 28px 30px, rgba(255,255,255,0) 30px 60px);
-  background-size:200px 200px;
-  animation:windMoveLeft 0.7s linear infinite;
+  background-image:repeating-linear-gradient(184deg, rgba(255,255,255,0) 0 80px, rgba(255,255,255,0.06) 80px 83px, rgba(255,255,255,0) 83px 160px);
+  background-size:400px 400px;
+  animation:windMoveLeft 1.0s linear infinite;
 }
 /* 風向き表示バナー */
 #wind-direction-banner{position:absolute;top:4%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.55);color:#fff;font-size:1.6vmin;padding:0.5vmin 1.5vmin;border-radius:2vmin;z-index:164;pointer-events:none;white-space:nowrap;display:none;}
 #room-street.wind-active #wind-direction-banner{display:block;}
+/* ガス止めOKポップアップ */
+#gas-ok-popup.active{display:flex!important;}
+/* 心拍キャンバス */
+#comm-heartbeat-canvas.active{display:block!important;}
 
 /* === 設置済み排風機アイコン === */
 #fan-placed-icon{display:none;position:absolute;bottom:32%;width:6%;aspect-ratio:1;z-index:50;pointer-events:none;}
@@ -3039,6 +3043,8 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         </div>
         <div class="comm-avatar" style="width:100%;aspect-ratio:1;max-height:32vh;border:2px solid #ccc;border-radius:1vmin;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img id="comm-avatar-img" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png" alt="通報者" style="width:100%;height:100%;object-fit:contain;"></div>
         <div class="comm-hint" style="font-size:70%;color:#333;background:#e1f5fe;border:1px solid #81d4fa;border-radius:1vmin;padding:1vmin;width:100%;box-sizing:border-box;">通報者と会話できます。</div>
+        <!-- 心拍アニメーション -->
+        <canvas id="comm-heartbeat-canvas" width="200" height="48" style="width:100%;height:6vmin;max-height:36px;display:none;border-radius:1vmin;background:#111;"></canvas>
         <div id="tantou-report-panel" style="display:none;width:100%;background:#fff8e1;border:1px solid #ffe082;border-radius:1vmin;padding:1vmin;font-size:65%;box-sizing:border-box;margin-top:0.5vmin;">
           <div style="font-weight:bold;color:#e65100;margin-bottom:0.5vmin;">📋 報告状況</div>
           <div style="margin:0.3vmin 0;">★到着時の事故発生　<span id="tantou-stat-a">0</span>%</div>
@@ -3060,6 +3066,15 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <input id="comm-input" class="comm-input" type="text" placeholder="聞きたいことを入力..." style="flex:1;border:1px solid #999;border-radius:1vmin;padding:1vmin;font-size:2.3vmin;">
       <button class="comm-send" onclick="sendComm()" style="width:20%;background:#2e7d32;color:#fff;border:none;border-radius:1vmin;font-weight:bold;font-size:2.5vmin;cursor:pointer;">送信</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== ガス止めOKポップアップ ===== -->
+<div id="gas-ok-popup" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;flex-direction:column;gap:1.5vmin;">
+  <div style="background:#fff;border-radius:2vmin;padding:3vmin 4vmin;max-width:80vw;text-align:center;box-shadow:0 0 3vmin rgba(0,200,80,0.5);border:2px solid #2e7d32;">
+    <div style="font-size:3.5vmin;margin-bottom:1vmin;">✅</div>
+    <div id="gas-ok-popup-msg" style="font-size:2.2vmin;font-weight:bold;color:#1b5e20;line-height:1.5;"></div>
+    <button onclick="document.getElementById('gas-ok-popup').style.display='none'" style="margin-top:2vmin;padding:1vmin 3vmin;background:#2e7d32;color:#fff;border:none;border-radius:1vmin;font-size:2vmin;cursor:pointer;">OK</button>
   </div>
 </div>
 
@@ -9209,6 +9224,7 @@ function resumeLoopSafe(){
           else if(type==='fire') document.getElementById('mode-msg').textContent = '消火器モード -クリックした箇所に設置/回収-';
           else if(type==='alm') document.getElementById('mode-msg').textContent = 'ポケット警報器モード -クリックした箇所に設置/回収-';
           else if(type==='sign') document.getElementById('mode-msg').textContent = '火気厳禁表示シートモード -クリックした箇所に設置/回収-';
+          else if(type==='fan') document.getElementById('mode-msg').textContent = '排風機モード -前面道路の風下側をクリックして設置-';
         }catch(e){}
       };
     }
@@ -9792,38 +9808,52 @@ function generateCommReply(userText){
 
   /* 焼き鳥屋店主 */
   if(commContext && commContext.partner==='yakitoriMaster'){
-    // 全思考解決済み → ガスOK
-    if(typeof window._thoughtAllResolved==='function' && window._thoughtAllResolved('yakitoriMaster')){
-      if(!_yakitoriGasOk){
-        _yakitoriGasOk = true;
-        try{ showSystemMsg('焼き鳥屋店主からガス止めの許可を得ました。'); }catch(e){}
-      }
-      return '分かった。ガス止めていいよ。早くしろ。';
+    var _yok = window._yakitoriGasOk || false;
+    var _yreply;
+    if(_commContainsAny(t,['止','閉','しめ'])){
+      _yreply = _yok ? '危ないんだろ。早くガス止めてくれ。' : 'いま止められねえよ。営業終了まで待っとれ。';
+    } else if(_commContainsAny(t,['警報','滞留','流入','事故','着火'])){
+      _yreply = _yok ? 'そんな危険なのか。避難の必要あるなら言ってくれ。' : '脅してんのか？ガスは止めないし警報も聞こえん。';
+    } else if(_commContainsAny(t,['危'])){
+      _yreply = _yok ? '危ないんだろ。早くガス止めてくれ。' : 'だから営業終了後は協力するって。';
+    } else if(_commContainsAny(t,['調','見','点検'])){
+      _yreply = _yok ? '営業に支障が出てる。さっさと頼む。' : '調査だけだぞ。';
+    } else if(_commContainsAny(t,['反応','検知'])){
+      _yreply = _yok ? '反応があったのは分かったって。' : '反応があったからなんだってんだ。';
+    } else if(_commContainsAny(t,['客','営業'])){
+      _yreply = _yok ? '客は全員帰したよ。この店にはいま、俺だけだ。' : '客は数人いて、営業終了まで２時間ある。それまで待っとれ。';
+    } else if(_commContainsAny(t,['ガス','gas','Gas'])){
+      _yreply = _yok ? '営業に支障が出てる。さっさと頼む。' : '営業中だぞ。ガス屋がなんの用だ。';
+    } else {
+      _yreply = _yok ? '早くしろ。' : '急いで言え。何の用だ。';
     }
-    // キーワード別返答（未解決時）
-    if(_commContainsAny(t,['ガス','gas','Gas'])) return 'ガス屋か。今は用はない。忙しいんだ。';
-    if(_commContainsAny(t,['止','閉','しめ'])) return '危険じゃないならガスは止めない。客が来てるんだ。';
-    if(_commContainsAny(t,['反応','検知','漏','見'])) return '反応があったからって、うちには関係ないだろ。';
-    if(_commContainsAny(t,['警報','滞留','流入','爆発','危険'])) return 'まさか爆発なんてしないだろう。大げさなことを言うな。';
-    return '急いで言え。何の用だ。';
+    if(!_yok){ try{ window._commDecStress && window._commDecStress('yakitoriMaster', 10); }catch(_){} }
+    return _yreply;
   }
 
   /* ラーメン屋店主 */
   if(commContext && commContext.partner==='ramenMaster'){
-    // 全思考解決済み → ガスOK
-    if(typeof window._thoughtAllResolved==='function' && window._thoughtAllResolved('ramenMaster')){
-      if(!_ramenGasOk){
-        _ramenGasOk = true;
-        try{ showSystemMsg('ラーメン屋店主からガス止めの許可を得ました。'); }catch(e){}
-      }
-      return '承知しました。ガスを止めていただいても大丈夫です。お気をつけて。';
+    var _rok = window._ramenGasOk || false;
+    var _rreply;
+    if(_commContainsAny(t,['止','閉','しめ'])){
+      _rreply = _rok ? 'ガスは止めてください。' : 'いまはガス止め厳しいです。お客さんいるので。';
+    } else if(_commContainsAny(t,['警報','滞留','流入','事故','着火'])){
+      _rreply = _rok ? '危険な場合は教えてください。避難しますので。' : 'うちの警報器は鳴ってませんが、確かに現在の状況は危険そうですね。';
+    } else if(_commContainsAny(t,['危'])){
+      _rreply = _rok ? '危険な状況なのですね。理解しました。' : '気持ちはわかるんだけどこっちも商売だから。';
+    } else if(_commContainsAny(t,['調','見','点検'])){
+      _rreply = _rok ? 'ここからは調査に協力します。' : '邪魔にならないならどうぞ。';
+    } else if(_commContainsAny(t,['反応','検知'])){
+      _rreply = _rok ? '実際に反応は見つかったんですね。' : '実際に反応は見つかったんですね。';
+    } else if(_commContainsAny(t,['客','営業'])){
+      _rreply = _rok ? 'お客は全員帰しました。この店にはいま、私だけです。' : 'お客さんはいま数人いて、営業終了まで１時間あります。';
+    } else if(_commContainsAny(t,['ガス','gas','Gas'])){
+      _rreply = _rok ? 'ここからは調査に協力します。' : '営業中なんで手短にお願いします。';
+    } else {
+      _rreply = 'はい、何でしょうか？';
     }
-    // キーワード別返答（未解決時）
-    if(_commContainsAny(t,['ガス','gas','Gas'])) return 'ガス屋さんか。何事だろうか。';
-    if(_commContainsAny(t,['止','閉','しめ'])) return '営業中だからガス止めは厳しいですね…';
-    if(_commContainsAny(t,['反応','検知','漏','見'])) return 'ガス漏れですか？それは危険ですね…';
-    if(_commContainsAny(t,['警報','滞留','流入','爆発','危険'])) return 'まさかガス爆発の危険があるのですか…！';
-    return 'はい、何でしょうか？';
+    if(!_rok){ try{ window._commDecStress && window._commDecStress('ramenMaster', 15); }catch(_){} }
+    return _rreply;
   }
 
   if (commContext && commContext.partner === 'manager') {
@@ -15303,13 +15333,6 @@ window._tantouGenerateReply = function(rawText){
     initGame = function(){
       window._windDirection = (Math.random() < 0.5) ? 'right' : 'left';
       applyWindOverlay();
-      // 排風機状態もリセット
-      window._fanPlaced = false;
-      window._fanPlacedRoom = null;
-      window._fanPlacedX = 50;
-      window._fanPlacementMode = false;
-      var fi = document.getElementById('fan-placed-icon');
-      if(fi) fi.style.display = 'none';
       return _orig.apply(this, arguments);
     };
     _windInitHooked = true;
@@ -15318,127 +15341,232 @@ window._tantouGenerateReply = function(rawText){
 })();
 
 /* ------------------------------------------------------------------ */
-/* ④ 排風機設置フロー                                                  */
+/* ④ 排風機設置フロー（カラーコーン方式）                               */
 /* ------------------------------------------------------------------ */
 (function(){
-  // 状態変数
-  window._fanPlaced       = false;
-  window._fanPlacedRoom   = null;
-  window._fanPlacedX      = 50;   // 0-100 % (room幅に対する位置)
-  window._fanPlacementMode= false;
+  window._fanPlaced     = false;
+  window._fanPlacedRoom = null;
+  window._fanPlacedX    = 50;
 
-  // 設置済みアイコンを表示
-  function showFanIcon(xPct){
-    var fi = document.getElementById('fan-placed-icon');
-    if(!fi) return;
-    fi.style.left = xPct + '%';
-    fi.style.display = 'block';
-  }
-
-  // 排風機の設置位置が「前面道路の風下」かを判定
-  function isFanOnDownwind(){
-    if(window._fanPlacedRoom !== 1) return false; // room 1 = 前面道路のみ
-    var dir = window._windDirection;
-    // 風が右へ流れる: 風下=右側(x>50)
-    // 風が左へ流れる: 風下=左側(x<50)
-    if(dir === 'right') return window._fanPlacedX > 50;
-    return window._fanPlacedX < 50;
-  }
-
-  // 設置タップハンドラ
-  function onFanPlaceTap(e){
-    if(!window._fanPlacementMode) return;
-    // コミュニケーション窓やモーダル上のタップは無視
-    try{
-      var t = e.target;
-      if(t && (t.closest('#comm-window') || t.closest('#msg-box') || t.closest('.modal-overlay'))){
-        return;
-      }
-    }catch(_){}
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    window._fanPlacementMode = false;
-
-    // タップ座標 → room内のX%を計算
-    var appEl = document.getElementById('app-container');
-    var rect = appEl ? appEl.getBoundingClientRect() : {left:0, width:window.innerWidth};
-    var cx = (e.clientX !== undefined) ? e.clientX
-           : (e.touches && e.touches[0]) ? e.touches[0].clientX : rect.left + rect.width/2;
-    var xPct = Math.max(0, Math.min(100, (cx - rect.left) / rect.width * 100));
-
-    window._fanPlaced     = true;
-    window._fanPlacedRoom = (typeof state !== 'undefined') ? state.room : null;
-    window._fanPlacedX    = xPct;
-
-    // room-streetにいる場合のみアイコン表示
-    if(window._fanPlacedRoom === 1) showFanIcon(xPct);
-
-    try{ showSystemMsg('排風機を設置しました。もう一度使用すると排風を開始します。'); }catch(_){}
-
-    // リスナー除去
-    document.removeEventListener('click',    onFanPlaceTap, {capture:true});
-    document.removeEventListener('touchstart', onFanPlaceTap, {capture:true});
-  }
-
-  // メインの排風機起動関数（selectItemから呼ばれる部分を置き換え）
-  window._fanActivate = function(){
-    if(window._fanPlacementMode) return; // 既に設置待ち中
-
-    if(!window._fanPlaced){
-      // フェーズ1: 設置位置を決める
-      window._fanPlacementMode = true;
-      try{ showSystemMsg('排風機を設置してください。（画面をタッチして設置位置を選んでください）'); }catch(_){}
-      document.addEventListener('click',     onFanPlaceTap, {capture:true, once:true});
-      document.addEventListener('touchstart', onFanPlaceTap, {capture:true, once:true, passive:false});
-      return;
-    }
-
-    // フェーズ2: 排風機を起動 → 設置位置を検証
-    if(!isFanOnDownwind()){
-      // 設置位置不正 → 爆発END
-      try{ badEnd('排風機は屋外の風下に設置してください。'); }catch(e){}
-      return;
-    }
-
-    // 正常：既存の排風モード開始
-    try{ startVentMode(); }catch(e2){
-      try{ showSystemMsg('排風を開始します。'); }catch(_){}
-    }
-  };
-
-  // selectItem('fan') の fan ブランチをパッチ
-  // selectItem は既存のまま。ただし startVentMode 呼び出し箇所を _fanActivate に差し替える
-  if(typeof window.selectItem === 'function' && !window.selectItem.__fanPatched){
-    var _origSI = window.selectItem;
+  // selectItem('fan') パッチ
+  function patchFanSelect(){
+    if(typeof window.selectItem !== 'function' || window.selectItem.__fanV2) return;
+    var _orig = window.selectItem;
     window.selectItem = function(key){
       if(key === 'fan'){
-        // バン（駐車場・room0）での格納はそのまま既存処理へ
-        if(typeof state !== 'undefined' && state.room === 0 &&
-           typeof ITEMS_DEF !== 'undefined' && ITEMS_DEF['fan'] && ITEMS_DEF['fan'].type === 'coll'){
-          return _origSI.apply(this, arguments);
-        }
-        // 装備切り替え
-        if(typeof state !== 'undefined' && state.equipped === key){
-          // 既に装備中 → 起動
-          window._fanActivate();
+        if(window._fanPlaced){
+          // 設置済み → 排風起動
+          try{ startVentMode(); }catch(e){ try{ showSystemMsg('排風を開始します。'); }catch(_){} }
         } else {
-          // 新規装備
-          if(typeof state !== 'undefined') state.equipped = key;
-          if(typeof isDetectorMode !== 'undefined' && (isDetectorMode || isPlacementMode || isVentMode)){
-            try{ stopMode(); }catch(_){}
-          }
-          // 排風機装備時はすぐ設置フローへ
-          window._fanActivate();
+          // 未設置 → 設置モード開始
+          try{ startPlacementMode('fan'); }catch(e){}
         }
         try{ updateHand(); renderInventory(); }catch(_){}
         return;
       }
-      return _origSI.apply(this, arguments);
+      return _orig.apply(this, arguments);
     };
-    window.selectItem.__fanPatched = true;
+    window.selectItem.__fanV2 = true;
   }
+
+  // 設置クリックを捕捉して位置を検証
+  document.addEventListener('click', function(e){
+    try{
+      if(typeof isPlacementMode === 'undefined' || !isPlacementMode) return;
+      if(typeof placementType === 'undefined' || placementType !== 'fan') return;
+
+      // placed-fan のクリック（除去） → 通常ハンドラに任せてフラグだけリセット
+      var els = document.elementsFromPoint(e.clientX, e.clientY);
+      for(var i=0; i<els.length; i++){
+        if(els[i].classList && els[i].classList.contains('placed-item') && els[i].dataset.type === 'fan'){
+          window._fanPlaced = false; window._fanPlacedRoom = null;
+          return;
+        }
+      }
+
+      // 設置位置を検証
+      var room = (typeof state !== 'undefined') ? state.room : null;
+      var appEl = document.getElementById('app-container');
+      var rect  = appEl ? appEl.getBoundingClientRect() : {left:0, width:window.innerWidth};
+      var xPct  = (e.clientX - rect.left) / rect.width * 100;
+      var isDownwindRoom = (room === 1);
+      var isDownwindSide = (window._windDirection === 'right') ? (xPct > 50) : (xPct < 50);
+
+      if(!isDownwindRoom || !isDownwindSide){
+        // 不正位置 → badEnd
+        e.preventDefault(); e.stopPropagation();
+        if(typeof isPlacementMode !== 'undefined') isPlacementMode = false;
+        if(typeof placementType   !== 'undefined') placementType   = null;
+        try{ document.getElementById('mode-msg').textContent = ''; }catch(_){}
+        setTimeout(function(){ try{ badEnd('排風機は前面道路の風下側に設置してください。'); }catch(_){} }, 80);
+        return;
+      }
+
+      // 正常設置
+      window._fanPlaced     = true;
+      window._fanPlacedRoom = room;
+      window._fanPlacedX    = xPct;
+      // 通常ハンドラが itemCounts を消費するので補充
+      if(typeof state !== 'undefined' && state.itemCounts){
+        if(!(state.itemCounts['fan'] > 0)) state.itemCounts['fan'] = 1;
+      }
+    }catch(_){}
+  }, {capture:true});
+
+  setTimeout(function(){
+    patchFanSelect();
+    if(typeof initGame === 'function' && !initGame.__fanV2Reset){
+      var _og = initGame;
+      initGame = function(){
+        window._fanPlaced = false; window._fanPlacedRoom = null; window._fanPlacedX = 50;
+        return _og.apply(this, arguments);
+      };
+      initGame.__fanV2Reset = true;
+    }
+  }, 500);
+})();
+
+/* ------------------------------------------------------------------ */
+/* ⑤ 心拍アニメーション & ストレス管理 & ガスOKポップアップ              */
+/* ------------------------------------------------------------------ */
+(function(){
+  /* ストレス初期値 */
+  var _stressInit = {yakitoriMaster:100, ramenMaster:100, reporter:80, alarmB:60, manager:50};
+  window._commStress = {};
+
+  function getStress(p){
+    if(window._commStress[p] === undefined)
+      window._commStress[p] = (_stressInit[p] !== undefined) ? _stressInit[p] : 50;
+    return window._commStress[p];
+  }
+
+  /* 公開: ストレス減算 */
+  window._commDecStress = function(partner, amount){
+    var cur = Math.max(0, getStress(partner) - amount);
+    window._commStress[partner] = cur;
+    _hbStress = cur;
+    if(cur <= 0){
+      if(partner === 'yakitoriMaster' && !window._yakitoriGasOk){
+        window._yakitoriGasOk = true;
+        setTimeout(function(){ _showGasOkPopup('yakitoriMaster'); }, 400);
+      }
+      if(partner === 'ramenMaster' && !window._ramenGasOk){
+        window._ramenGasOk = true;
+        setTimeout(function(){ _showGasOkPopup('ramenMaster'); }, 400);
+      }
+    }
+  };
+
+  /* ガスOKポップアップ */
+  function _showGasOkPopup(partner){
+    var msg = (partner === 'yakitoriMaster')
+      ? '分かった。ガス止めていいよ。'
+      : '承知しました。ガスを止めていただいても大丈夫です。';
+    try{
+      document.getElementById('gas-ok-popup-msg').textContent = msg;
+      document.getElementById('gas-ok-popup').style.display = 'flex';
+    }catch(_){}
+    try{
+      var who = (partner === 'yakitoriMaster') ? '焼き鳥屋' : 'ラーメン屋';
+      showSystemMsg(who + '店主からガス止めの許可を得ました。');
+    }catch(_){}
+    try{ playAudio('se_ok', SE && SE.ok ? SE.ok : null); }catch(_){}
+  }
+
+  /* 心拍キャンバス */
+  var _hbCanvas = null, _hbCtx = null, _hbRAF = null;
+  var _hbPhase  = 0, _hbStress = 50, _hbActive = false;
+
+  function ecgY(phase, stress){
+    var amp = 2 + stress * 0.16;
+    var p   = ((phase % 1) + 1) % 1;
+    var spike = 0;
+    if(p > 0.30 && p < 0.38) spike = Math.sin((p-0.30)/0.08*Math.PI) * amp * 2.4;
+    return Math.sin(phase * Math.PI * 2) * amp * 0.25 + spike;
+  }
+
+  function drawHB(){
+    if(!_hbCanvas || !_hbCtx || !_hbActive){ _hbRAF = null; return; }
+    var w = _hbCanvas.width, h = _hbCanvas.height;
+    var img = _hbCtx.getImageData(1, 0, w-1, h);
+    _hbCtx.putImageData(img, 0, 0);
+    _hbCtx.clearRect(w-1, 0, 1, h);
+    var s = _hbStress;
+    var r = Math.round(200*s/100), g = Math.round(200*(1-s/100)), b = 30;
+    var mid = h / 2;
+    var y1 = mid - ecgY(_hbPhase, s);
+    _hbPhase += 0.018 + s * 0.0003;
+    var y2 = mid - ecgY(_hbPhase, s);
+    _hbCtx.beginPath();
+    _hbCtx.strokeStyle = 'rgb('+r+','+g+','+b+')';
+    _hbCtx.lineWidth = 1.5;
+    _hbCtx.moveTo(w-2, y1);
+    _hbCtx.lineTo(w-1, y2);
+    _hbCtx.stroke();
+    _hbRAF = requestAnimationFrame(drawHB);
+  }
+
+  function startHB(partner){
+    _hbCanvas = document.getElementById('comm-heartbeat-canvas');
+    if(!_hbCanvas) return;
+    _hbCtx = _hbCanvas.getContext('2d');
+    _hbCtx.fillStyle = '#111';
+    _hbCtx.fillRect(0, 0, _hbCanvas.width, _hbCanvas.height);
+    _hbStress = getStress(partner);
+    _hbPhase  = 0;
+    _hbActive = true;
+    _hbCanvas.style.display = 'block';
+    if(_hbRAF) cancelAnimationFrame(_hbRAF);
+    drawHB();
+  }
+
+  function stopHB(){
+    _hbActive = false;
+    if(_hbRAF){ cancelAnimationFrame(_hbRAF); _hbRAF = null; }
+    if(_hbCanvas) _hbCanvas.style.display = 'none';
+  }
+
+  var _hbPartners = ['yakitoriMaster','ramenMaster','reporter','alarmB','manager'];
+
+  function hookCommOpen(){
+    if(typeof window.openCommWindow !== 'function' || window.openCommWindow.__hbHook) return;
+    var _o = window.openCommWindow;
+    window.openCommWindow = function(){
+      _o.apply(this, arguments);
+      setTimeout(function(){
+        try{
+          var p = (typeof commContext !== 'undefined' && commContext) ? commContext.partner : null;
+          if(p && _hbPartners.indexOf(p) !== -1) startHB(p); else stopHB();
+        }catch(_){}
+      }, 60);
+    };
+    window.openCommWindow.__hbHook = true;
+  }
+
+  function hookCommClose(){
+    if(typeof window.closeCommWindow !== 'function' || window.closeCommWindow.__hbHook) return;
+    var _o = window.closeCommWindow;
+    window.closeCommWindow = function(){
+      _o.apply(this, arguments); stopHB();
+    };
+    window.closeCommWindow.__hbHook = true;
+  }
+
+  setTimeout(function(){
+    hookCommOpen(); hookCommClose();
+    if(typeof initGame === 'function' && !initGame.__stressReset){
+      var _og = initGame;
+      initGame = function(){
+        window._commStress    = {};
+        window._yakitoriGasOk = false;
+        window._ramenGasOk    = false;
+        try{ document.getElementById('gas-ok-popup').style.display='none'; }catch(_){}
+        stopHB();
+        return _og.apply(this, arguments);
+      };
+      initGame.__stressReset = true;
+    }
+  }, 700);
 })();
 
 })(); // end outer IIFE
