@@ -16187,7 +16187,7 @@ window._tantouGenerateReply = function(rawText){
     // 規制線（警察画像の左側・道路縦断）: right:39%, width:4.5%
     var kiseienEl = document.createElement('div');
     kiseienEl.id = 'kiseien-el';
-    kiseienEl.style.cssText = 'position:absolute;bottom:0;right:39%;width:4.5%;height:100%;z-index:53;pointer-events:none;' +
+    kiseienEl.style.cssText = 'position:absolute;bottom:0;right:39%;width:2.25%;height:50%;z-index:53;pointer-events:none;' +
       'background:repeating-linear-gradient(-45deg,#FFD600 0px,#FFD600 12px,#111111 12px,#111111 24px);opacity:0.9;';
     street.appendChild(kiseienEl);
   }
@@ -16395,11 +16395,11 @@ window._tantouGenerateReply = function(rawText){
       if(!_shoboAccepted && window.__btState && window.__btState.cleared && window.__btState.cleared.shobo)
         _shoboAccepted = true;
       var room = getRoom();
-      if(_keisatsuAccepted && !_keisatsuMsgShown && room===1 && room!==_pfPrevRoom){
+      if(_keisatsuAccepted && !_keisatsuMsgShown && room===1){
         _keisatsuMsgShown = true;
         showPoliceArrivalMsg();
       }
-      if(_shoboAccepted && !_shoboMsgShown && room===1 && room!==_pfPrevRoom){
+      if(_shoboAccepted && !_shoboMsgShown && room===1){
         _shoboMsgShown = true;
         showFireArrivalMsg();
       }
