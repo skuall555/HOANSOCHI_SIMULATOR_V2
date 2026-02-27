@@ -8066,6 +8066,10 @@ function startVenting(location) {
           if(typeof updateDangerMeter === 'function') {
             updateDangerMeter();
           }
+          // 排風完了フラグ：入室時の爆発チェックをスキップ
+          try{ alarmBVentilated = true; }catch(e){}
+          // getLel1()が0を返すよう hs1FoundAt もリセット
+          try{ hs1FoundAt = null; }catch(e){}
         }
 
         showSystemMsg('反応箇所は消失しました。');
@@ -10539,6 +10543,14 @@ function _commInferStanceFromHs1(){
     { id:'rm1', text:'営業中に誰だろう？',                    resolved:'ガス屋さんか。何事だろうか。',         keys:['ガス'] },
     { id:'rm2', text:'ガス止め...はないよな？',               resolved:'営業中だからガス止めは厳しい。',       keys:['止','閉'] },
     { id:'rm3', text:'まさかガス漏れしてるなんてことないよな。', resolved:'ガス漏れ？危険だな...',            keys:['反応','検','見'] }
+  ];
+
+  /* ===== 消防大隊長 思考定義（状況把握・認識表示用） ===== */
+  THOUGHTS_MAP.fireCommander = [
+    { id:'fc_gas',    text:'ガスの状況はどうか？',      resolved:'ガスの状況を把握した。',          keys:['ガス'] },
+    { id:'fc_absent', text:'居住者の応答はあるか？',    resolved:'居住者の状況は把握した。',        keys:['在','応答','不在'] },
+    { id:'fc_danger', text:'危険な状況はあるか？',      resolved:'事故発生の可能性を認識した。',    keys:['警報','滞留','漏れ'] },
+    { id:'fc_detect', text:'ガスの検知結果は？',        resolved:'ガスの反応を確認した。',          keys:['反応','漏','検知'] }
   ];
 
   /* グローバルに公開（外部スクリプトからアクセス可能にする） */
@@ -16270,16 +16282,14 @@ window._tantouGenerateReply = function(rawText){
     truckEl.style.cssText = 'position:absolute;bottom:10%;left:0%;width:23.4%;height:28.8%;z-index:52;pointer-events:none;';
     truckEl.innerHTML = '<img src="'+FIRETRUCK_URL+'" style="width:100%;height:100%;object-fit:contain;" alt="消防車">';
     street.appendChild(truckEl);
-    // 緑ボタン（大隊長）
-    var greenBtn = document.createElement('button');
+    // 緑ボタン（大隊長）－通報者ボタンと同じデザイン・配置
+    var greenBtn = document.createElement('div');
     greenBtn.id = 'fire-commander-btn';
-    greenBtn.style.cssText = 'position:absolute;bottom:42%;left:1%;z-index:200;' +
-      'background:linear-gradient(to bottom,#7cb342,#33691e);border:none;color:#fff;' +
-      'padding:1vmin 1.8vmin;border-radius:0.8vmin;cursor:pointer;' +
-      'display:flex;align-items:center;gap:1vmin;font-size:1.6vmin;font-weight:bold;' +
-      'box-shadow:0 0.5vmin 1.5vmin rgba(0,0,0,0.4);';
-    greenBtn.innerHTML = '<img src="'+FIRE_ICON_URL+'" style="width:3.5vmin;height:3.5vmin;object-fit:contain;vertical-align:middle;"> 大隊長';
-    greenBtn.onclick = function(){ if(typeof openCommWindow==='function') openCommWindow('normal','fireCommander'); };
+    greenBtn.className = 'act-btn talk-btn';
+    greenBtn.style.cssText = 'position:absolute;bottom:3%;right:3%;z-index:210;height:20%;aspect-ratio:1;display:flex;';
+    greenBtn.innerHTML = '<img src="'+FIRE_ICON_URL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="消防大隊長">';
+    greenBtn.onmousedown = function(){ if(typeof openCommWindow==='function') openCommWindow('normal','fireCommander'); };
+    greenBtn.addEventListener('touchstart', function(e){ if(typeof openCommWindow==='function') openCommWindow('normal','fireCommander'); e.preventDefault(); }, {passive:false});
     street.appendChild(greenBtn);
   }
 
@@ -16313,7 +16323,7 @@ window._tantouGenerateReply = function(rawText){
     GAUGE_KWS.forEach(function(kw){ if(t.indexOf(kw)!==-1) gained+=10; });
     if(gained > 0){
       _fireGauge = Math.min(100, _fireGauge + gained);
-      if(_fireGauge > 60 && !_fireKeyDone){
+      if(_fireGauge > 30 && !_fireKeyDone){
         _fireKeyDone = true;
         setTimeout(function(){
           var win=document.getElementById('fire-cmd-win'); if(win) win.remove();
@@ -16386,7 +16396,7 @@ window._tantouGenerateReply = function(rawText){
         _fireGauge = Math.min(100, _fireGauge + gained);
         var g = document.getElementById('fcmd-gauge');
         if(g) g.textContent = '状況把握：' + _fireGauge + '％';
-        if(_fireGauge > 60 && !_fireKeyDone){
+        if(_fireGauge > 30 && !_fireKeyDone){
           _fireKeyDone = true;
           setTimeout(function(){ win.remove(); showFireKeyMsg(); }, 500);
           return;
