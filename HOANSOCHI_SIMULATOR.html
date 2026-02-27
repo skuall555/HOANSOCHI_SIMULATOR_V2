@@ -3999,7 +3999,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="bed-shelf-unit"><div class="shelf-inner">服</div><div class="bed-shelf-door ps-door" id="bedroom-shelf-b" data-max-slide="100" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false" style="transform: translateX(0px); opacity: 1;">収納棚</div></div>
 <div class="bed-bed custom-bed-img has-custom-img"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%83%99%E3%83%83%E3%83%89%E6%94%B9%E9%80%A0.png" style="width:100%; height:100%; object-fit:contain;"></div>
 </div>
-<div id="player" style="transform: none; left: 5%; bottom: 15%; display: block; transition: none;" class=""><div id="player-hand"></div><div id="player-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%82%E3%81%88%E3%82%8B.gif" style="width:100%; height:100%; object-fit:contain;"></div></div>
+<div id="player" style="transform: none; left: 5%; bottom: 15%; display: block; transition: none;" class=""><div id="odor-meter" style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);width:200%;pointer-events:none;display:flex;flex-direction:column;align-items:center;z-index:95;"><div id="odor-meter-label" style="font-size:1.2vmin;color:#0f0;text-shadow:0 0 3px #0a0;white-space:nowrap;font-weight:bold;line-height:1;">臭気メーター👃</div><canvas id="odor-ecg-canvas" width="80" height="20" style="width:100%;height:2vmin;image-rendering:pixelated;"></canvas></div><div id="player-hand"></div><div id="player-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%82%E3%81%88%E3%82%8B.gif" style="width:100%; height:100%; object-fit:contain;"></div></div>
 
 <div id="scene-memo" class="overlay-screen">
   <div class="memo-wrap">
@@ -4319,7 +4319,8 @@ window._gameStats = {
   signsPlaced: 0,          // 火気厳禁表示シート設置数
   alarmsUsedUp: false,     // 警報器使い切り
   signsUsedUp: false,      // 表示シート使い切り
-  noGasConfirmed: 0        // 滞留ガスなし確認数
+  noGasConfirmed: 0,       // 滞留ガスなし確認数
+  safetyAwarenessPenalty: 0 // 安全意識ペナルティ（レーダーチャート用）
 };
 
 if(dangerTimer) clearInterval(dangerTimer);
@@ -4620,7 +4621,9 @@ function _drawRadarChart(){
     // 警報器・表示シート設置
     if(stats.alarmsPlaced >= 1) score1 += 15;
     if(stats.signsPlaced >= 1) score1 += 15;
-    score1 = Math.min(100, score1);
+    // 安全意識ペナルティ（配達員インターホン、滞留ガス未確認等）
+    try{ if(stats.safetyAwarenessPenalty) score1 -= stats.safetyAwarenessPenalty; }catch(e){}
+    score1 = Math.max(0, Math.min(100, score1));
 
     // ②社内情報共有（固定60点：未実装）
     var score2 = 60;
@@ -5196,6 +5199,7 @@ document.getElementById('detector-overlay').classList.add('active');
 document.getElementById('mode-msg').textContent = "検知器モード -ガスの反応がありそうな場所をタップ-";
 startBGM();
 try{ document.getElementById('detector-tool').style.display='block'; }catch(e){}
+try{ startDetectorProximityBeep(); }catch(e){}
 }
 
 /* Placement Mode (New) */
@@ -5220,6 +5224,7 @@ try{ if(typeof isPressureTestMode!=='undefined' && isPressureTestMode){ stopPres
     isPlacementMode = false;
     isVentMode = false;
     placementType = null;
+    try{ stopDetectorProximityBeep(); }catch(e){}
     
     // 排風タイマーをクリア
     if(ventTimer) {
@@ -5448,8 +5453,15 @@ function updateDetToolPos(e){
       var ax=(cx-rect.left), ay=(cy-rect.top);
       var hit=false;
       if(typeof pointInRect2==='function' && typeof requiredDoorOpen2==='function'){
-        if(window.hotspot1 && hotspot1.rect && requiredDoorOpen2(hotspot1) && pointInRect2(ax,ay,hotspot1.rect)) hit=true;
-        if(window.hotspot2 && hotspot2.rect && requiredDoorOpen2(hotspot2) && pointInRect2(ax,ay,hotspot2.rect)) hit=true;
+        // BUG FIX: 座標だけでなく、その画面にいるかも判断する
+        if(window.hotspot1 && hotspot1.rect && requiredDoorOpen2(hotspot1) && pointInRect2(ax,ay,hotspot1.rect)){
+          var _r1=document.getElementById(hotspot1.roomId);
+          if(_r1 && _r1.classList.contains('active')) hit=true;
+        }
+        if(window.hotspot2 && hotspot2.rect && requiredDoorOpen2(hotspot2) && pointInRect2(ax,ay,hotspot2.rect)){
+          var _r2=document.getElementById(hotspot2.roomId);
+          if(_r2 && _r2.classList.contains('active')) hit=true;
+        }
       }
       detTool.classList.toggle('hit', !!hit);
     }catch(_e){ try{ detTool.classList.remove('hit'); }catch(__e){} }
@@ -6608,11 +6620,45 @@ if (isWindow) {
     if (ratio >= 0.01 && (!d.dataset.gasCleared || d.dataset.gasCleared === "false")) {
         d.dataset.isDangerous = "true";
     }
-    // Explosion Check
+    // Explosion Check (仕様変更: 反応箇所がこの扉/蓋に被っている場合のみ爆発)
     if (ratio >= 0.30) {
         if (!d.dataset.gasCleared || d.dataset.gasCleared === "false") {
+            // この扉/蓋のBoundingRectを取得
+            var _doorOverlapsReaction = false;
+            try{
+              var _activeRoom = document.querySelector('.room.active');
+              var _activeRoomId = _activeRoom ? _activeRoom.id : '';
+              var _appR = document.getElementById('app-container').getBoundingClientRect();
+              var _doorR = d.getBoundingClientRect();
+              var _doorRect = {x:_doorR.left-_appR.left, y:_doorR.top-_appR.top, w:_doorR.width, h:_doorR.height};
+
+              function _rectsOverlap(a,b){
+                return a && b && a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+              }
+              // 反応箇所1チェック
+              if(typeof hotspot1!=='undefined' && hotspot1 && hotspot1.rect && hotspot1.roomId===_activeRoomId){
+                if(_rectsOverlap(_doorRect, hotspot1.rect)) _doorOverlapsReaction = true;
+              }
+              // 反応箇所2チェック
+              if(typeof hotspot2!=='undefined' && hotspot2 && hotspot2.rect && hotspot2.roomId===_activeRoomId){
+                if(_rectsOverlap(_doorRect, hotspot2.rect)) _doorOverlapsReaction = true;
+              }
+            }catch(_eChk){}
+
             isDragging = false;
-            badEnd("扉や蓋を開ける際は、滞留ガスの有無を確認");
+            if(_doorOverlapsReaction){
+              // 反応箇所が被っている → 爆発END
+              badEnd("ガスが滞留していたようだ。解放前に滞留ガスの有無を確認しよう。");
+            }else{
+              // 反応箇所が被っていない → 警告のみ（爆発しない）
+              d.style.transform = 'translateX(0px)';
+              try{
+                showSystemMsg("滞留ガスを確認してから解放しましょう。危険度の上昇率が上がった。");
+                dangerRate += 0.2;
+                updateDangerUI();
+                if(window._gameStats) window._gameStats.safetyAwarenessPenalty = (window._gameStats.safetyAwarenessPenalty||0) + 5;
+              }catch(_eWarn){}
+            }
             return;
         }
     }
@@ -7847,6 +7893,121 @@ function playBeep2(){
     o.connect(g); g.connect(actx.destination);
     o.start(); o.stop(actx.currentTime+0.08);
   }catch(e){}
+}
+
+// === 近接度に応じた検知器ビープ音システム ===
+var _detProximityState = { osc:null, gain:null, lastLevel:0, stopTimer:null };
+
+function _getDetectorProximityLevel(){
+  // 検知器の位置と反応箇所の距離を計算し、近接度レベルを返す
+  // 0=範囲外, 1=遠い(ピッ...ピッ...), 2=近い(ピピピピ), 3=重なる(ピー)
+  try{
+    if(!isDetectorMode) return 0;
+    var detTool = document.getElementById('detector-tool');
+    if(!detTool || detTool.style.display==='none') return 0;
+    var dx = parseFloat(detTool.style.left)||0;
+    var dy = parseFloat(detTool.style.top)||0;
+    var a = appRect2();
+    var bestLevel = 0;
+
+    function checkHotspot(hs, found, vented){
+      if(!hs || !hs.rect) return 0;
+      if(vented) return 0;
+      var room = document.getElementById(hs.roomId);
+      if(!room || !room.classList.contains('active')) return 0;
+      // 反応箇所の中心
+      var hcx = hs.rect.x + hs.rect.w/2;
+      var hcy = hs.rect.y + hs.rect.h/2;
+      var dist = Math.sqrt((dx-hcx)*(dx-hcx)+(dy-hcy)*(dy-hcy));
+      // 反応箇所のサイズに基づく閾値
+      var hsSize = Math.max(hs.rect.w, hs.rect.h);
+      var farRange = hsSize * 4;   // 遠い範囲
+      var nearRange = hsSize * 2;  // 近い範囲
+      var hitRange = hsSize * 0.7; // 重なる範囲
+
+      if(dist <= hitRange) return 3;
+      if(dist <= nearRange) return 2;
+      if(dist <= farRange) return 1;
+      return 0;
+    }
+
+    var l1 = checkHotspot(hotspot1, hotspotFound1, window._hs1Vented);
+    var l2 = checkHotspot(hotspot2, hotspotFound2, window._hs2Vented);
+    // hotspot3（警報器フロア）
+    var l3 = 0;
+    if(typeof hotspot3!=='undefined' && hotspot3 && hotspot3.rect){
+      l3 = checkHotspot(hotspot3, false, false);
+    }
+    bestLevel = Math.max(l1, l2, l3);
+    return bestLevel;
+  }catch(e){ return 0; }
+}
+
+function playProximityBeep(level){
+  try{
+    if(!actx) return;
+    if(typeof isMuted!=='undefined' && isMuted) return;
+    if(actx.state==='suspended') actx.resume();
+    var now = actx.currentTime;
+    // 前のオシレーターを停止
+    try{ if(_detProximityState.osc){ _detProximityState.osc.stop(); _detProximityState.osc.disconnect(); } }catch(e){}
+    try{ if(_detProximityState.gain){ _detProximityState.gain.disconnect(); } }catch(e){}
+
+    var o = actx.createOscillator();
+    var g = actx.createGain();
+    o.type='square';
+
+    if(level===1){
+      // 遠い: ピッ...ピッ... (低音、短いビープ)
+      o.frequency.setValueAtTime(800, now);
+      g.gain.setValueAtTime(0.08, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now+0.06);
+      o.connect(g); g.connect(actx.destination);
+      o.start(now); o.stop(now+0.06);
+    } else if(level===2){
+      // 近い: ピピピピ (中音、連続短ビープ)
+      o.frequency.setValueAtTime(1000, now);
+      g.gain.setValueAtTime(0.10, now);
+      // 4回の短いビープ (LFOのように断続)
+      for(var i=0;i<4;i++){
+        g.gain.setValueAtTime(0.10, now+i*0.06);
+        g.gain.setValueAtTime(0.001, now+i*0.06+0.04);
+      }
+      o.connect(g); g.connect(actx.destination);
+      o.start(now); o.stop(now+0.25);
+    } else if(level===3){
+      // 重なる: ピー (高音、長い持続音)
+      o.frequency.setValueAtTime(1200, now);
+      g.gain.setValueAtTime(0.12, now);
+      g.gain.setValueAtTime(0.12, now+0.3);
+      g.gain.exponentialRampToValueAtTime(0.001, now+0.35);
+      o.connect(g); g.connect(actx.destination);
+      o.start(now); o.stop(now+0.35);
+    }
+    _detProximityState.osc = o;
+    _detProximityState.gain = g;
+    _detProximityState.lastLevel = level;
+  }catch(e){}
+}
+
+// 定期的に近接度を計算してビープ音を鳴らすタイマー
+var _detProximityTimer = null;
+function startDetectorProximityBeep(){
+  if(_detProximityTimer) return;
+  _detProximityTimer = setInterval(function(){
+    try{
+      if(!isDetectorMode){ stopDetectorProximityBeep(); return; }
+      var level = _getDetectorProximityLevel();
+      if(level > 0){
+        playProximityBeep(level);
+      }
+    }catch(e){}
+  }, 500); // レベル1:0.5秒間隔、レベル2:0.25秒間隔で自動調整
+}
+function stopDetectorProximityBeep(){
+  if(_detProximityTimer){ clearInterval(_detProximityTimer); _detProximityTimer=null; }
+  try{ if(_detProximityState.osc){ _detProximityState.osc.stop(); _detProximityState.osc.disconnect(); } }catch(e){}
+  _detProximityState.osc=null; _detProximityState.gain=null; _detProximityState.lastLevel=0;
 }
 
 function handleHotspotCheck2(e){
@@ -12216,7 +12377,7 @@ try{
 
   function scheduleNext(){
     clearTimers();
-    var delay = 5000 + Math.random()*10000; // 5〜15秒
+    var delay = 15000 + Math.random()*5000; // 15〜20秒
     // 2秒前警告
     st.timerWarn = setTimeout(function(){
       if(isCommonCorridor() && !st.active && !window.isPaused) playPrewarn();
@@ -12257,12 +12418,53 @@ try{
         awardCard();
         reverseAndExit();
       }else{
-        // 分岐2: シートなし → 危険イベント
-        hideSprite();
-        st.active=false;
-        st.coolUntil = Date.now() + 2500;
-        showDanger();
-        scheduleNext();
+        // シートなし: 警報器鳴動中かつ居住者B宅のドアに到着 → 爆発END
+        var isAlarmDoor = false;
+        try{
+          if(typeof _cityGasAlarmActive!=='undefined' && _cityGasAlarmActive && typeof alarmResidentRoom!=='undefined' && alarmResidentRoom){
+            // 配達員の目的地ドアが警報器鳴動宅のドアと一致するか
+            var alarmDoorX = (alarmResidentRoom===2||alarmResidentRoom===4) ? 77 : 23;
+            if(Math.abs(st.destX - alarmDoorX) < 10) isAlarmDoor = true;
+          }
+        }catch(e){}
+
+        if(isAlarmDoor){
+          // 分岐2a: 警報器鳴動中 + 居住者B宅ドア → 爆発END
+          hideSprite();
+          st.active=false;
+          st.coolUntil = Date.now() + 2500;
+          playChime();
+          try{
+            var ov=$('scene-delivery-danger');
+            var gif=$('delivery-danger-gif');
+            var msg=$('delivery-danger-msg');
+            if(ov) ov.classList.add('active');
+            if(gif) gif.src=INTERCOM_IMG;
+            if(msg) msg.textContent='警報器が鳴っている部屋のインターホンを押されてしまった。';
+            var ok=$('delivery-danger-ok');
+            if(ok && !ok.__boundAlarm){
+              ok.addEventListener('click', function(){
+                try{ var ov2=$('scene-delivery-danger'); if(ov2) ov2.classList.remove('active'); }catch(e){}
+                try{ if(typeof window.badEnd==='function') window.badEnd('警報器が鳴っている部屋のインターホンを押されてしまった。'); }catch(e2){}
+              });
+              ok.__boundAlarm=true;
+            }
+          }catch(e){}
+          scheduleNext();
+        }else{
+          // 分岐2b: 通常の配達 → 警告のみ（爆発しない）
+          hideSprite();
+          st.active=false;
+          st.coolUntil = Date.now() + 2500;
+          playChime();
+          try{
+            if(typeof window.showSystemMsg==='function') window.showSystemMsg('インターホンを押されてしまった。危険度の上昇率が上がった。');
+            if(typeof dangerRate!=='undefined') window.dangerRate = (window.dangerRate||dangerRate) + 0.2;
+            if(typeof updateDangerUI==='function') updateDangerUI();
+            if(window._gameStats) window._gameStats.safetyAwarenessPenalty = (window._gameStats.safetyAwarenessPenalty||0) + 5;
+          }catch(e){}
+          scheduleNext();
+        }
       }
     });
   }
@@ -13670,7 +13872,7 @@ try{
     }catch(e){}
     resetNpc();
     phase = 'idle';
-    scheduleDelivery(9000 + Math.random()*12000);
+    scheduleDelivery(15000 + Math.random()*5000);
   }
 
   function scheduleDelivery(nextDelay){
@@ -13678,7 +13880,7 @@ try{
     if(!isEntranceActive()) return;
     if(phase !== 'idle') return;
 
-    const delay = (typeof nextDelay==='number') ? nextDelay : (8000 + Math.random()*14000);
+    const delay = (typeof nextDelay==='number') ? nextDelay : (15000 + Math.random()*5000);
     const warnDelay = Math.max(0, delay - 2000);
 
     warnTimer = setTimeout(function(){
@@ -13804,22 +14006,18 @@ try{
 
 
 <script id="mc-elevator-button-explode-fix7">
+// === エレベーター機能 (v2) ===
+// 1Fエントランス: 反応箇所がなければ階選択→移動、あれば爆発END
+// 1F共用部/2F共用部/地下街: 緑ボタンでエレベーター利用
 (function(){
   'use strict';
-  function isEntrance(){
-    var r = document.querySelector('.room.active');
-    return !!(r && r.id === 'room-entrance');
-  }
-  function playPing(){
+  // エレベーターアイコン（SVGインライン）
+  var ELEV_IMG = "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Crect%20width%3D%2260%22%20height%3D%2260%22%20fill%3D%22%236d4c41%22%20rx%3D%224%22/%3E%3Crect%20x%3D%226%22%20y%3D%228%22%20width%3D%2222%22%20height%3D%2244%22%20fill%3D%22%235d4037%22/%3E%3Crect%20x%3D%2232%22%20y%3D%228%22%20width%3D%2222%22%20height%3D%2244%22%20fill%3D%22%235d4037%22/%3E%3Crect%20x%3D%2228%22%20y%3D%228%22%20width%3D%224%22%20height%3D%2244%22%20fill%3D%22%233a3a3a%22/%3E%3Ctext%20x%3D%2230%22%20y%3D%2258%22%20fill%3D%22%23fff%22%20font-size%3D%226%22%20text-anchor%3D%22middle%22%3EEV%3C/text%3E%3C/svg%3E";
+
+  function playElevatorSE(){
     try{
       if(typeof window.isMuted!=='undefined' && window.isMuted) return;
       if(typeof window.initAudio==='function') window.initAudio();
-      // Prefer in-game SFX if available
-      if(typeof window.playAudio==='function' && window.SE && typeof window.SE.ring==='function'){
-        window.playAudio('se_ring', window.SE.ring);
-        return;
-      }
-      // Fallback: simple ding-dong using WebAudio
       var AC = window.AudioContext || window.webkitAudioContext;
       if(!AC) return;
       var ctx = window.__mcPingCtx || (window.__mcPingCtx = new AC());
@@ -13836,29 +14034,204 @@ try{
         o.connect(g); g.connect(ctx.destination);
         o.start(t0); o.stop(t0+dur+0.02);
       }
+      // エレベーター到着音: ピンポーン
       tone(784, now, 0.18);
       tone(523, now+0.22, 0.22);
+      // ドア開閉音
+      tone(440, now+0.6, 0.1);
+      tone(440, now+0.75, 0.1);
     }catch(e){}
   }
-  function boom(){
-    try{ if(typeof window.gameOver==='function') window.gameOver('エレベーターのボタンを押してしまった。'); }catch(e){}
+
+  function hasReactionInRoom(roomId){
+    // この画面に反応箇所が出現しているかチェック
+    try{
+      if(typeof hotspot1!=='undefined' && hotspot1 && hotspot1.roomId===roomId && !window._hs1Vented) return true;
+      if(typeof hotspot2!=='undefined' && hotspot2 && hotspot2.roomId===roomId && !window._hs2Vented) return true;
+      // 警報器フロア (hotspot3)
+      if(typeof hotspot3!=='undefined' && hotspot3 && hotspot3.roomId===roomId) return true;
+    }catch(e){}
+    return false;
   }
-  function onPress(ev){
+
+  function hasBasement(){
+    try{
+      return typeof activeScenario!=='undefined' && activeScenario && activeScenario.basement==='あり';
+    }catch(e){ return false; }
+  }
+
+  function showFloorSelect(currentFloorRoomId, onSelect){
+    // 既存のモーダルがあれば削除
+    var old = document.getElementById('elevator-floor-modal');
+    if(old) old.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'elevator-floor-modal';
+    modal.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:700;display:flex;align-items:center;justify-content:center;';
+
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#1a1a2e;border:0.3vmin solid #4fc3f7;border-radius:1.5vmin;padding:3vmin;color:#fff;text-align:center;min-width:30%;';
+
+    var title = document.createElement('div');
+    title.style.cssText = 'font-size:2.8vmin;font-weight:bold;margin-bottom:2vmin;color:#4fc3f7;';
+    title.textContent = '何階に行きますか？';
+    box.appendChild(title);
+
+    var floors = [];
+    // 現在の階を除いたフロアを表示
+    if(currentFloorRoomId !== 'room-corridor2') floors.push({label:'2F', roomNum:4, roomId:'room-corridor2'});
+    if(currentFloorRoomId !== 'room-corridor1') floors.push({label:'1F', roomNum:3, roomId:'room-corridor1'});
+    if(currentFloorRoomId !== 'room-entrance') floors.push({label:'1Fエントランス', roomNum:2, roomId:'room-entrance'});
+    if(hasBasement() && currentFloorRoomId !== 'room-basement') floors.push({label:'B1F', roomNum:12, roomId:'room-basement'});
+
+    floors.forEach(function(f){
+      var btn = document.createElement('button');
+      btn.style.cssText = 'display:block;width:100%;margin:1vmin 0;padding:1.5vmin 3vmin;font-size:2.4vmin;font-weight:bold;background:linear-gradient(to bottom,#4fc3f7,#0288d1);color:#fff;border:0.2vmin solid #fff;border-radius:1vmin;cursor:pointer;';
+      btn.textContent = f.label;
+      btn.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        modal.remove();
+        onSelect(f.roomNum);
+      });
+      box.appendChild(btn);
+    });
+
+    // キャンセルボタン
+    var cancelBtn = document.createElement('button');
+    cancelBtn.style.cssText = 'display:block;width:100%;margin:1.5vmin 0 0;padding:1vmin 2vmin;font-size:2vmin;background:#555;color:#fff;border:0.2vmin solid #888;border-radius:1vmin;cursor:pointer;';
+    cancelBtn.textContent = 'キャンセル';
+    cancelBtn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      modal.remove();
+      try{ window.isPaused = false; if(typeof loop==='function') loop(); }catch(e){}
+    });
+    box.appendChild(cancelBtn);
+
+    modal.appendChild(box);
+    modal.addEventListener('click', function(ev){
+      if(ev.target===modal){
+        modal.remove();
+        try{ window.isPaused = false; if(typeof loop==='function') loop(); }catch(e){}
+      }
+    });
+    document.getElementById('app-container').appendChild(modal);
+  }
+
+  function elevatorTravel(destRoomNum){
+    playElevatorSE();
+    try{ window.isPaused = true; }catch(e){}
+    // エレベーター効果音の後に画面遷移
+    setTimeout(function(){
+      try{
+        window.isPaused = false;
+        if(typeof changeRoom==='function') changeRoom(destRoomNum, 50);
+        if(typeof loop==='function') loop();
+      }catch(e){}
+    }, 1000);
+  }
+
+  // === 1Fエントランスのエレベーターボタン ===
+  function onEntranceElevatorPress(ev){
     try{ ev.stopPropagation(); }catch(e){}
-    if(!isEntrance()) return;
-    try{ if(window.isPaused) return; }catch(e){}
-    playPing();
-    setTimeout(boom, 700);
+    try{
+      var r = document.querySelector('.room.active');
+      if(!r || r.id !== 'room-entrance') return;
+      if(window.isPaused) return;
+    }catch(e){ return; }
+
+    // 反応箇所チェック
+    if(hasReactionInRoom('room-entrance')){
+      // 反応箇所あり → 爆発END
+      playElevatorSE();
+      setTimeout(function(){
+        try{ if(typeof window.badEnd==='function') window.badEnd('臭気や反応がある箇所で火気や電気スイッチは使用しない。'); }catch(e){}
+      }, 700);
+      return;
+    }
+
+    // 反応箇所なし → 階選択
+    try{ window.isPaused = true; }catch(e){}
+    showFloorSelect('room-entrance', function(dest){
+      elevatorTravel(dest);
+    });
   }
-  function bind(){
+
+  function bindEntrance(){
     var up = document.getElementById('elevator-btn-up');
     var dn = document.getElementById('elevator-btn-down');
-    if(up && !up.__fix7){ up.__fix7=true; up.addEventListener('click', onPress); }
-    if(dn && !dn.__fix7){ dn.__fix7=true; dn.addEventListener('click', onPress); }
+    if(up && !up.__fix8){
+      up.__fix8 = true;
+      // 古いイベントリスナーを無効化
+      up.addEventListener('click', function(ev){ ev.stopPropagation(); ev.stopImmediatePropagation(); onEntranceElevatorPress(ev); }, true);
+    }
+    if(dn && !dn.__fix8){
+      dn.__fix8 = true;
+      dn.addEventListener('click', function(ev){ ev.stopPropagation(); ev.stopImmediatePropagation(); onEntranceElevatorPress(ev); }, true);
+    }
   }
+
+  // === 各フロアのエレベーター緑ボタン ===
+  function createElevatorButton(roomId, roomEl){
+    if(!roomEl) return;
+    if(roomEl.querySelector('.elevator-green-btn')) return;
+
+    var btn = document.createElement('div');
+    btn.className = 'act-btn talk-btn elevator-green-btn';
+    btn.style.cssText = 'position:absolute;bottom:3%;left:3%;z-index:210;height:15%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;background:radial-gradient(circle, rgba(0,200,80,0.55), rgba(0,120,60,0.85));border:0.3vmin solid #fff;border-radius:50%;box-shadow:0 0.5vmin 1vmin rgba(0,0,0,0.5);pointer-events:auto;';
+    var img = document.createElement('img');
+    img.src = ELEV_IMG;
+    img.style.cssText = 'width:70%;height:70%;object-fit:contain;pointer-events:none;';
+    img.onerror = function(){ btn.textContent='EV'; btn.style.fontSize='1.8vmin'; btn.style.color='#fff'; btn.style.fontWeight='bold'; };
+    btn.appendChild(img);
+
+    btn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      try{ if(window.isPaused) return; }catch(e){}
+
+      // 反応箇所チェック
+      if(hasReactionInRoom(roomId)){
+        // 反応箇所あり → 爆発END
+        playElevatorSE();
+        setTimeout(function(){
+          try{ if(typeof window.badEnd==='function') window.badEnd('臭気や反応がある箇所で火気や電気スイッチは使用しない。'); }catch(e){}
+        }, 700);
+        return;
+      }
+
+      // 反応箇所なし → 階選択
+      try{ window.isPaused = true; }catch(e){}
+      showFloorSelect(roomId, function(dest){
+        elevatorTravel(dest);
+      });
+    });
+
+    btn.addEventListener('touchstart', function(ev){
+      ev.preventDefault();
+      btn.click();
+    }, {passive:false});
+
+    roomEl.appendChild(btn);
+  }
+
+  function setupFloorButtons(){
+    // 1F共用部
+    var c1 = document.getElementById('room-corridor1');
+    if(c1) createElevatorButton('room-corridor1', c1);
+    // 2F共用部
+    var c2 = document.getElementById('room-corridor2');
+    if(c2) createElevatorButton('room-corridor2', c2);
+    // 地下街
+    var bm = document.getElementById('room-basement');
+    if(bm) createElevatorButton('room-basement', bm);
+  }
+
   document.addEventListener('DOMContentLoaded', function(){
-    bind();
-    setInterval(bind, 500);
+    bindEntrance();
+    setupFloorButtons();
+    setInterval(function(){
+      bindEntrance();
+      setupFloorButtons();
+    }, 1000);
   });
 })();
 </script>
@@ -17097,6 +17470,116 @@ window._tantouGenerateReply = function(rawText){
   openDB().catch(function(e){console.warn('RecDB init:',e);});
   setTimeout(hookAll,900);
 
+})();
+</script>
+
+<script id="odor-meter-ecg">
+// === 臭気メーター（心電図）===
+// プレイヤーの頭上に常に表示。反応箇所に近づくと波が大きくなる。
+(function(){
+  var canvas = document.getElementById('odor-ecg-canvas');
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var ecgData = [];
+  for(var i=0;i<W;i++) ecgData.push(H/2);
+  var ecgIndex = 0;
+  var _ecgAmplitude = 0.15; // 基本振幅（0-1）
+
+  function getPlayerProximityToReaction(){
+    // プレイヤーの位置と反応箇所の距離から近接度を返す（0-1）
+    try{
+      if(typeof isPaused!=='undefined' && isPaused) return 0;
+      var playerEl = document.getElementById('player');
+      if(!playerEl || playerEl.style.display==='none') return 0;
+      var appCont = document.getElementById('app-container');
+      if(!appCont) return 0;
+      var appR = appCont.getBoundingClientRect();
+      var pR = playerEl.getBoundingClientRect();
+      var px = (pR.left + pR.width/2) - appR.left;
+      var py = (pR.top + pR.height/2) - appR.top;
+      var bestProx = 0;
+
+      function checkHS(hs, vented){
+        if(!hs || !hs.rect) return 0;
+        if(vented) return 0;
+        var room = document.getElementById(hs.roomId);
+        if(!room || !room.classList.contains('active')) return 0;
+        var hcx = hs.rect.x + hs.rect.w/2;
+        var hcy = hs.rect.y + hs.rect.h/2;
+        var dist = Math.sqrt((px-hcx)*(px-hcx)+(py-hcy)*(py-hcy));
+        var maxDist = Math.max(appR.width, appR.height) * 0.5;
+        var prox = Math.max(0, 1 - dist/maxDist);
+        return prox;
+      }
+
+      if(typeof hotspot1!=='undefined') bestProx = Math.max(bestProx, checkHS(hotspot1, window._hs1Vented));
+      if(typeof hotspot2!=='undefined') bestProx = Math.max(bestProx, checkHS(hotspot2, window._hs2Vented));
+      if(typeof hotspot3!=='undefined') bestProx = Math.max(bestProx, checkHS(hotspot3, false));
+      return bestProx;
+    }catch(e){ return 0; }
+  }
+
+  function updateECG(){
+    try{
+      var prox = getPlayerProximityToReaction();
+      // 振幅を近接度に応じて調整（0.15〜0.9）
+      var targetAmp = 0.15 + prox * 0.75;
+      _ecgAmplitude += (targetAmp - _ecgAmplitude) * 0.1; // スムーズに遷移
+
+      // ECGパターン生成
+      var amp = _ecgAmplitude * (H/2 * 0.85);
+      var phase = ecgIndex % 30;
+      var val = H/2;
+      if(phase===10) val = H/2 - amp*0.3;
+      else if(phase===12) val = H/2 - amp*1.0; // R波（メインピーク）
+      else if(phase===14) val = H/2 + amp*0.4;
+      else if(phase===16) val = H/2 - amp*0.15;
+      else val = H/2 + (Math.random()-0.5)*amp*0.08;
+
+      ecgData[ecgIndex % W] = val;
+      ecgIndex++;
+
+      // 描画
+      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle = '#0f0';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for(var i=0;i<W;i++){
+        var idx = (ecgIndex + i) % W;
+        if(i===0) ctx.moveTo(i, ecgData[idx]);
+        else ctx.lineTo(i, ecgData[idx]);
+      }
+      ctx.stroke();
+
+      // 現在位置マーカー
+      var curIdx = (ecgIndex-1) % W;
+      var curX = W - 1;
+      ctx.fillStyle = '#0f0';
+      ctx.beginPath();
+      ctx.arc(curX, ecgData[curIdx], 1.5, 0, Math.PI*2);
+      ctx.fill();
+    }catch(e){}
+  }
+
+  // 50msごとに更新（20fps）
+  setInterval(updateECG, 50);
+
+  // プレイヤー非表示時は臭気メーターも非表示にする
+  var odorMeter = document.getElementById('odor-meter');
+  if(odorMeter){
+    setInterval(function(){
+      try{
+        var player = document.getElementById('player');
+        if(player && player.style.display==='none'){
+          odorMeter.style.display='none';
+        }else{
+          odorMeter.style.display='flex';
+        }
+      }catch(e){}
+    }, 200);
+  }
 })();
 </script>
 
