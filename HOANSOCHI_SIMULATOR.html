@@ -120,6 +120,10 @@ img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
     z-index: 200; display: flex; flex-direction: column; justify-content: center;
     padding: 1vmin; color: #fff; box-sizing: border-box; pointer-events: none;
 }
+/* 臭気メーター（危険度パネルの下） */
+#odor-meter-panel { width: 17.5%; }
+@keyframes nose-shake-slow { 0%,100%{transform:rotate(0deg)} 25%{transform:rotate(-8deg)} 75%{transform:rotate(8deg)} }
+@keyframes nose-shake-fast { 0%,100%{transform:rotate(0deg)} 15%{transform:rotate(-15deg)} 35%{transform:rotate(15deg)} 50%{transform:rotate(-12deg)} 65%{transform:rotate(12deg)} 85%{transform:rotate(-8deg)} }
 
 /* 安全率メーター */
 #safety-panel {
@@ -3489,6 +3493,13 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="danger-bar-bg"><div id="danger-bar" class="danger-bar-fill" style="width: 54%; background-color: rgb(255, 82, 82);"></div></div>
 <div class="danger-rate" id="danger-rate-text">上昇率: 1.00/秒</div>
 </div>
+<div id="odor-meter-panel" style="position:absolute;top:auto;right:1.5vmin;z-index:200;display:flex;flex-direction:column;align-items:center;pointer-events:none;">
+  <div id="odor-meter-label" style="font-size:1.6vmin;color:#fff;font-weight:bold;line-height:1.2;white-space:nowrap;background:rgba(0,0,0,0.6);padding:0.3vmin 1vmin;border-radius:0.5vmin 0.5vmin 0 0;width:100%;text-align:center;box-sizing:border-box;">＜臭気メーター＞</div>
+  <div style="display:flex;align-items:stretch;background:rgba(0,0,0,0.85);border:0.2vmin solid #fff;border-radius:0 0 0.5vmin 0.5vmin;overflow:hidden;">
+    <div id="odor-nose-icon" style="font-size:3vmin;display:flex;align-items:center;justify-content:center;padding:0 0.5vmin;transition:transform 0.1s;">👃</div>
+    <canvas id="odor-ecg-canvas" width="80" height="30" style="width:17.5%;height:4.5vmin;image-rendering:pixelated;"></canvas>
+  </div>
+</div>
 <div id="pressure-float"><span class="small">試験中</span>（残り--秒）</div>
 
 <div id="safety-panel">
@@ -3999,7 +4010,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="bed-shelf-unit"><div class="shelf-inner">服</div><div class="bed-shelf-door ps-door" id="bedroom-shelf-b" data-max-slide="100" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false" style="transform: translateX(0px); opacity: 1;">収納棚</div></div>
 <div class="bed-bed custom-bed-img has-custom-img"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%83%99%E3%83%83%E3%83%89%E6%94%B9%E9%80%A0.png" style="width:100%; height:100%; object-fit:contain;"></div>
 </div>
-<div id="player" style="transform: none; left: 5%; bottom: 15%; display: block; transition: none;" class=""><div id="odor-meter" style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);width:200%;pointer-events:none;display:flex;flex-direction:column;align-items:center;z-index:95;"><div id="odor-meter-label" style="font-size:1.2vmin;color:#0f0;text-shadow:0 0 3px #0a0;white-space:nowrap;font-weight:bold;line-height:1;">臭気メーター👃</div><canvas id="odor-ecg-canvas" width="80" height="20" style="width:100%;height:2vmin;image-rendering:pixelated;"></canvas></div><div id="player-hand"></div><div id="player-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%82%E3%81%88%E3%82%8B.gif" style="width:100%; height:100%; object-fit:contain;"></div></div>
+<div id="player" style="transform: none; left: 5%; bottom: 15%; display: block; transition: none;" class=""><div id="player-hand"></div><div id="player-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%82%E3%81%88%E3%82%8B.gif" style="width:100%; height:100%; object-fit:contain;"></div></div>
 
 <div id="scene-memo" class="overlay-screen">
   <div class="memo-wrap">
@@ -7074,7 +7085,8 @@ function normalizeScenarioData(arr){
       basement:(s.basement!=null)?String(s.basement):'なし',
       gasCause:(s.gasCause!=null)?String(s.gasCause):(s.gasLeakCause!=null?String(s.gasLeakCause):'101号室灯内内管'),
       description:(s.description!=null)?String(s.description):'',
-      difficulty:(s.difficulty!=null)?String(s.difficulty):'B級'
+      difficulty:(s.difficulty!=null)?String(s.difficulty):'B級',
+      safetyNorma:(s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100
     };
   }
   return base;
@@ -11019,6 +11031,11 @@ function _applyScenarioToForm(s){
 
   try{ var elIn=document.getElementById('sc-indoor-leak'); if(elIn){ elIn.value = (s.indoorLeakRoomNo!=null)?String(s.indoorLeakRoomNo):((s.indoorLeakRoom!=null)?String(s.indoorLeakRoom):((s.indoorLeak!=null)?String(s.indoorLeak):'なし')); } }catch(e3){}
   try{ document.getElementById('sc-basement').value = s.basement?String(s.basement):'なし'; }catch(e){}
+  // 不足フィールド追加
+  try{ document.getElementById('sc-difficulty').value = s.difficulty?String(s.difficulty):'B級'; }catch(e){}
+  try{ document.getElementById('sc-gas-cause').value = s.gasCause?String(s.gasCause):(s.gasLeakCause?String(s.gasLeakCause):''); }catch(e){}
+  try{ document.getElementById('sc-description').value = (s.description!=null)?String(s.description):''; }catch(e){}
+  try{ document.getElementById('sc-safety-norma').value = (s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100; }catch(e){}
 }
 function copyScenarioFromSelected(){
   try{
@@ -14103,7 +14120,7 @@ try{
     cancelBtn.addEventListener('click', function(ev){
       ev.stopPropagation();
       modal.remove();
-      try{ window.isPaused = false; if(typeof loop==='function') loop(); }catch(e){}
+      try{ window.isPaused = false; if(typeof loopId!=='undefined'&&loopId){cancelAnimationFrame(loopId);loopId=null;} if(typeof loop==='function') loop(); }catch(e){}
     });
     box.appendChild(cancelBtn);
 
@@ -14111,7 +14128,7 @@ try{
     modal.addEventListener('click', function(ev){
       if(ev.target===modal){
         modal.remove();
-        try{ window.isPaused = false; if(typeof loop==='function') loop(); }catch(e){}
+        try{ window.isPaused = false; if(typeof loopId!=='undefined'&&loopId){cancelAnimationFrame(loopId);loopId=null;} if(typeof loop==='function') loop(); }catch(e){}
       }
     });
     document.getElementById('app-container').appendChild(modal);
@@ -14125,6 +14142,7 @@ try{
       try{
         window.isPaused = false;
         if(typeof changeRoom==='function') changeRoom(destRoomNum, 50);
+        if(typeof loopId!=='undefined'&&loopId){cancelAnimationFrame(loopId);loopId=null;}
         if(typeof loop==='function') loop();
       }catch(e){}
     }, 1000);
@@ -14170,14 +14188,18 @@ try{
     }
   }
 
-  // === 各フロアのエレベーター緑ボタン ===
-  function createElevatorButton(roomId, roomEl){
-    if(!roomEl) return;
-    if(roomEl.querySelector('.elevator-green-btn')) return;
+  // === controls-r 内のエレベーター緑ボタン（talk-btnの左に配置） ===
+  var ELEVATOR_ROOMS = {3:'room-corridor1', 4:'room-corridor2', 12:'room-basement'};
+
+  function createElevatorButtonInControls(){
+    var cr = document.querySelector('.controls-r');
+    if(!cr) return;
+    if(document.getElementById('elevator-green-btn')) return;
 
     var btn = document.createElement('div');
+    btn.id = 'elevator-green-btn';
     btn.className = 'act-btn talk-btn elevator-green-btn';
-    btn.style.cssText = 'position:absolute;bottom:3%;left:3%;z-index:210;height:15%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;background:radial-gradient(circle, rgba(0,200,80,0.55), rgba(0,120,60,0.85));border:0.3vmin solid #fff;border-radius:50%;box-shadow:0 0.5vmin 1vmin rgba(0,0,0,0.5);pointer-events:auto;';
+    btn.style.cssText = 'display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;';
     var img = document.createElement('img');
     img.src = ELEV_IMG;
     img.style.cssText = 'width:70%;height:70%;object-fit:contain;pointer-events:none;';
@@ -14188,9 +14210,13 @@ try{
       ev.stopPropagation();
       try{ if(window.isPaused) return; }catch(e){}
 
+      // 現在のルームを取得
+      var roomId = null;
+      try{ roomId = ELEVATOR_ROOMS[state.room] || null; }catch(e){}
+      if(!roomId) return;
+
       // 反応箇所チェック
       if(hasReactionInRoom(roomId)){
-        // 反応箇所あり → 爆発END
         playElevatorSE();
         setTimeout(function(){
           try{ if(typeof window.badEnd==='function') window.badEnd('臭気や反応がある箇所で火気や電気スイッチは使用しない。'); }catch(e){}
@@ -14210,28 +14236,34 @@ try{
       btn.click();
     }, {passive:false});
 
-    roomEl.appendChild(btn);
+    // talk-btn の前に挿入（青ボタンの左側）
+    var talkBtn = document.getElementById('talk-btn');
+    if(talkBtn) cr.insertBefore(btn, talkBtn);
+    else cr.insertBefore(btn, cr.firstChild);
   }
 
-  function setupFloorButtons(){
-    // 1F共用部
-    var c1 = document.getElementById('room-corridor1');
-    if(c1) createElevatorButton('room-corridor1', c1);
-    // 2F共用部
-    var c2 = document.getElementById('room-corridor2');
-    if(c2) createElevatorButton('room-corridor2', c2);
-    // 地下街
-    var bm = document.getElementById('room-basement');
-    if(bm) createElevatorButton('room-basement', bm);
+  function updateElevatorButtonVisibility(){
+    var btn = document.getElementById('elevator-green-btn');
+    if(!btn) return;
+    try{
+      var rm = state.room;
+      if(rm===3 || rm===4 || rm===12){
+        btn.style.display = 'flex';
+      } else {
+        btn.style.display = 'none';
+      }
+    }catch(e){ btn.style.display = 'none'; }
   }
 
   document.addEventListener('DOMContentLoaded', function(){
     bindEntrance();
-    setupFloorButtons();
+    createElevatorButtonInControls();
+    updateElevatorButtonVisibility();
     setInterval(function(){
       bindEntrance();
-      setupFloorButtons();
-    }, 1000);
+      createElevatorButtonInControls();
+      updateElevatorButtonVisibility();
+    }, 300);
   });
 })();
 </script>
@@ -17474,8 +17506,7 @@ window._tantouGenerateReply = function(rawText){
 </script>
 
 <script id="odor-meter-ecg">
-// === 臭気メーター（心電図）===
-// プレイヤーの頭上に常に表示。反応箇所に近づくと波が大きくなる。
+// === 臭気メーター（心電図） - 危険度パネルの下に表示 ===
 (function(){
   var canvas = document.getElementById('odor-ecg-canvas');
   if(!canvas) return;
@@ -17484,10 +17515,23 @@ window._tantouGenerateReply = function(rawText){
   var ecgData = [];
   for(var i=0;i<W;i++) ecgData.push(H/2);
   var ecgIndex = 0;
-  var _ecgAmplitude = 0.15; // 基本振幅（0-1）
+  var _ecgAmplitude = 0.15;
+  var _lastNoseLevel = 0; // 0=静止, 1=ゆっくり揺れ, 2=素早く揺れ
+
+  // 危険度パネルの下に配置
+  function positionOdorPanel(){
+    try{
+      var dp = document.getElementById('danger-panel');
+      var op = document.getElementById('odor-meter-panel');
+      if(!dp || !op) return;
+      var dpRect = dp.getBoundingClientRect();
+      var appRect = document.getElementById('app-container').getBoundingClientRect();
+      var topPos = (dpRect.bottom - appRect.top);
+      op.style.top = topPos + 'px';
+    }catch(e){}
+  }
 
   function getPlayerProximityToReaction(){
-    // プレイヤーの位置と反応箇所の距離から近接度を返す（0-1）
     try{
       if(typeof isPaused!=='undefined' && isPaused) return 0;
       var playerEl = document.getElementById('player');
@@ -17499,7 +17543,6 @@ window._tantouGenerateReply = function(rawText){
       var px = (pR.left + pR.width/2) - appR.left;
       var py = (pR.top + pR.height/2) - appR.top;
       var bestProx = 0;
-
       function checkHS(hs, vented){
         if(!hs || !hs.rect) return 0;
         if(vented) return 0;
@@ -17509,10 +17552,8 @@ window._tantouGenerateReply = function(rawText){
         var hcy = hs.rect.y + hs.rect.h/2;
         var dist = Math.sqrt((px-hcx)*(px-hcx)+(py-hcy)*(py-hcy));
         var maxDist = Math.max(appR.width, appR.height) * 0.5;
-        var prox = Math.max(0, 1 - dist/maxDist);
-        return prox;
+        return Math.max(0, 1 - dist/maxDist);
       }
-
       if(typeof hotspot1!=='undefined') bestProx = Math.max(bestProx, checkHS(hotspot1, window._hs1Vented));
       if(typeof hotspot2!=='undefined') bestProx = Math.max(bestProx, checkHS(hotspot2, window._hs2Vented));
       if(typeof hotspot3!=='undefined') bestProx = Math.max(bestProx, checkHS(hotspot3, false));
@@ -17523,28 +17564,51 @@ window._tantouGenerateReply = function(rawText){
   function updateECG(){
     try{
       var prox = getPlayerProximityToReaction();
-      // 振幅を近接度に応じて調整（0.15〜0.9）
       var targetAmp = 0.15 + prox * 0.75;
-      _ecgAmplitude += (targetAmp - _ecgAmplitude) * 0.1; // スムーズに遷移
+      _ecgAmplitude += (targetAmp - _ecgAmplitude) * 0.1;
+
+      // 色とレベル判定: 小さい=水色, 中=オレンジ, 大=赤
+      var strokeColor, noseLevel;
+      if(_ecgAmplitude < 0.35){
+        strokeColor = '#00e5ff'; noseLevel = 0; // 水色、静止
+      } else if(_ecgAmplitude < 0.6){
+        strokeColor = '#ff9800'; noseLevel = 1; // オレンジ、ゆっくり揺れ
+      } else {
+        strokeColor = '#ff1744'; noseLevel = 2; // 赤、素早く揺れ
+      }
+
+      // 鼻アイコンのアニメーション更新
+      if(noseLevel !== _lastNoseLevel){
+        _lastNoseLevel = noseLevel;
+        var nose = document.getElementById('odor-nose-icon');
+        if(nose){
+          if(noseLevel === 0){
+            nose.style.animation = 'none';
+          } else if(noseLevel === 1){
+            nose.style.animation = 'nose-shake-slow 1s infinite ease-in-out';
+          } else {
+            nose.style.animation = 'nose-shake-fast 0.3s infinite ease-in-out';
+          }
+        }
+      }
 
       // ECGパターン生成
       var amp = _ecgAmplitude * (H/2 * 0.85);
       var phase = ecgIndex % 30;
       var val = H/2;
       if(phase===10) val = H/2 - amp*0.3;
-      else if(phase===12) val = H/2 - amp*1.0; // R波（メインピーク）
+      else if(phase===12) val = H/2 - amp*1.0;
       else if(phase===14) val = H/2 + amp*0.4;
       else if(phase===16) val = H/2 - amp*0.15;
       else val = H/2 + (Math.random()-0.5)*amp*0.08;
-
       ecgData[ecgIndex % W] = val;
       ecgIndex++;
 
       // 描画
       ctx.fillStyle = 'rgba(0,0,0,0.85)';
       ctx.fillRect(0,0,W,H);
-      ctx.strokeStyle = '#0f0';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
       for(var i=0;i<W;i++){
         var idx = (ecgIndex + i) % W;
@@ -17552,34 +17616,29 @@ window._tantouGenerateReply = function(rawText){
         else ctx.lineTo(i, ecgData[idx]);
       }
       ctx.stroke();
-
-      // 現在位置マーカー
+      // マーカー
       var curIdx = (ecgIndex-1) % W;
-      var curX = W - 1;
-      ctx.fillStyle = '#0f0';
+      ctx.fillStyle = strokeColor;
       ctx.beginPath();
-      ctx.arc(curX, ecgData[curIdx], 1.5, 0, Math.PI*2);
+      ctx.arc(W-1, ecgData[curIdx], 2, 0, Math.PI*2);
       ctx.fill();
     }catch(e){}
   }
 
-  // 50msごとに更新（20fps）
   setInterval(updateECG, 50);
+  setInterval(positionOdorPanel, 300);
+  positionOdorPanel();
 
-  // プレイヤー非表示時は臭気メーターも非表示にする
-  var odorMeter = document.getElementById('odor-meter');
-  if(odorMeter){
-    setInterval(function(){
-      try{
-        var player = document.getElementById('player');
-        if(player && player.style.display==='none'){
-          odorMeter.style.display='none';
-        }else{
-          odorMeter.style.display='flex';
-        }
-      }catch(e){}
-    }, 200);
-  }
+  // プレイヤー非表示時は臭気メーターパネルも非表示
+  setInterval(function(){
+    try{
+      var panel = document.getElementById('odor-meter-panel');
+      var player = document.getElementById('player');
+      if(panel){
+        panel.style.display = (player && player.style.display==='none') ? 'none' : 'flex';
+      }
+    }catch(e){}
+  }, 200);
 })();
 </script>
 
