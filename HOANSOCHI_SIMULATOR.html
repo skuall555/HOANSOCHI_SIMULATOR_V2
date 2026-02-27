@@ -16532,4 +16532,572 @@ window._tantouGenerateReply = function(rawText){
 })();
 </script>
 
+
+<script>
+// ============================================================
+// 🎥 録画システム (Recording System v1.0)
+// ============================================================
+(function(){
+  'use strict';
+
+  // ─── 定数 ─────────────────────────────────────────────────
+  var DB_NAME  = 'gasGameRecDB';
+  var DB_VER   = 1;
+  var STORE    = 'recs';
+  var MAX_RECS = 20;
+
+  // ─── 状態 ─────────────────────────────────────────────────
+  var _db        = null;
+  var _mr        = null;      // MediaRecorder
+  var _chunks    = [];
+  var _stream    = null;
+  var _recStart  = null;      // Date.now() at recording start
+  var _isRec     = false;
+  var _recMeta   = null;      // {scenarioNo, scenarioName, difficulty}
+  var _knownCards= {};        // id → true (polled set)
+
+  // ─── IndexedDB ────────────────────────────────────────────
+  function openDB(){
+    return new Promise(function(res,rej){
+      if(_db){res(_db);return;}
+      var req=indexedDB.open(DB_NAME,DB_VER);
+      req.onupgradeneeded=function(e){
+        var d=e.target.result;
+        if(!d.objectStoreNames.contains(STORE)){
+          var st=d.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});
+          st.createIndex('sno','sno',{unique:false});
+        }
+      };
+      req.onsuccess=function(e){_db=e.target.result;res(_db);};
+      req.onerror  =function(e){rej(e.target.error);};
+    });
+  }
+  function dbGetAll(){
+    return openDB().then(function(d){
+      return new Promise(function(res,rej){
+        var req=d.transaction(STORE,'readonly').objectStore(STORE).getAll();
+        req.onsuccess=function(){
+          var a=(req.result||[]).slice().sort(function(a,b){
+            return new Date(b.startAt)-new Date(a.startAt);
+          });
+          res(a);
+        };
+        req.onerror=function(){rej(req.error);};
+      });
+    });
+  }
+  function dbGet(id){
+    return openDB().then(function(d){
+      return new Promise(function(res,rej){
+        var req=d.transaction(STORE,'readonly').objectStore(STORE).get(id);
+        req.onsuccess=function(){res(req.result);};
+        req.onerror =function(){rej(req.error);};
+      });
+    });
+  }
+  function dbAdd(rec){
+    return openDB().then(function(d){
+      return new Promise(function(res,rej){
+        var req=d.transaction(STORE,'readwrite').objectStore(STORE).add(rec);
+        req.onsuccess=function(){res(req.result);};
+        req.onerror =function(){rej(req.error);};
+      });
+    });
+  }
+  function dbPut(rec){
+    return openDB().then(function(d){
+      return new Promise(function(res,rej){
+        var req=d.transaction(STORE,'readwrite').objectStore(STORE).put(rec);
+        req.onsuccess=function(){res(req.result);};
+        req.onerror =function(){rej(req.error);};
+      });
+    });
+  }
+  function dbDel(id){
+    return openDB().then(function(d){
+      return new Promise(function(res,rej){
+        var req=d.transaction(STORE,'readwrite').objectStore(STORE).delete(id);
+        req.onsuccess=function(){res();};
+        req.onerror =function(){rej(req.error);};
+      });
+    });
+  }
+
+  // ─── 古い録画を自動削除（ブックマーク除く）────────────────
+  function pruneOldest(){
+    return dbGetAll().then(function(all){
+      if(all.length<MAX_RECS) return;
+      var nonBk=all.filter(function(r){return !r.bookmarked;});
+      var excess=all.length-MAX_RECS+1;
+      var toKill=nonBk.slice(nonBk.length-excess);
+      return toKill.reduce(function(p,r){return p.then(function(){return dbDel(r.id);});},Promise.resolve());
+    });
+  }
+
+  // ─── UI ユーティリティ ────────────────────────────────────
+  function esc(s){
+    if(typeof _esc==='function') return _esc(s);
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function fmtDur(sec){
+    if(!sec||isNaN(sec)) return '--';
+    return Math.floor(sec/60)+'分'+String(Math.floor(sec%60)).padStart(2,'0')+'秒';
+  }
+  function fmtTime(sec){
+    return Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
+  }
+  function toast(msg,col){
+    var t=document.createElement('div');
+    t.style.cssText='position:fixed;bottom:5vmin;left:50%;transform:translateX(-50%);background:'+(col||'rgba(0,0,0,0.88)')+';color:#fff;padding:1.2vmin 2.5vmin;border-radius:1vmin;font-size:1.8vmin;font-family:sans-serif;z-index:299999;pointer-events:none;white-space:nowrap;box-shadow:0 0.5vmin 2vmin rgba(0,0,0,0.5);';
+    t.textContent=msg;
+    document.body.appendChild(t);
+    setTimeout(function(){t.remove();},3500);
+  }
+  function mkBtn(txt,bg,fs){
+    var b=document.createElement('button');
+    b.textContent=txt;
+    b.style.cssText='padding:0.5vmin 1.2vmin;background:'+bg+';color:#fff;border:none;border-radius:0.5vmin;font-size:'+(fs||'1.5vmin')+';cursor:pointer;white-space:nowrap;';
+    return b;
+  }
+
+  // ─── REC インジケーター ───────────────────────────────────
+  function showRecInd(){
+    var el=document.getElementById('_recInd_');
+    if(!el){
+      el=document.createElement('div');
+      el.id='_recInd_';
+      el.style.cssText='position:fixed;top:1vmin;left:50%;transform:translateX(-50%);z-index:299999;display:flex;align-items:center;gap:0.5vmin;background:rgba(0,0,0,0.78);color:#fff;padding:0.5vmin 1.3vmin;border-radius:2vmin;font-size:1.5vmin;font-family:sans-serif;pointer-events:none;border:0.15vmin solid rgba(244,67,54,0.7);';
+      el.innerHTML='<span style="width:1vmin;height:1vmin;background:#f44336;border-radius:50%;animation:recBl 1s infinite;display:inline-block;flex-shrink:0;"></span><span style="margin-left:0.3vmin;">REC</span>';
+      document.body.appendChild(el);
+    }
+    el.style.display='flex';
+  }
+  function hideRecInd(){
+    var el=document.getElementById('_recInd_');
+    if(el) el.style.display='none';
+  }
+
+  // ─── 録画開始 ─────────────────────────────────────────────
+  function startRec(meta){
+    if(_isRec) return Promise.resolve(false);
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){
+      toast('このブラウザは画面録画に対応していません');
+      return Promise.resolve(false);
+    }
+    return navigator.mediaDevices.getDisplayMedia({
+      video:{frameRate:{ideal:30,max:30},width:{ideal:1280},height:{ideal:720}},
+      audio:{echoCancellation:false,noiseSuppression:false,sampleRate:44100}
+    }).then(function(stream){
+      _stream   =stream;
+      _chunks   =[];
+      _recStart =Date.now();
+      _isRec    =true;
+      _recMeta  =meta;
+      _knownCards={};
+      window._recCardEvents=[];
+      // 開始時点で所持済みカードを記録（差分追跡用）
+      try{
+        var ow=window.__getOwnedCardIds ? window.__getOwnedCardIds() : [];
+        ow.forEach(function(id){_knownCards[id]=true;});
+      }catch(e){}
+      var mime=(MediaRecorder.isTypeSupported('video/webm;codecs=vp9')?'video/webm;codecs=vp9'
+               :MediaRecorder.isTypeSupported('video/webm;codecs=vp8')?'video/webm;codecs=vp8'
+               :'video/webm');
+      _mr=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:500000});
+      _mr.ondataavailable=function(e){if(e.data&&e.data.size>0)_chunks.push(e.data);};
+      _mr.onstop=onRecStop;
+      _mr.start(1000);
+      stream.getVideoTracks()[0].onended=function(){if(_isRec)stopRec();};
+      showRecInd();
+      return true;
+    }).catch(function(e){
+      console.log('録画キャンセル:',e.message);
+      return false;
+    });
+  }
+
+  // ─── 録画停止 ─────────────────────────────────────────────
+  function stopRec(){
+    if(!_isRec||!_mr) return;
+    _isRec=false;
+    try{_mr.stop();}catch(e){}
+    try{_stream.getTracks().forEach(function(t){t.stop();});}catch(e){}
+    hideRecInd();
+  }
+
+  // ─── 録画保存 ─────────────────────────────────────────────
+  function onRecStop(){
+    var blob=new Blob(_chunks,{type:_mr?_mr.mimeType:'video/webm'});
+    var dur=_recMeta&&_recMeta._endTime ? (_recMeta._endTime-_recStart)/1000 : (Date.now()-_recStart)/1000;
+    var meta=_recMeta||{};
+    var rec={
+      sno     :meta.scenarioNo||null,
+      sname   :meta.scenarioName||'',
+      diff    :meta.difficulty||'',
+      startAt :new Date(_recStart).toISOString(),
+      duration:dur,
+      blob    :blob,
+      bookmarked:false,
+      cards   :window._recCardEvents||[]
+    };
+    pruneOldest().then(function(){return dbAdd(rec);}).then(function(){
+      toast('🎥 録画を保存しました（'+fmtDur(dur)+'）','rgba(21,101,192,0.92)');
+    }).catch(function(e){
+      console.error('録画保存エラー:',e);
+      toast('録画の保存に失敗しました（容量不足の可能性）','rgba(198,40,40,0.92)');
+    });
+    _chunks=[]; _stream=null; _mr=null; _recMeta=null;
+  }
+
+  // ─── カードポーリング ─────────────────────────────────────
+  setInterval(function(){
+    if(!_isRec||!_recStart) return;
+    try{
+      var ow=window.__getOwnedCardIds ? window.__getOwnedCardIds() : [];
+      ow.forEach(function(id){
+        if(!_knownCards[id]){
+          _knownCards[id]=true;
+          var name=String(id).replace('カード_','');
+          var off=(Date.now()-_recStart)/1000;
+          if(!window._recCardEvents) window._recCardEvents=[];
+          window._recCardEvents.push({id:id,name:name,tsOffset:off});
+        }
+      });
+    }catch(e){}
+  },300);
+
+  // ─── 録画プロンプト ───────────────────────────────────────
+  function showRecPrompt(onRec,onSkip){
+    var ov=document.createElement('div');
+    ov.id='_recPrompt_';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.83);z-index:299999;display:flex;align-items:center;justify-content:center;font-family:sans-serif;';
+    ov.innerHTML='<div style="background:#1a2744;border:0.3vmin solid #42a5f5;border-radius:2vmin;padding:3vmin 4vmin;max-width:62vmin;min-width:36vmin;text-align:center;color:#fff;box-shadow:0 1vmin 3vmin rgba(0,0,0,0.7);">'
+      +'<div style="font-size:3.5vmin;margin-bottom:1.5vmin;">🎥 録画設定</div>'
+      +'<div style="font-size:1.8vmin;color:#b0bec5;margin-bottom:2.5vmin;line-height:1.85;">このプレイを録画しますか？<br>'
+      +'「録画して開始」を押すと<b style="color:#fff;">画面共有ダイアログ</b>が開きます。<br>'
+      +'<span style="color:#64b5f6;font-size:1.5vmin;">「タブ」を選択し、このタブを共有してください。</span><br>'
+      +'<span style="color:#78909c;font-size:1.3vmin;">録画はIndexedDBに最大'+MAX_RECS+'件保存されます。</span></div>'
+      +'<div style="display:flex;gap:1.5vmin;justify-content:center;flex-wrap:wrap;">'
+      +'<button id="_recGo_" style="padding:1.2vmin 2.8vmin;background:linear-gradient(135deg,#e53935,#b71c1c);color:#fff;border:none;border-radius:0.8vmin;font-size:1.9vmin;font-weight:bold;cursor:pointer;box-shadow:0 0.3vmin 1vmin rgba(229,57,53,0.5);">🎥 録画して開始</button>'
+      +'<button id="_recSkip_" style="padding:1.2vmin 2.8vmin;background:#37474f;color:#fff;border:none;border-radius:0.8vmin;font-size:1.9vmin;cursor:pointer;">録画なしで開始</button>'
+      +'</div></div>';
+    document.body.appendChild(ov);
+    document.getElementById('_recGo_').onclick=function(){ov.remove();onRec();};
+    document.getElementById('_recSkip_').onclick=function(){ov.remove();onSkip();};
+  }
+
+  // ─── 録画一覧モーダル ─────────────────────────────────────
+  function showRecList(sno,sname){
+    dbGetAll().then(function(all){
+      var recs=all.filter(function(r){return r.sno===sno;});
+      var listHtml='';
+      if(recs.length===0){
+        listHtml='<div style="color:#90caf9;font-size:2vmin;padding:3vmin;text-align:center;">このシナリオの録画はありません。</div>';
+      }else{
+        for(var i=0;i<recs.length;i++){
+          var r=recs[i];
+          var dt=new Date(r.startAt).toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+          var bkC=r.bookmarked?'#ffd700':'#90a4ae';
+          var bkI=r.bookmarked?'⭐':'☆';
+          var bkB=r.bookmarked?'0.2vmin solid rgba(255,215,0,0.6)':'0.2vmin solid rgba(100,181,246,0.2)';
+          var cardInfo=(r.cards&&r.cards.length>0)?'　🃏 '+r.cards.length+'枚':'';
+          listHtml+='<div id="_rRow_'+r.id+'" style="padding:1.2vmin 1.5vmin;margin-bottom:0.8vmin;background:rgba(255,255,255,0.07);border:'+bkB+';border-radius:0.8vmin;display:flex;align-items:center;gap:0.8vmin;flex-wrap:wrap;">'
+            +'<div style="flex:1;min-width:0;">'
+            +'<div style="font-size:1.8vmin;color:#e3f2fd;font-weight:bold;">'+esc(dt)+'</div>'
+            +'<div style="font-size:1.4vmin;color:#90caf9;">⏱ '+fmtDur(r.duration)+(r.bookmarked?'　⭐ブックマーク':'')+cardInfo+'</div>'
+            +'</div>'
+            +'<button onclick="window._rPlay('+r.id+')" style="padding:0.5vmin 1.5vmin;background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border:none;border-radius:0.5vmin;font-size:1.5vmin;cursor:pointer;font-weight:bold;white-space:nowrap;">▶ 再生</button>'
+            +'<button onclick="window._rBk('+r.id+')" style="padding:0.5vmin 1.2vmin;background:#263238;color:'+bkC+';border:0.15vmin solid #546e7a;border-radius:0.5vmin;font-size:1.8vmin;cursor:pointer;" title="ブックマーク">'+bkI+'</button>'
+            +'<button onclick="window._rDl('+r.id+')" style="padding:0.5vmin 1.2vmin;background:#00695c;color:#fff;border:none;border-radius:0.5vmin;font-size:1.5vmin;cursor:pointer;white-space:nowrap;" title="端末に保存">💾 保存</button>'
+            +'<button onclick="window._rDel('+r.id+')" style="padding:0.5vmin 1.2vmin;background:#c62828;color:#fff;border:none;border-radius:0.5vmin;font-size:1.5vmin;cursor:pointer;" title="削除">🗑</button>'
+            +'</div>';
+        }
+      }
+      var ov=document.createElement('div');
+      ov.id='_recList_';
+      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:199991;display:flex;align-items:center;justify-content:center;font-family:sans-serif;';
+      ov.innerHTML='<div style="width:min(94vmin,98%);max-height:92vh;background:linear-gradient(145deg,#0a1628,#0d1f3a);border:0.3vmin solid #42a5f5;border-radius:2vmin;display:flex;flex-direction:column;overflow:hidden;">'
+        +'<div style="background:linear-gradient(90deg,#1565c0,#283593);padding:1.5vmin 2vmin;display:flex;align-items:center;gap:1vmin;flex-shrink:0;">'
+        +'<div style="flex:1;font-size:2.2vmin;font-weight:bold;color:#fff;">🎥 録画一覧　'+esc(sname?'No.'+sno+'　'+sname:'No.'+sno)+'</div>'
+        +'<div style="font-size:1.4vmin;color:#90caf9;">'+recs.length+'件 ／ 最大'+MAX_RECS+'件（⭐除く）</div>'
+        +'<button onclick="document.getElementById(\'_recList_\').remove()" style="width:3.5vmin;height:3.5vmin;background:#37474f;color:#fff;border:none;border-radius:50%;font-size:2vmin;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">×</button>'
+        +'</div>'
+        +'<div style="flex:1;overflow-y:auto;padding:1.5vmin 2vmin;">'+listHtml+'</div>'
+        +'</div>';
+      document.body.appendChild(ov);
+    }).catch(function(e){toast('録画一覧の取得に失敗しました');});
+  }
+
+  // ─── 再生モーダル ─────────────────────────────────────────
+  function playRec(id){
+    dbGet(id).then(function(rec){
+      if(!rec||!rec.blob){toast('録画データが見つかりません');return;}
+      var url=URL.createObjectURL(rec.blob);
+      var ov=document.createElement('div');
+      ov.id='_recPlayer_';
+      ov.style.cssText='position:fixed;inset:0;background:#000;z-index:299990;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;';
+
+      // タイトルカード（冒頭3秒）
+      var dt=new Date(rec.startAt).toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      var tc=document.createElement('div');
+      tc.style.cssText='position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;color:#fff;z-index:3;transition:opacity 0.6s;';
+      tc.innerHTML='<div style="max-width:65%;text-align:center;line-height:1.8;">'
+        +'<div style="font-size:1.5vmin;color:#aaa;">プレイ開始日時</div>'
+        +'<div style="font-size:3vmin;font-weight:bold;margin-bottom:2vmin;">'+esc(dt)+'</div>'
+        +'<div style="font-size:1.5vmin;color:#aaa;">シナリオNo.</div>'
+        +'<div style="font-size:2.8vmin;font-weight:bold;">No.'+(rec.sno||'-')+'</div>'
+        +'<div style="font-size:1.5vmin;color:#aaa;margin-top:1.5vmin;">難易度</div>'
+        +'<div style="font-size:2.5vmin;font-weight:bold;margin-bottom:0.5vmin;">'+esc(rec.diff||'-')+'</div>'
+        +'<div style="font-size:1.5vmin;color:#aaa;">シナリオ名</div>'
+        +'<div style="font-size:2.5vmin;font-weight:bold;">'+esc(rec.sname||'(名称未設定)')+'</div>'
+        +'</div>';
+
+      var vid=document.createElement('video');
+      vid.src=url;
+      vid.style.cssText='max-width:100%;max-height:calc(100vh - 8vmin);display:block;opacity:0;transition:opacity 0.5s;';
+      vid.preload='auto';
+
+      // コントロールバー
+      var cb=document.createElement('div');
+      cb.style.cssText='position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.88);padding:1vmin 1.5vmin;display:flex;align-items:center;gap:0.8vmin;z-index:4;flex-wrap:wrap;';
+
+      var playBtn=mkBtn('⏸','#333','2vmin');
+      var seekBar=document.createElement('input');
+      seekBar.type='range'; seekBar.min=0; seekBar.max=1000; seekBar.value=0;
+      seekBar.style.cssText='flex:1;cursor:pointer;min-width:5vmin;accent-color:#42a5f5;';
+      var timeLbl=document.createElement('span');
+      timeLbl.style.cssText='color:#fff;font-size:1.5vmin;white-space:nowrap;font-family:monospace;';
+      timeLbl.textContent='0:00 / 0:00';
+
+      var cardBtn=null;
+      if(rec.cards&&rec.cards.length>0){
+        cardBtn=mkBtn('🃏 カード('+rec.cards.length+')','#1565c0');
+      }
+      var dlBtn   =mkBtn('💾 端末に保存','#00695c');
+      var closeBtn=mkBtn('✕ 閉じる','#37474f');
+
+      cb.appendChild(playBtn);
+      cb.appendChild(seekBar);
+      cb.appendChild(timeLbl);
+      if(cardBtn) cb.appendChild(cardBtn);
+      cb.appendChild(dlBtn);
+      cb.appendChild(closeBtn);
+
+      ov.appendChild(tc);
+      ov.appendChild(vid);
+      ov.appendChild(cb);
+      document.body.appendChild(ov);
+
+      // タイトルカード → 動画へ遷移（3秒後）
+      setTimeout(function(){
+        tc.style.opacity='0';
+        setTimeout(function(){
+          tc.style.display='none';
+          vid.style.opacity='1';
+          vid.play().catch(function(){});
+          playBtn.textContent='⏸';
+        },600);
+      },3000);
+
+      // 再生操作
+      playBtn.onclick=function(){
+        if(tc.style.display!=='none') return;
+        if(vid.paused){vid.play();playBtn.textContent='⏸';}
+        else{vid.pause();playBtn.textContent='▶';}
+      };
+      vid.onplay =function(){playBtn.textContent='⏸';};
+      vid.onpause=function(){playBtn.textContent='▶';};
+      vid.ontimeupdate=function(){
+        if(vid.duration){
+          seekBar.value=(vid.currentTime/vid.duration)*1000;
+          timeLbl.textContent=fmtTime(vid.currentTime)+' / '+fmtTime(vid.duration);
+        }
+      };
+      seekBar.oninput=function(){
+        if(vid.duration) vid.currentTime=(seekBar.value/1000)*vid.duration;
+      };
+      dlBtn.onclick=function(){dlRecObj(rec);};
+      closeBtn.onclick=function(){
+        vid.pause();
+        URL.revokeObjectURL(url);
+        ov.remove();
+      };
+      if(cardBtn) cardBtn.onclick=function(){toggleCardPanel(rec.cards,vid,ov);};
+    }).catch(function(){toast('再生エラーが発生しました');});
+  }
+
+  // ─── カードスキップパネル ─────────────────────────────────
+  function toggleCardPanel(cards,vid,container){
+    var p=document.getElementById('_rCards_');
+    if(p){p.remove();return;}
+    p=document.createElement('div');
+    p.id='_rCards_';
+    p.style.cssText='position:absolute;right:2vmin;top:2vmin;bottom:9vmin;background:rgba(10,22,40,0.97);border:0.2vmin solid #42a5f5;border-radius:1vmin;padding:1.5vmin;min-width:22vmin;max-width:32vmin;overflow-y:auto;z-index:5;font-family:sans-serif;';
+    var h='<div style="font-size:1.8vmin;font-weight:bold;color:#e3f2fd;margin-bottom:1vmin;">🃏 取得カード一覧</div>';
+    for(var i=0;i<cards.length;i++){
+      var c=cards[i];
+      h+='<div onclick="window._rSeek('+c.tsOffset+')" style="padding:0.8vmin 1vmin;margin-bottom:0.4vmin;background:rgba(255,255,255,0.07);border-radius:0.5vmin;cursor:pointer;display:flex;align-items:center;gap:0.8vmin;" onmouseover="this.style.background=\'rgba(66,165,245,0.22)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.07)\'">'
+        +'<span style="font-size:1.3vmin;color:#64b5f6;white-space:nowrap;">'+fmtTime(c.tsOffset)+'</span>'
+        +'<span style="font-size:1.5vmin;color:#e3f2fd;">'+esc(c.name||c.id)+'</span>'
+        +'</div>';
+    }
+    p.innerHTML=h;
+    container.appendChild(p);
+    window._rSeek=function(offset){vid.currentTime=offset;vid.play().catch(function(){});};
+  }
+
+  // ─── ダウンロード ─────────────────────────────────────────
+  function dlRecObj(rec){
+    var url=URL.createObjectURL(rec.blob);
+    var d=new Date(rec.startAt);
+    var pad=function(n){return String(n).padStart(2,'0');};
+    var fname='シナリオ'+(rec.sno||'?')+'_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'_'+pad(d.getHours())+pad(d.getMinutes())+'.webm';
+    var a=document.createElement('a');
+    a.href=url; a.download=fname; a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);},30000);
+  }
+  function dlRecById(id){dbGet(id).then(function(r){if(r)dlRecObj(r);});}
+
+  // ─── グローバルコールバック（inline onclickで使用）────────
+  window._rPlay=function(id){playRec(id);};
+  window._rBk=function(id){
+    dbGet(id).then(function(rec){
+      if(!rec) return;
+      rec.bookmarked=!rec.bookmarked;
+      return dbPut(rec).then(function(){
+        var btn=document.querySelector('#_rRow_'+id+' button[onclick*="_rBk"]');
+        if(btn){btn.style.color=rec.bookmarked?'#ffd700':'#90a4ae';btn.textContent=rec.bookmarked?'⭐':'☆';}
+        var row=document.getElementById('_rRow_'+id);
+        if(row) row.style.borderColor='rgba('+(rec.bookmarked?'255,215,0,0.6':'100,181,246,0.2')+')';
+        toast(rec.bookmarked?'⭐ ブックマークしました':'ブックマークを解除しました');
+      });
+    });
+  };
+  window._rDl=function(id){dlRecById(id);};
+  window._rDel=function(id){
+    if(!confirm('この録画を削除しますか？')) return;
+    dbDel(id).then(function(){
+      var row=document.getElementById('_rRow_'+id);
+      if(row){row.style.transition='opacity 0.3s';row.style.opacity='0';setTimeout(function(){row.remove();},320);}
+      toast('削除しました');
+    });
+  };
+  window._showRecList=function(sno,sname){showRecList(sno,sname);};
+
+  // ─── 履歴画面に録画ボタンを追加 ──────────────────────────
+  function addRecBtns(){
+    dbGetAll().then(function(all){
+      var map={};
+      all.forEach(function(r){
+        if(r.sno==null) return;
+        if(!map[r.sno]) map[r.sno]={cnt:0,sname:r.sname};
+        map[r.sno].cnt++;
+      });
+      var box=document.getElementById('history-stats');
+      if(!box) return;
+      var btns=box.querySelectorAll('button[onclick*="challengeScenarioFromHistory"]');
+      btns.forEach(function(btn){
+        if(btn.previousElementSibling&&btn.previousElementSibling.className==='_rHBtn_') return;
+        var oc=btn.getAttribute('onclick')||'';
+        var m=oc.match(/challengeScenarioFromHistory\((\d+)\)/);
+        if(!m) return;
+        var sno=parseInt(m[1])+1;
+        if(!map[sno]) return;
+        var rb=document.createElement('button');
+        rb.className='_rHBtn_';
+        rb.textContent='🎥 録画('+map[sno].cnt+')';
+        rb.style.cssText='padding:0.5vmin 1.5vmin;font-size:1.5vmin;background:linear-gradient(135deg,#b71c1c,#c62828);color:#fff;border:none;border-radius:0.5vmin;cursor:pointer;white-space:nowrap;font-weight:bold;margin-right:0.5vmin;';
+        rb.onclick=function(e){e.stopPropagation();window._showRecList(sno,map[sno].sname);};
+        btn.parentElement.insertBefore(rb,btn);
+      });
+    }).catch(function(){});
+  }
+
+  // ─── ゲーム関数フック ─────────────────────────────────────
+  function hookAll(){
+    // nextFromCall をフック（実際のゲーム開始ポイント）
+    if(typeof window.nextFromCall==='function'&&!window.nextFromCall.__recH){
+      var origNFC=window.nextFromCall;
+      window.nextFromCall=function(){
+        var sc=(typeof activeScenario!=='undefined')?activeScenario:null;
+        var no=(typeof selectedScenarioIdx!=='undefined'&&selectedScenarioIdx!==null)?(selectedScenarioIdx+1):null;
+        var meta={scenarioNo:no,scenarioName:sc?(sc.name||''):'',difficulty:sc?(sc.difficulty||''):''};
+        showRecPrompt(
+          function(){ // 録画して開始
+            startRec(meta).then(function(){origNFC.call(window);});
+          },
+          function(){ // 録画なしで開始
+            origNFC.call(window);
+          }
+        );
+      };
+      window.nextFromCall.__recH=true;
+    }
+
+    // completeSafetyMeasures（クリア時）
+    if(typeof window.completeSafetyMeasures==='function'&&!window.completeSafetyMeasures.__recH){
+      var origCSM=window.completeSafetyMeasures;
+      window.completeSafetyMeasures=function(){
+        if(_isRec&&_recMeta) _recMeta._endTime=Date.now();
+        if(_isRec) setTimeout(stopRec,800);
+        return origCSM.apply(this,arguments);
+      };
+      window.completeSafetyMeasures.__recH=true;
+    }
+
+    // gameOver（爆発）
+    if(typeof window.gameOver==='function'&&!window.gameOver.__recH){
+      var origGO=window.gameOver;
+      window.gameOver=function(){
+        if(_isRec&&_recMeta) _recMeta._endTime=Date.now();
+        if(_isRec) setTimeout(stopRec,1800);
+        return origGO.apply(this,arguments);
+      };
+      window.gameOver.__recH=true;
+    }
+
+    // badEnd（失敗）
+    if(typeof window.badEnd==='function'&&!window.badEnd.__recH){
+      var origBE=window.badEnd;
+      window.badEnd=function(){
+        if(_isRec&&_recMeta) _recMeta._endTime=Date.now();
+        if(_isRec) setTimeout(stopRec,1800);
+        return origBE.apply(this,arguments);
+      };
+      window.badEnd.__recH=true;
+    }
+
+    // confirmExit（途中終了）
+    if(typeof window.confirmExit==='function'&&!window.confirmExit.__recH){
+      var origCE=window.confirmExit;
+      window.confirmExit=function(){
+        if(_isRec) stopRec();
+        return origCE.apply(this,arguments);
+      };
+      window.confirmExit.__recH=true;
+    }
+
+    // renderHistory をフックして録画ボタンを追加
+    if(typeof window.renderHistory==='function'&&!window.renderHistory.__recH){
+      var origRH=window.renderHistory;
+      window.renderHistory=function(){
+        origRH.apply(this,arguments);
+        setTimeout(addRecBtns,200);
+      };
+      window.renderHistory.__recH=true;
+    }
+  }
+
+  // ─── CSS アニメーション ───────────────────────────────────
+  var sEl=document.createElement('style');
+  sEl.textContent='@keyframes recBl{0%,100%{opacity:1}50%{opacity:0.1}}';
+  document.head.appendChild(sEl);
+
+  // ─── 初期化 ───────────────────────────────────────────────
+  openDB().catch(function(e){console.warn('RecDB init:',e);});
+  setTimeout(hookAll,900);
+
+})();
+</script>
+
 </div></div></body></html>
