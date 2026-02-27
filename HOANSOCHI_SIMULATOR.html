@@ -212,9 +212,17 @@ img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 .danger-bar-fill { width: 0%; height: 100%; background: #00e676; transition: width 0.5s, background-color 0.5s; }
 .danger-rate { font-size: 50%; color:#aaa; margin-top:0.5vmin; text-align:right;}
 
+/* 扉の号室表示 */
+.door-room-num {
+    position: absolute; top: 6%; width: 100%; text-align: center;
+    font-size: 1.8vmin; font-weight: bold; color: #fff;
+    text-shadow: 0 0 0.4vmin #000, 0 0 0.8vmin #000;
+    pointer-events: none; letter-spacing: 0.05em; z-index: 2;
+}
 /* 保安措置完了ボタン */
 #complete-safety-btn {
-    position: absolute; bottom: 2vmin; left: 50%; transform: translateX(-50%);
+    position: absolute; bottom: 2vmin; left: 0; right: 0; margin: 0 auto;
+    width: max-content; max-width: 80%;
     background: linear-gradient(135deg, #4caf50, #66bb6a);
     border: 0.3vmin solid #fff; border-radius: 1.5vmin;
     color: #fff; font-size: 3vmin; font-weight: bold;
@@ -222,6 +230,7 @@ img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
     box-shadow: 0 0.5vmin 1vmin rgba(0,0,0,0.5);
     display: none; pointer-events: auto;
     animation: pulse-glow 1.5s infinite;
+    touch-action: manipulation; white-space: nowrap;
 }
 @keyframes pulse-glow {
     0%, 100% { box-shadow: 0 0 1vmin rgba(76, 175, 80, 0.8), 0 0 2vmin rgba(76, 175, 80, 0.5); }
@@ -3497,7 +3506,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   <div id="odor-meter-label" style="font-size:1.6vmin;color:#fff;font-weight:bold;line-height:1.2;white-space:nowrap;background:rgba(0,0,0,0.6);padding:0.3vmin 1vmin;border-radius:0.5vmin 0.5vmin 0 0;width:100%;text-align:center;box-sizing:border-box;">＜臭気メーター＞</div>
   <div style="display:flex;align-items:stretch;background:rgba(0,0,0,0.85);border:0.2vmin solid #fff;border-radius:0 0 0.5vmin 0.5vmin;overflow:hidden;">
     <div id="odor-nose-icon" style="font-size:3vmin;display:flex;align-items:center;justify-content:center;padding:0 0.5vmin;transition:transform 0.1s;">👃</div>
-    <canvas id="odor-ecg-canvas" width="80" height="30" style="width:17.5%;height:4.5vmin;image-rendering:pixelated;"></canvas>
+    <canvas id="odor-ecg-canvas" width="320" height="30" style="width:28vmin;height:4.5vmin;image-rendering:pixelated;"></canvas>
   </div>
 </div>
 <div id="pressure-float"><span class="small">試験中</span>（残り--秒）</div>
@@ -3775,8 +3784,8 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="cor-floor"></div>
 <div class="stairs-zone st-left"><div class="stairs-steps"></div><div class="st-label">▲<br>2F</div></div>
 <div class="stairs-zone st-right"><div class="stairs-steps"></div><div class="st-label">▼<br>入口</div></div>
-<div class="apt-door apt-l" id="door-1" onclick="openDoorModal(1)" style="background: rgb(0, 0, 0); border: none; box-shadow: none;"><div style="position:absolute; left:0; top:0; width:20%; height:100%; background:#8d6e63;"></div></div>
-<div class="apt-door apt-r" id="door-2" onclick="openDoorModal(2)" style="background: rgb(205, 179, 139); border: 0.5vmin solid rgb(93, 64, 55); box-shadow: none;"></div>
+<div class="apt-door apt-l" id="door-1" onclick="openDoorModal(1)" style="background: rgb(0, 0, 0); border: none; box-shadow: none;"><div style="position:absolute; left:0; top:0; width:20%; height:100%; background:#8d6e63;"></div><span class="door-room-num">101</span></div>
+<div class="apt-door apt-r" id="door-2" onclick="openDoorModal(2)" style="background: rgb(205, 179, 139); border: 0.5vmin solid rgb(93, 64, 55); box-shadow: none;"><span class="door-room-num">102</span></div>
 <div class="ps-container ps-l"><div class="gas-meter-art" onclick="clickMeter(1)" id="meter-art-1"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AC%E3%82%B9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%BC.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="ps-door" id="ps1-1" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false" style="transform: translateX(0px); opacity: 1;"><div class="ps-handle"></div></div></div>
 <div class="ps-container ps-r"><div class="gas-meter-art" onclick="clickMeter(2)" id="meter-art-2"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AC%E3%82%B9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%BC.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="ps-door" id="ps1-2" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false" style="transform: translateX(0px); opacity: 1;"><div class="ps-handle"></div></div></div>
 </div>
@@ -3784,8 +3793,8 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div id="room-corridor2" class="room corridor-bg">
 <div class="cor-floor"></div>
 <div class="stairs-zone st-right"><div class="stairs-steps"></div><div class="st-label">▼<br>1F</div></div>
-<div class="apt-door apt-l" id="door-3" onclick="openDoorModal(3)" style="background: rgb(205, 179, 139); border: 0.5vmin solid rgb(93, 64, 55); box-shadow: none;"></div>
-<div class="apt-door apt-r" id="door-4" onclick="openDoorModal(4)" style="background: rgb(205, 179, 139); border: 0.5vmin solid rgb(93, 64, 55);"></div>
+<div class="apt-door apt-l" id="door-3" onclick="openDoorModal(3)" style="background: rgb(205, 179, 139); border: 0.5vmin solid rgb(93, 64, 55); box-shadow: none;"><span class="door-room-num">201</span></div>
+<div class="apt-door apt-r" id="door-4" onclick="openDoorModal(4)" style="background: rgb(205, 179, 139); border: 0.5vmin solid rgb(93, 64, 55);"><span class="door-room-num">202</span></div>
 <div class="ps-container ps-l"><div class="gas-meter-art" onclick="clickMeter(3)" id="meter-art-3"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AC%E3%82%B9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%BC.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="ps-door" id="ps2-1" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false" style="transform: translateX(0px); opacity: 1;"><div class="ps-handle"></div></div></div>
 <div class="ps-container ps-r"><div class="gas-meter-art" onclick="clickMeter(4)" id="meter-art-4"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AC%E3%82%B9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%BC.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="ps-door" id="ps2-2" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false" style="transform: translateX(0px); opacity: 1;"><div class="ps-handle"></div></div></div>
 </div>
@@ -4895,7 +4904,12 @@ function openDoorModal(id) {
 // 排風モードの処理
 if(isVentMode) {
   // 居住者B宅のドアの場合のみ排風処理を開始
-  if(_cityGasAlarmActive && _cityGasAlarmRoomId && id === _cityGasAlarmRoomId) {
+  // alarmResidentRoom(整数1-4)またはalarmRoomId(_cityGasAlarmRoomId)と照合
+  var _isAlarmDoor = _cityGasAlarmActive && (
+    (typeof alarmResidentRoom !== 'undefined' && alarmResidentRoom && id === alarmResidentRoom) ||
+    (typeof _cityGasAlarmRoomId !== 'undefined' && _cityGasAlarmRoomId && id === _cityGasAlarmRoomId)
+  );
+  if(_isAlarmDoor) {
     startVenting('alarmDoor');
     return;
   }
@@ -5979,14 +5993,19 @@ changeRoom(5, 5); didWarp=true;
 else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom <= 2) {
   if((alarmResidentRoom===1 && state.x>5 && state.x<30) || (alarmResidentRoom===2 && state.x>70 && state.x<95)) {
   if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive && typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod !== '在宅している' && !alarmBVentilated){
-  // ②：反応箇所の濃度が10%LEL未満なら排風なしで入室可能
-  var _eDoorLel = 0;
-  try{ _eDoorLel = typeof getLel1==='function' ? getLel1() : 0; }catch(_el){}
-  if(_eDoorLel >= 10){
-    try{ badEnd('ガスが滞留している空間に入室する場合は、排風機を使用して濃度を下げてから入室しましょう。'); }catch(e3){}
-    return;
+  // 排風済みチェック（ドア排風・反応箇所排風どちらでもOK）
+  var _hs1done = typeof window._hs1Vented!=='undefined' && window._hs1Vented;
+  var _hs2done = typeof window._hs2Vented!=='undefined' && window._hs2Vented;
+  if(!_hs1done && !_hs2done){
+    // 排風なし：LEL10%以上なら爆発
+    var _eDoorLel = 0;
+    try{ _eDoorLel = typeof getLel1==='function' ? getLel1() : 0; }catch(_el){}
+    if(_eDoorLel >= 10){
+      try{ badEnd('ガスが滞留している空間に入室する場合は、排風機を使用して濃度を下げてから入室しましょう。'); }catch(e3){}
+      return;
+    }
   }
-  // 濃度10%未満のため排風なしで入室可能（fall through）
+  // 排風済み or 濃度10%未満のため入室可能（fall through）
 }
   entryFloor = 3;
   currentApartmentOwner='B';
@@ -6006,14 +6025,19 @@ changeRoom(5, 5); didWarp=true;
 else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom >= 3) {
   if((alarmResidentRoom===3 && state.x>5 && state.x<30) || (alarmResidentRoom===4 && state.x>70 && state.x<95)) {
   if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive && typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod !== '在宅している' && !alarmBVentilated){
-  // ②：反応箇所の濃度が10%LEL未満なら排風なしで入室可能
-  var _eDoorLel = 0;
-  try{ _eDoorLel = typeof getLel1==='function' ? getLel1() : 0; }catch(_el){}
-  if(_eDoorLel >= 10){
-    try{ badEnd('ガスが滞留している空間に入室する場合は、排風機を使用して濃度を下げてから入室しましょう。'); }catch(e3){}
-    return;
+  // 排風済みチェック（ドア排風・反応箇所排風どちらでもOK）
+  var _hs1done2 = typeof window._hs1Vented!=='undefined' && window._hs1Vented;
+  var _hs2done2 = typeof window._hs2Vented!=='undefined' && window._hs2Vented;
+  if(!_hs1done2 && !_hs2done2){
+    // 排風なし：LEL10%以上なら爆発
+    var _eDoorLel = 0;
+    try{ _eDoorLel = typeof getLel1==='function' ? getLel1() : 0; }catch(_el){}
+    if(_eDoorLel >= 10){
+      try{ badEnd('ガスが滞留している空間に入室する場合は、排風機を使用して濃度を下げてから入室しましょう。'); }catch(e3){}
+      return;
+    }
   }
-  // 濃度10%未満のため排風なしで入室可能（fall through）
+  // 排風済み or 濃度10%未満のため入室可能（fall through）
 }
   entryFloor = 4;
   currentApartmentOwner='B';
@@ -12499,11 +12523,13 @@ try{
       if((dir===1 && st.curX>=destX) || (dir===-1 && st.curX<=destX)){
         st.curX = destX;
         var el=$('deliveryman'); if(el) el.style.left=st.curX+'%';
+        var im=$('deliveryman-img'); if(im) im.style.transform=(dir===1)?'scaleX(1)':'scaleX(-1)';
         stopAnim();
         if(onDone) onDone();
         return;
       }
       var el=$('deliveryman'); if(el) el.style.left=st.curX+'%';
+      var im=$('deliveryman-img'); if(im) im.style.transform=(dir===1)?'scaleX(1)':'scaleX(-1)';
       st.raf=requestAnimationFrame(step);
     }
     st.raf=requestAnimationFrame(step);
@@ -14198,8 +14224,8 @@ try{
 
     var btn = document.createElement('div');
     btn.id = 'elevator-green-btn';
-    btn.className = 'act-btn talk-btn elevator-green-btn';
-    btn.style.cssText = 'display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;';
+    btn.className = 'act-btn elevator-green-btn';
+    btn.style.cssText = 'display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;background:radial-gradient(circle,rgba(0,200,80,0.55),rgba(0,120,60,0.85));border:0.3vmin solid #fff;border-radius:50%;box-shadow:0 0.5vmin 1vmin rgba(0,0,0,0.5);';
     var img = document.createElement('img');
     img.src = ELEV_IMG;
     img.style.cssText = 'width:70%;height:70%;object-fit:contain;pointer-events:none;';
@@ -14236,10 +14262,10 @@ try{
       btn.click();
     }, {passive:false});
 
-    // talk-btn の前に挿入（青ボタンの左側）
-    var talkBtn = document.getElementById('talk-btn');
-    if(talkBtn) cr.insertBefore(btn, talkBtn);
-    else cr.insertBefore(btn, cr.firstChild);
+    // action-btn（青ボタン）の直前に挿入
+    var actionBtn = document.getElementById('action-btn');
+    if(actionBtn) cr.insertBefore(btn, actionBtn);
+    else cr.appendChild(btn);
   }
 
   function updateElevatorButtonVisibility(){
@@ -15564,7 +15590,8 @@ function __applySafetyAwarenessRules(labels, values){
             return;
           }
         }catch(e4){}
-        try{ openCommWindow('normal'); }catch(e2){}
+        // 管理会社以外の番号 → エラーメッセージ
+        try{ if(typeof showSystemMsg==='function') showSystemMsg('電話番号が違うみたいだ。'); }catch(e5){}
       }, 2000);
     } catch(e){}
   };
