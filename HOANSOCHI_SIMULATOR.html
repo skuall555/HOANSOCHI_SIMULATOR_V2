@@ -18213,6 +18213,8 @@ function selectElement(el) {
     '<button class="se-btn se-btn-primary" id="se-btn-pos" onclick="window._seStartPos()">位置を編集</button>' +
     '<button class="se-btn se-btn-success" id="se-btn-size" onclick="window._seStartSize()">サイズを編集</button>' +
     '<button class="se-btn se-btn-purple" onclick="window._seReplaceImg()">画像の差し替え</button>' +
+    '<button class="se-btn se-btn-warn" onclick="window._seBringForward()">前面へ</button>' +
+    '<button class="se-btn se-btn-warn" onclick="window._seSendBackward()">背面へ</button>' +
     '<button class="se-btn se-btn-danger" onclick="window._seDeselectEl()">選択解除</button>';
   document.body.appendChild(panel);
 }
@@ -18392,6 +18394,31 @@ window._seReplaceImg = function() {
   });
 };
 
+// ─── 前面/背面（z-index操作） ───
+window._seBringForward = function() {
+  if(!_me.selEl) return;
+  var el = _me.selEl;
+  var cur = parseInt(window.getComputedStyle(el).zIndex) || 0;
+  el.style.zIndex = cur + 1;
+  // DOM順でも前面に（次の兄弟の後に移動）
+  if(el.nextElementSibling) {
+    el.parentElement.insertBefore(el.nextElementSibling, el);
+  }
+  saveUndoSnapshot();
+};
+
+window._seSendBackward = function() {
+  if(!_me.selEl) return;
+  var el = _me.selEl;
+  var cur = parseInt(window.getComputedStyle(el).zIndex) || 0;
+  el.style.zIndex = Math.max(0, cur - 1);
+  // DOM順でも背面に（前の兄弟の前に移動）
+  if(el.previousElementSibling) {
+    el.parentElement.insertBefore(el, el.previousElementSibling);
+  }
+  saveUndoSnapshot();
+};
+
 // ─── Undo/Redo（実DOMのスナップショット） ───
 function saveUndoSnapshot() {
   var room = document.getElementById('se-edit-room');
@@ -18536,44 +18563,56 @@ window.mapEditorCloneFrom = function() {
 
 // ─── 編集終了（実DOMに変更を反映） ───
 window.mapEditorFinish = function() {
-  deselectElement();
-  mapEditorHideEntrances();
+  try{ deselectElement(); }catch(e){}
+  try{ mapEditorHideEntrances(); }catch(e){}
 
   var editRoom = document.getElementById('se-edit-room');
 
   if(_me.isNew) {
-    // 新規マップ: 名前入力して保存
     var mapName = prompt('マップ名を入力してください：');
-    if(!mapName) return;
+    if(!mapName) {
+      // キャンセル→エディタに留まる
+      return;
+    }
     var mapId = 'room-custom-' + Date.now();
     if(editRoom) {
       editRoom.id = mapId;
       _sed.maps.push({ id:mapId, name:mapName, html:editRoom.outerHTML });
     }
   } else {
-    // 既存マップ: 元の位置に戻す（変更は保持される）
-    if(editRoom && _me._origParent) {
+    // 既存マップ: 元の位置に戻す
+    if(editRoom) {
       editRoom.id = _me.mapId;
       editRoom.className = _me._origClass || 'room';
-      // roomのstyleは元に戻す（子要素の変更はそのまま保持）
       editRoom.style.cssText = _me._origStyle || '';
-      restoreGameUI(editRoom);
-      // 元の位置に戻す
-      if(_me._origNext) {
-        _me._origParent.insertBefore(editRoom, _me._origNext);
-      } else {
-        _me._origParent.appendChild(editRoom);
-      }
+      try{ restoreGameUI(editRoom); }catch(e){}
+      try{
+        if(_me._origParent && _me._origParent.isConnected) {
+          if(_me._origNext && _me._origNext.isConnected) {
+            _me._origParent.insertBefore(editRoom, _me._origNext);
+          } else {
+            _me._origParent.appendChild(editRoom);
+          }
+        } else {
+          // フォールバック: scene-gameに戻す
+          var sg = document.getElementById('scene-game');
+          if(sg) sg.appendChild(editRoom);
+        }
+      }catch(e){ console.warn('Room restore error:', e); }
     }
   }
 
   // scene-gameを隠す
-  var gameScreen = document.getElementById('scene-game');
-  if(gameScreen){ gameScreen.classList.remove('active'); gameScreen.style.visibility=''; }
+  try{
+    var gameScreen = document.getElementById('scene-game');
+    if(gameScreen){ gameScreen.classList.remove('active'); gameScreen.style.visibility=''; }
+  }catch(e){}
 
-  document.getElementById('se-map-editor').classList.remove('active');
+  // 画面遷移
+  ensureOverlaysInBody();
+  document.getElementById('scene-map-editor').classList.remove('active');
   document.getElementById('scene-map-list').classList.add('active');
-  renderMapGrid();
+  try{ renderMapGrid(); }catch(e){ console.warn('renderMapGrid error:', e); }
 };
 
 // ─── 新規マップ作成 ───
