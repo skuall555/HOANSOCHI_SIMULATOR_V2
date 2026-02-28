@@ -2811,6 +2811,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   if(!window.startGame) window.startGame = function(){ window.__queuedStartGame = true; _showMenuQuick(); };
   if(!window.showScenarioList) window.showScenarioList = function(){ window.__queuedShowScenario = true; _showMenuQuick(); };
   if(!window.showCustom) window.showCustom = function(){ window.__queuedShowCustom = true; _showMenuQuick(); };
+  if(!window.showStageEditor) window.showStageEditor = function(){ window.__queuedShowStageEditor = true; _showMenuQuick(); };
 
   // Title/menu helpers
   if(!window.hideMenu) window.hideMenu = function(){
@@ -11233,6 +11234,7 @@ try{
   if(window.__queuedShowScenario){ window.__queuedShowScenario=false; try{ showScenarioList(); }catch(e1){} }
   if(window.__queuedShowCustom){ window.__queuedShowCustom=false; try{ showCustom(); }catch(e2){} }
   if(window.__queuedStartGame){ window.__queuedStartGame=false; try{ startGame(); }catch(e3){} }
+  if(window.__queuedShowStageEditor){ window.__queuedShowStageEditor=false; try{ showStageEditor(); }catch(e4){} }
 }catch(e){}
 </script>
 
@@ -17944,8 +17946,19 @@ function createMapThumbnail(roomEl) {
   return canvas.toDataURL('image/png');
 }
 
+// ─── ステージエディタのオーバーレイをbody直下に移動（scene-game内だとdisplay:noneで非表示になる） ───
+function ensureOverlaysInBody() {
+  ['scene-stage-editor','scene-map-list','scene-map-editor','scene-stage-list','scene-stage-composer'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el && el.parentElement !== document.body){
+      document.body.appendChild(el);
+    }
+  });
+}
+
 // ─── 画面遷移 ───
 window.showStageEditor = function() {
+  ensureOverlaysInBody();
   initStageEditorData();
   document.getElementById('scene-stage-editor').classList.add('active');
 };
