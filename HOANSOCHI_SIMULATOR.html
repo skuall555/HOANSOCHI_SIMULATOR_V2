@@ -2850,6 +2850,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <button class="hud-btn" style="background:#0056b3; font-weight:bold; font-size:60%; padding:2%;" onclick="document.getElementById('import-file').click()">📂 データ読込</button>
 <button class="hud-btn" style="background:#003366; font-weight:bold; font-size:60%; padding:2%;" onclick="event.stopPropagation(); showCustom();">⚙ カスタマイズ</button>
 <button class="hud-btn" style="background:#2e7d32; font-weight:bold; font-size:60%; padding:2%;" onclick="event.stopPropagation(); showScenarioList();">📝 シナリオ設定</button>
+<button class="hud-btn" style="background:#8e24aa; font-weight:bold; font-size:60%; padding:2%;" onclick="event.stopPropagation(); showStageEditor();">🗺 ステージ作成・編集</button>
 </div>
 </div>
 
@@ -2860,6 +2861,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <button class="menu-btn sec" onclick="showScenarioList()">📝 シナリオ設定</button>
 <button class="menu-btn sec" onclick="openHistory()">📈 履歴/統計</button>
 <button class="menu-btn sec" onclick="openSaveDataManager()">💾 セーブデータ管理</button>
+<button class="menu-btn sec" onclick="showStageEditor()">🗺 ステージ作成・編集</button>
 <button class="menu-btn sec" onclick="hideMenu()">ゲームに戻る</button>
 </div>
 </div>
@@ -5992,21 +5994,16 @@ changeRoom(5, 5); didWarp=true;
 }
 else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom <= 2) {
   if((alarmResidentRoom===1 && state.x>5 && state.x<30) || (alarmResidentRoom===2 && state.x>70 && state.x<95)) {
+  // 排風なしで入室：安全率-5% + 警告メッセージ（爆発ENDは廃止）
   if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive && typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod !== '在宅している' && !alarmBVentilated){
-  // 排風済みチェック（ドア排風・反応箇所排風どちらでもOK）
-  var _hs1done = typeof window._hs1Vented!=='undefined' && window._hs1Vented;
-  var _hs2done = typeof window._hs2Vented!=='undefined' && window._hs2Vented;
-  if(!_hs1done && !_hs2done){
-    // 排風なし：LEL10%以上なら爆発
-    var _eDoorLel = 0;
-    try{ _eDoorLel = typeof getLel1==='function' ? getLel1() : 0; }catch(_el){}
-    if(_eDoorLel >= 10){
-      try{ badEnd('ガスが滞留している空間に入室する場合は、排風機を使用して濃度を下げてから入室しましょう。'); }catch(e3){}
-      return;
+    var _hs1done = typeof window._hs1Vented!=='undefined' && window._hs1Vented;
+    var _hs2done = typeof window._hs2Vented!=='undefined' && window._hs2Vented;
+    if(!_hs1done && !_hs2done){
+      safetyValue = Math.max(0, safetyValue - 5);
+      updateSafetyUI();
+      showSystemMsg("濃度が高い空間に入室しました。");
     }
   }
-  // 排風済み or 濃度10%未満のため入室可能（fall through）
-}
   entryFloor = 3;
   currentApartmentOwner='B';
     changeRoom(5, 5); didWarp=true;
@@ -6024,21 +6021,16 @@ changeRoom(5, 5); didWarp=true;
 }
 else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom >= 3) {
   if((alarmResidentRoom===3 && state.x>5 && state.x<30) || (alarmResidentRoom===4 && state.x>70 && state.x<95)) {
+  // 排風なしで入室：安全率-5% + 警告メッセージ（爆発ENDは廃止）
   if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive && typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod !== '在宅している' && !alarmBVentilated){
-  // 排風済みチェック（ドア排風・反応箇所排風どちらでもOK）
-  var _hs1done2 = typeof window._hs1Vented!=='undefined' && window._hs1Vented;
-  var _hs2done2 = typeof window._hs2Vented!=='undefined' && window._hs2Vented;
-  if(!_hs1done2 && !_hs2done2){
-    // 排風なし：LEL10%以上なら爆発
-    var _eDoorLel = 0;
-    try{ _eDoorLel = typeof getLel1==='function' ? getLel1() : 0; }catch(_el){}
-    if(_eDoorLel >= 10){
-      try{ badEnd('ガスが滞留している空間に入室する場合は、排風機を使用して濃度を下げてから入室しましょう。'); }catch(e3){}
-      return;
+    var _hs1done2 = typeof window._hs1Vented!=='undefined' && window._hs1Vented;
+    var _hs2done2 = typeof window._hs2Vented!=='undefined' && window._hs2Vented;
+    if(!_hs1done2 && !_hs2done2){
+      safetyValue = Math.max(0, safetyValue - 5);
+      updateSafetyUI();
+      showSystemMsg("濃度が高い空間に入室しました。");
     }
   }
-  // 排風済み or 濃度10%未満のため入室可能（fall through）
-}
   entryFloor = 4;
   currentApartmentOwner='B';
     changeRoom(5, 5); didWarp=true;
@@ -9882,16 +9874,16 @@ function updateTalkButtonVisibility(){
       try{ var im2=document.getElementById('talk-icon-img'); var src=(customData && customData['resident'])?customData['resident']:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png'; if(im2) im2.src = src; }catch(e2){}
     }
     btn.style.display = show ? 'flex' : 'none';
-    return;
 
-    if(typeof state==='undefined' || state===null) { btn.style.display='none'; return; }
-    // detector/placement/gas識別中は非表示
-    if((typeof isDetectorMode!=='undefined' && isDetectorMode) || (typeof isPlacementMode!=='undefined' && isPlacementMode) || (typeof isGasIdMode!=='undefined' && isGasIdMode) || isPaused){
-      btn.style.display='none';
-      return;
+    // 消防大隊長ボタンの表示/非表示（前面道路=room1のみ表示）
+    var fcBtn = document.getElementById('fire-commander-btn');
+    if(fcBtn){
+      if(window._shoboFireActive && state.room === 1){
+        fcBtn.style.display = 'flex';
+      } else {
+        fcBtn.style.display = 'none';
+      }
     }
-    if(state.room===reporterRoom){ btn.style.display='flex'; }
-    else { btn.style.display='none'; }
   }catch(e){}
 }
 
@@ -16714,15 +16706,20 @@ window._tantouGenerateReply = function(rawText){
     truckEl.style.cssText = 'position:absolute;bottom:10%;left:0%;width:23.4%;height:28.8%;z-index:52;pointer-events:none;';
     truckEl.innerHTML = '<img src="'+FIRETRUCK_URL+'" style="width:100%;height:100%;object-fit:contain;" alt="消防車">';
     street.appendChild(truckEl);
-    // 緑ボタン（大隊長）－通報者ボタンと同じデザイン・配置
+    // 緑ボタン（大隊長）－controls-r内、action-btnの左に配置
     var greenBtn = document.createElement('div');
     greenBtn.id = 'fire-commander-btn';
     greenBtn.className = 'act-btn talk-btn';
-    greenBtn.style.cssText = 'position:absolute;bottom:3%;right:3%;z-index:210;height:20%;aspect-ratio:1;display:flex;';
+    greenBtn.style.cssText = 'display:flex;';
     greenBtn.innerHTML = '<img src="'+FIRE_ICON_URL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="消防大隊長">';
     greenBtn.onmousedown = function(){ if(typeof openCommWindow==='function') openCommWindow('normal','fireCommander'); };
     greenBtn.addEventListener('touchstart', function(e){ if(typeof openCommWindow==='function') openCommWindow('normal','fireCommander'); e.preventDefault(); }, {passive:false});
-    street.appendChild(greenBtn);
+    // controls-r内のaction-btnの直前に挿入
+    var cr = document.querySelector('.controls-r');
+    var actionBtn = document.getElementById('action-btn');
+    if(cr && actionBtn){ cr.insertBefore(greenBtn, actionBtn); }
+    else if(cr){ cr.appendChild(greenBtn); }
+    else { street.appendChild(greenBtn); }
   }
 
   function updateKohoBGMVolume(){
@@ -17666,6 +17663,1408 @@ window._tantouGenerateReply = function(rawText){
       }
     }catch(e){}
   }, 200);
+})();
+</script>
+
+<!-- ============================= -->
+<!-- ステージ作成・編集機能         -->
+<!-- ============================= -->
+<style>
+/* === ステージエディタ共通 === */
+.se-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:900;display:none;flex-direction:column;align-items:center;overflow-y:auto;}
+.se-overlay.active{display:flex!important;}
+.se-header{width:100%;background:#1a1a2e;color:#fff;padding:1.5vmin 2vmin;display:flex;align-items:center;gap:2vmin;flex-shrink:0;box-sizing:border-box;}
+.se-header h2{margin:0;font-size:2.5vmin;flex:1;}
+.se-btn{padding:1vmin 2vmin;border:none;border-radius:0.8vmin;cursor:pointer;font-size:1.8vmin;font-weight:bold;transition:transform 0.1s,opacity 0.1s;}
+.se-btn:active{transform:scale(0.95);}
+.se-btn-primary{background:#7c4dff;color:#fff;}
+.se-btn-secondary{background:#455a64;color:#fff;}
+.se-btn-danger{background:#e53935;color:#fff;}
+.se-btn-success{background:#43a047;color:#fff;}
+.se-btn-purple{background:#8e24aa;color:#fff;}
+.se-body{flex:1;width:100%;padding:2vmin;box-sizing:border-box;overflow-y:auto;}
+
+/* === モード選択画面 === */
+.se-mode-grid{display:flex;gap:3vmin;justify-content:center;align-items:center;flex-wrap:wrap;padding:5vmin 0;}
+.se-mode-card{width:40vmin;height:30vmin;background:linear-gradient(135deg,#1e3c72,#2a5298);border-radius:2vmin;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#fff;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 0.5vmin 2vmin rgba(0,0,0,0.4);}
+.se-mode-card:hover{transform:scale(1.05);box-shadow:0 1vmin 3vmin rgba(0,0,0,0.6);}
+.se-mode-card .se-mode-icon{font-size:8vmin;margin-bottom:1vmin;}
+.se-mode-card .se-mode-label{font-size:2.5vmin;font-weight:bold;}
+
+/* === マップ一覧グリッド === */
+.se-map-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(22vmin,1fr));gap:2vmin;width:100%;}
+.se-map-card{background:#263238;border-radius:1.5vmin;overflow:hidden;cursor:pointer;transition:transform 0.2s;border:0.3vmin solid transparent;}
+.se-map-card:hover{transform:scale(1.03);border-color:#7c4dff;}
+.se-map-thumb{width:100%;height:15vmin;background:#37474f;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
+.se-map-thumb img,.se-map-thumb canvas{width:100%;height:100%;object-fit:cover;}
+.se-map-thumb .se-thumb-placeholder{color:#90a4ae;font-size:2vmin;text-align:center;}
+.se-map-name{padding:1vmin;color:#fff;font-size:1.8vmin;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* === マップ編集画面 === */
+.se-map-editor{position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:950;display:none;flex-direction:column;}
+.se-map-editor.active{display:flex!important;}
+.se-map-toolbar{width:100%;background:#111;color:#fff;padding:0.8vmin 1.5vmin;display:flex;align-items:center;gap:1vmin;flex-shrink:0;flex-wrap:wrap;z-index:960;box-sizing:border-box;}
+.se-map-toolbar .se-btn{font-size:1.6vmin;padding:0.6vmin 1.2vmin;}
+.se-map-canvas-area{flex:1;position:relative;overflow:hidden;background:#f0f0f0;}
+.se-map-canvas-area .room{position:absolute!important;top:0;left:0;width:100%!important;height:100%!important;display:block!important;}
+
+/* 選択されたエレメントの虹色枠 */
+@keyframes rainbowBorder{0%{border-color:#ff0000;}14%{border-color:#ff8800;}28%{border-color:#ffff00;}42%{border-color:#00ff00;}57%{border-color:#0088ff;}71%{border-color:#0000ff;}85%{border-color:#8800ff;}100%{border-color:#ff0000;}}
+.se-selected{outline:0.5vmin solid;animation:rainbowBorder 2s linear infinite;outline-offset:0.2vmin;cursor:move;}
+.se-element-info{position:absolute;top:calc(100% + 1vmin);left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:0.8vmin 1.5vmin;border-radius:1vmin;font-size:1.6vmin;white-space:nowrap;z-index:970;display:flex;gap:1vmin;align-items:center;}
+.se-element-info .se-btn{font-size:1.4vmin;padding:0.4vmin 0.8vmin;}
+
+/* 入口の可視化 */
+.se-entrance-visible{background:rgba(255,255,0,0.35)!important;border:0.3vmin dashed rgba(255,200,0,0.8)!important;box-sizing:border-box;}
+
+/* 画像挿入ダイアログ */
+.se-dialog{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:1.5vmin;padding:3vmin;z-index:980;box-shadow:0 1vmin 4vmin rgba(0,0,0,0.5);min-width:40vmin;max-width:80vmin;}
+.se-dialog h3{margin:0 0 1.5vmin 0;font-size:2.2vmin;}
+.se-dialog label{display:block;margin:1vmin 0 0.3vmin;font-size:1.6vmin;color:#333;}
+.se-dialog input[type="text"],.se-dialog input[type="url"]{width:100%;padding:0.8vmin;border:1px solid #ccc;border-radius:0.5vmin;font-size:1.6vmin;box-sizing:border-box;}
+.se-dialog-actions{display:flex;gap:1vmin;justify-content:flex-end;margin-top:2vmin;}
+.se-dialog-backdrop{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:975;}
+
+/* === ステージ構成エディタ（リレーション画面） === */
+.se-composer{position:fixed;top:0;left:0;width:100%;height:100%;background:#1a1a2e;z-index:950;display:none;flex-direction:column;}
+.se-composer.active{display:flex!important;}
+.se-composer-toolbar{width:100%;background:#111;color:#fff;padding:0.8vmin 1.5vmin;display:flex;align-items:center;gap:1vmin;flex-shrink:0;flex-wrap:wrap;z-index:960;box-sizing:border-box;}
+.se-composer-canvas{flex:1;position:relative;overflow:auto;background:#16213e;}
+.se-composer-canvas svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;}
+.se-node{position:absolute;width:22vmin;background:#0f3460;border:0.3vmin solid #533483;border-radius:1.2vmin;cursor:grab;z-index:5;user-select:none;transition:box-shadow 0.2s;}
+.se-node:hover{box-shadow:0 0 2vmin rgba(124,77,255,0.6);}
+.se-node.se-node-selected{border-color:#7c4dff;box-shadow:0 0 3vmin rgba(124,77,255,0.8);}
+.se-node-header{background:#533483;color:#fff;padding:0.6vmin 1vmin;font-size:1.5vmin;font-weight:bold;border-radius:0.9vmin 0.9vmin 0 0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.se-node-thumb{width:100%;height:12vmin;background:#1a1a2e;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.se-node-thumb img{width:100%;height:100%;object-fit:cover;}
+.se-node-ports{padding:0.5vmin;display:flex;flex-wrap:wrap;gap:0.3vmin;}
+.se-node-port{background:#e94560;color:#fff;font-size:1.1vmin;padding:0.2vmin 0.5vmin;border-radius:0.4vmin;cursor:pointer;white-space:nowrap;}
+.se-node-port:hover{background:#ff6b6b;}
+.se-node-port.se-port-connected{background:#43a047;}
+
+/* コネクション線 */
+.se-connection{stroke:#7c4dff;stroke-width:2;fill:none;pointer-events:stroke;cursor:pointer;}
+.se-connection:hover{stroke:#ff6b6b;stroke-width:3;}
+.se-connection-label{fill:#fff;font-size:1.4vmin;text-anchor:middle;pointer-events:none;}
+
+/* 右クリックメニュー */
+.se-context-menu{position:fixed;background:#263238;border:1px solid #455a64;border-radius:0.8vmin;padding:0.5vmin 0;z-index:990;box-shadow:0 0.5vmin 2vmin rgba(0,0,0,0.5);min-width:20vmin;}
+.se-context-item{padding:0.8vmin 1.5vmin;color:#fff;font-size:1.6vmin;cursor:pointer;white-space:nowrap;}
+.se-context-item:hover{background:#37474f;}
+.se-context-separator{height:1px;background:#455a64;margin:0.3vmin 0;}
+
+/* ステージ一覧 */
+.se-stage-list{display:flex;flex-direction:column;gap:1.5vmin;width:100%;max-width:80vmin;margin:0 auto;}
+.se-stage-item{background:#263238;border-radius:1.2vmin;padding:1.5vmin 2vmin;display:flex;align-items:center;gap:2vmin;cursor:pointer;border:0.2vmin solid transparent;transition:border-color 0.2s;}
+.se-stage-item:hover{border-color:#7c4dff;}
+.se-stage-item .se-stage-num{color:#7c4dff;font-size:2.5vmin;font-weight:bold;min-width:4vmin;text-align:center;}
+.se-stage-item .se-stage-name{color:#fff;font-size:2vmin;flex:1;}
+.se-stage-item .se-stage-actions{display:flex;gap:1vmin;}
+</style>
+
+<!-- ステージエディタ モード選択画面 -->
+<div id="scene-stage-editor" class="se-overlay">
+  <div class="se-header">
+    <h2>ステージ作成・編集</h2>
+    <button class="se-btn se-btn-success" onclick="stageEditorExportHTML()">編集内容を全てHTMLに書き込む</button>
+    <button class="se-btn se-btn-secondary" onclick="closeStageEditor()">閉じる</button>
+  </div>
+  <div class="se-body">
+    <div class="se-mode-grid">
+      <div class="se-mode-card" onclick="openStageComposerList()">
+        <div class="se-mode-icon">🔗</div>
+        <div class="se-mode-label">ステージ構成作成・編集</div>
+      </div>
+      <div class="se-mode-card" onclick="openMapEditorList()">
+        <div class="se-mode-icon">🗺</div>
+        <div class="se-mode-label">マップ作成・編集</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- マップ一覧画面 -->
+<div id="scene-map-list" class="se-overlay">
+  <div class="se-header">
+    <h2>マップ作成・編集</h2>
+    <button class="se-btn se-btn-primary" onclick="openExistingMapList()">既存マップを編集</button>
+    <button class="se-btn se-btn-success" onclick="createNewMap()">新規マップ作成</button>
+    <button class="se-btn se-btn-secondary" onclick="closeMapEditorList()">戻る</button>
+  </div>
+  <div class="se-body">
+    <div id="se-map-grid" class="se-map-grid"></div>
+  </div>
+</div>
+
+<!-- マップ編集画面 -->
+<div id="scene-map-editor" class="se-map-editor">
+  <div class="se-map-toolbar" id="se-map-toolbar">
+    <button class="se-btn se-btn-secondary" onclick="mapEditorUndo()" title="元に戻す">⬅️ 戻す</button>
+    <button class="se-btn se-btn-secondary" onclick="mapEditorRedo()" title="先に進む">➡️ 進む</button>
+    <span style="width:1vmin;"></span>
+    <button class="se-btn se-btn-secondary" id="se-btn-play" onclick="mapEditorPlay()" title="再生">▶️ 再生</button>
+    <button class="se-btn se-btn-secondary" id="se-btn-stop" onclick="mapEditorStop()" title="再生停止" style="display:none;">⏹ 停止</button>
+    <span style="width:1vmin;"></span>
+    <button class="se-btn se-btn-secondary" id="se-btn-entrance-show" onclick="mapEditorShowEntrances()">入口表示</button>
+    <button class="se-btn se-btn-secondary" id="se-btn-entrance-hide" onclick="mapEditorHideEntrances()" style="display:none;">入口非表示</button>
+    <span style="width:1vmin;"></span>
+    <button class="se-btn se-btn-purple" onclick="mapEditorInsertImage()">画像の挿入</button>
+    <button class="se-btn se-btn-secondary" id="se-btn-clone" onclick="mapEditorCloneFrom()" style="display:none;">既存マップから複製</button>
+    <span style="flex:1;"></span>
+    <span id="se-map-name-display" style="color:#fff;font-size:1.8vmin;margin-right:1vmin;"></span>
+    <button class="se-btn se-btn-danger" onclick="mapEditorFinish()">編集を終了する</button>
+  </div>
+  <div class="se-map-canvas-area" id="se-map-canvas">
+  </div>
+</div>
+
+<!-- ステージ構成一覧画面 -->
+<div id="scene-stage-list" class="se-overlay">
+  <div class="se-header">
+    <h2>ステージ構成作成・編集</h2>
+    <button class="se-btn se-btn-success" onclick="createNewStageConfig()">新規ステージ構成作成</button>
+    <button class="se-btn se-btn-secondary" onclick="closeStageComposerList()">戻る</button>
+  </div>
+  <div class="se-body">
+    <div id="se-stage-list" class="se-stage-list"></div>
+  </div>
+</div>
+
+<!-- ステージ構成編集画面（リレーション） -->
+<div id="scene-stage-composer" class="se-composer">
+  <div class="se-composer-toolbar" id="se-composer-toolbar">
+    <button class="se-btn se-btn-secondary" onclick="stageComposerBack()">← 戻る</button>
+    <span style="width:1vmin;"></span>
+    <span id="se-composer-name" style="color:#fff;font-size:2vmin;font-weight:bold;"></span>
+    <span style="flex:1;"></span>
+    <button class="se-btn se-btn-primary" onclick="stageComposerAddMap()">マップを追加</button>
+    <button class="se-btn se-btn-purple" onclick="stageComposerEditName()">名称変更</button>
+    <button class="se-btn se-btn-success" onclick="stageComposerSave()">保存</button>
+  </div>
+  <div class="se-composer-canvas" id="se-composer-canvas">
+    <svg id="se-composer-svg"></svg>
+  </div>
+</div>
+
+<!-- ステージエディタ用保存データ -->
+<script id="saved-stage-data" type="application/json">{"maps":[],"stages":[{"name":"集合住宅（地下街あり）","maps":["駐車場","前面道路","1Fエントランス","階段","1F共用廊下","2F共用廊下","地下街","101号室","102号室","201号室","202号室"],"connections":[{"from":"前面道路","to":"1Fエントランス","condition":"扉","bidirectional":true},{"from":"1Fエントランス","to":"階段","condition":"","bidirectional":true},{"from":"階段","to":"地下街","condition":"階段降りる","bidirectional":true},{"from":"1Fエントランス","to":"1F共用廊下","condition":"","bidirectional":true},{"from":"2F共用廊下","to":"階段","condition":"","bidirectional":true},{"from":"1F共用廊下","to":"101号室","condition":"扉","bidirectional":true},{"from":"1F共用廊下","to":"102号室","condition":"扉","bidirectional":true},{"from":"2F共用廊下","to":"201号室","condition":"扉","bidirectional":true},{"from":"2F共用廊下","to":"202号室","condition":"扉","bidirectional":true}],"bgm":{},"nodePositions":{"駐車場":{"x":10,"y":50},"前面道路":{"x":140,"y":50},"1Fエントランス":{"x":270,"y":50},"階段":{"x":400,"y":50},"地下街":{"x":400,"y":200},"1F共用廊下":{"x":270,"y":200},"2F共用廊下":{"x":530,"y":50},"101号室":{"x":200,"y":350},"102号室":{"x":340,"y":350},"201号室":{"x":460,"y":200},"202号室":{"x":600,"y":200}}}]}</script>
+
+<script>
+/* ========================================================================
+   ステージ作成・編集 メインモジュール
+   ======================================================================== */
+(function(){
+'use strict';
+
+// ─── データモデル ───
+var _stageEditorData = { maps: [], stages: [] };
+var _mapEditorState = {
+  currentMapId: null,
+  isNewMap: false,
+  undoStack: [],
+  redoStack: [],
+  selectedElement: null,
+  editMode: null, // 'position' | 'size' | null
+  isPlaying: false,
+  showEntrances: false,
+  clonedRoomEl: null,
+  insertedImages: []
+};
+var _composerState = {
+  currentStageIdx: -1,
+  draggingNode: null,
+  dragOffset: { x: 0, y: 0 },
+  connectingFrom: null,
+  selectedNode: null
+};
+
+// ─── 初期化 ───
+function initStageEditorData() {
+  try {
+    var el = document.getElementById('saved-stage-data');
+    if (el) {
+      var d = JSON.parse(el.textContent);
+      if (d && d.maps) _stageEditorData.maps = d.maps;
+      if (d && d.stages) _stageEditorData.stages = d.stages;
+    }
+  } catch(e) { console.warn('Stage editor data load error:', e); }
+}
+initStageEditorData();
+
+// ─── 既存マップ情報収集 ───
+function getExistingMaps() {
+  var rooms = document.querySelectorAll('.room[id^="room-"]');
+  var maps = [];
+  var ROOM_NAMES = {
+    'room-parking': '駐車場',
+    'room-street': '前面道路',
+    'room-entrance': '1Fエントランス',
+    'room-stairs': '階段',
+    'room-basement': '地下街',
+    'room-corridor1': '1F共用廊下',
+    'room-corridor2': '2F共用廊下',
+    'room-hallway': '101号室 廊下',
+    'room-toilet': 'トイレ(A)',
+    'room-changing': '脱衣所(A)',
+    'room-bath': '浴室(A)',
+    'room-kitchen': '台所(A)',
+    'room-bedroom': '寝室(A)',
+    'room-hallway-b': '102号室 廊下',
+    'room-toilet-b': 'トイレ(B)',
+    'room-changing-b': '脱衣所(B)',
+    'room-bath-b': '浴室(B)',
+    'room-kitchen-b': '台所(B)',
+    'room-bedroom-b': '寝室(B)',
+    'room-yakitori': '焼き鳥屋',
+    'room-ramen-shop': 'ラーメン屋'
+  };
+  rooms.forEach(function(r) {
+    var id = r.id;
+    var name = ROOM_NAMES[id] || id.replace('room-', '');
+    maps.push({ id: id, name: name, element: r });
+  });
+  return maps;
+}
+
+// ─── マップのサムネイル生成 ───
+function createMapThumbnail(roomEl) {
+  var canvas = document.createElement('canvas');
+  canvas.width = 320;
+  canvas.height = 180;
+  var ctx = canvas.getContext('2d');
+  // 背景色を取得
+  var cs = getComputedStyle(roomEl);
+  ctx.fillStyle = cs.backgroundColor || '#37474f';
+  ctx.fillRect(0, 0, 320, 180);
+  // マップ名をテキストで表示
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(roomEl.id.replace('room-', ''), 160, 95);
+  return canvas.toDataURL('image/png');
+}
+
+// ─── 画面遷移 ───
+window.showStageEditor = function() {
+  initStageEditorData();
+  document.getElementById('scene-stage-editor').classList.add('active');
+};
+window.closeStageEditor = function() {
+  document.getElementById('scene-stage-editor').classList.remove('active');
+};
+
+// === マップ一覧 ===
+window.openMapEditorList = function() {
+  document.getElementById('scene-stage-editor').classList.remove('active');
+  document.getElementById('scene-map-list').classList.add('active');
+  renderMapGrid();
+};
+window.closeMapEditorList = function() {
+  document.getElementById('scene-map-list').classList.remove('active');
+  document.getElementById('scene-stage-editor').classList.add('active');
+};
+window.openExistingMapList = function() {
+  renderMapGrid();
+};
+
+function renderMapGrid() {
+  var grid = document.getElementById('se-map-grid');
+  grid.innerHTML = '';
+  var maps = getExistingMaps();
+  // カスタムマップも追加
+  _stageEditorData.maps.forEach(function(cm) {
+    var found = false;
+    maps.forEach(function(m) { if (m.id === cm.id) found = true; });
+    if (!found) {
+      maps.push({ id: cm.id, name: cm.name, element: null, custom: true, data: cm });
+    }
+  });
+  maps.forEach(function(m) {
+    var card = document.createElement('div');
+    card.className = 'se-map-card';
+    var thumb = document.createElement('div');
+    thumb.className = 'se-map-thumb';
+    if (m.element) {
+      var tn = createMapThumbnail(m.element);
+      var img = document.createElement('img');
+      img.src = tn;
+      thumb.appendChild(img);
+    } else {
+      var ph = document.createElement('div');
+      ph.className = 'se-thumb-placeholder';
+      ph.textContent = m.custom ? '(カスタムマップ)' : '(プレビュー不可)';
+      thumb.appendChild(ph);
+    }
+    var nameEl = document.createElement('div');
+    nameEl.className = 'se-map-name';
+    nameEl.textContent = m.name;
+    card.appendChild(thumb);
+    card.appendChild(nameEl);
+    card.onclick = function() { openMapEditor(m.id, m.name, false); };
+    grid.appendChild(card);
+  });
+}
+
+// === マップ編集画面 ===
+function openMapEditor(mapId, mapName, isNew) {
+  _mapEditorState.currentMapId = mapId;
+  _mapEditorState.isNewMap = isNew;
+  _mapEditorState.undoStack = [];
+  _mapEditorState.redoStack = [];
+  _mapEditorState.selectedElement = null;
+  _mapEditorState.editMode = null;
+  _mapEditorState.isPlaying = false;
+  _mapEditorState.showEntrances = false;
+  _mapEditorState.insertedImages = [];
+
+  document.getElementById('se-map-name-display').textContent = mapName || '新規マップ';
+  document.getElementById('se-btn-clone').style.display = isNew ? 'inline-flex' : 'none';
+
+  var canvas = document.getElementById('se-map-canvas');
+  canvas.innerHTML = '';
+
+  if (!isNew) {
+    // 既存マップを複製してキャンバスに配置
+    var roomEl = document.getElementById(mapId);
+    if (roomEl) {
+      var clone = roomEl.cloneNode(true);
+      clone.id = 'se-editing-room';
+      clone.classList.remove('active');
+      clone.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
+      // プレイヤーやUI要素を非表示
+      var toHide = clone.querySelectorAll('.player-el, .npc-el, .van-visual, .placed-item');
+      toHide.forEach(function(el) { el.style.display = 'none'; });
+      canvas.appendChild(clone);
+      _mapEditorState.clonedRoomEl = clone;
+      // カスタムマップの挿入済み画像を復元
+      restoreInsertedImages(mapId, clone);
+      // クリック可能にする
+      makeElementsClickable(clone);
+    }
+  }
+
+  // カスタム挿入画像を復元
+  var customMap = findCustomMapData(mapId);
+  if (customMap && customMap.insertedImages) {
+    customMap.insertedImages.forEach(function(imgData) {
+      addInsertedImageToCanvas(canvas, imgData);
+    });
+  }
+
+  document.getElementById('scene-map-list').classList.remove('active');
+  document.getElementById('scene-map-editor').classList.add('active');
+  saveUndoState();
+}
+
+function findCustomMapData(mapId) {
+  for (var i = 0; i < _stageEditorData.maps.length; i++) {
+    if (_stageEditorData.maps[i].id === mapId) return _stageEditorData.maps[i];
+  }
+  return null;
+}
+
+function restoreInsertedImages(mapId, container) {
+  var cm = findCustomMapData(mapId);
+  if (!cm || !cm.insertedImages) return;
+  cm.insertedImages.forEach(function(imgData) {
+    addInsertedImageToCanvas(container.parentElement || container, imgData);
+  });
+}
+
+function addInsertedImageToCanvas(container, imgData) {
+  var wrapper = document.createElement('div');
+  wrapper.className = 'se-inserted-image';
+  wrapper.dataset.imgName = imgData.name;
+  wrapper.style.cssText = 'position:absolute;left:' + (imgData.x||10) + '%;top:' + (imgData.y||10) + '%;width:' + (imgData.w||20) + '%;height:' + (imgData.h||20) + '%;z-index:10;cursor:pointer;';
+  var img = document.createElement('img');
+  img.src = imgData.url;
+  img.style.cssText = 'width:100%;height:100%;object-fit:contain;pointer-events:none;';
+  img.alt = imgData.name;
+  wrapper.appendChild(img);
+  wrapper.onclick = function(e) { e.stopPropagation(); selectEditorElement(wrapper, imgData.name); };
+  container.appendChild(wrapper);
+  _mapEditorState.insertedImages.push({ name: imgData.name, url: imgData.url, el: wrapper, x: imgData.x||10, y: imgData.y||10, w: imgData.w||20, h: imgData.h||20 });
+}
+
+function makeElementsClickable(container) {
+  // 背景画像、子要素をクリック可能にする
+  var children = container.querySelectorAll('div, img, span');
+  children.forEach(function(child) {
+    if (child.classList.contains('se-element-info')) return;
+    child.style.pointerEvents = 'auto';
+    child.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var name = child.dataset.name || child.className || child.tagName;
+      if (child.alt) name = child.alt;
+      if (child.id) name = child.id;
+      selectEditorElement(child, name);
+    });
+  });
+  // コンテナ自体のクリックで選択解除
+  container.addEventListener('click', function(e) {
+    if (e.target === container) deselectEditorElement();
+  });
+}
+
+// ─── エレメント選択 ───
+function selectEditorElement(el, name) {
+  deselectEditorElement();
+  _mapEditorState.selectedElement = el;
+  el.classList.add('se-selected');
+
+  // 情報パネル
+  var info = document.createElement('div');
+  info.className = 'se-element-info';
+  info.id = 'se-element-info-panel';
+  info.innerHTML = '<span style="font-weight:bold;">' + escapeHtml(name) + '</span>' +
+    '<button class="se-btn se-btn-primary" onclick="startPositionEdit()">位置を編集</button>' +
+    '<button class="se-btn se-btn-success" onclick="startSizeEdit()">サイズを編集</button>' +
+    '<button class="se-btn se-btn-purple" onclick="replaceElementImage()">画像の差し替え</button>';
+  el.style.position = el.style.position || 'relative';
+  el.appendChild(info);
+}
+
+function deselectEditorElement() {
+  if (_mapEditorState.selectedElement) {
+    _mapEditorState.selectedElement.classList.remove('se-selected');
+    var info = document.getElementById('se-element-info-panel');
+    if (info) info.remove();
+    _mapEditorState.selectedElement = null;
+    _mapEditorState.editMode = null;
+  }
+}
+
+function escapeHtml(str) {
+  var d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ─── 位置編集（ドラッグ） ───
+window.startPositionEdit = function() {
+  if (!_mapEditorState.selectedElement) return;
+  _mapEditorState.editMode = 'position';
+  var el = _mapEditorState.selectedElement;
+  el.style.cursor = 'grab';
+  var startX, startY, origLeft, origTop;
+
+  function onDown(e) {
+    e.preventDefault();
+    var pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX;
+    startY = pt.clientY;
+    origLeft = parseFloat(el.style.left) || 0;
+    origTop = parseFloat(el.style.top) || 0;
+    el.style.cursor = 'grabbing';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }
+  function onMove(e) {
+    e.preventDefault();
+    var pt = e.touches ? e.touches[0] : e;
+    var canvas = document.getElementById('se-map-canvas');
+    var rect = canvas.getBoundingClientRect();
+    var dx = ((pt.clientX - startX) / rect.width) * 100;
+    var dy = ((pt.clientY - startY) / rect.height) * 100;
+    el.style.left = (origLeft + dx) + '%';
+    el.style.top = (origTop + dy) + '%';
+  }
+  function onUp() {
+    el.style.cursor = 'move';
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+    saveUndoState();
+    // 挿入画像の場合座標を更新
+    updateInsertedImageData(el);
+  }
+  el.addEventListener('mousedown', onDown);
+  el.addEventListener('touchstart', onDown, { passive: false });
+  el._sePositionHandlers = { down: onDown };
+};
+
+// ─── サイズ編集（ドラッグ） ───
+window.startSizeEdit = function() {
+  if (!_mapEditorState.selectedElement) return;
+  _mapEditorState.editMode = 'size';
+  var el = _mapEditorState.selectedElement;
+  el.style.cursor = 'nwse-resize';
+  var startX, startY, origW, origH;
+
+  function onDown(e) {
+    e.preventDefault();
+    var pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX;
+    startY = pt.clientY;
+    origW = parseFloat(el.style.width) || 20;
+    origH = parseFloat(el.style.height) || 20;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }
+  function onMove(e) {
+    e.preventDefault();
+    var pt = e.touches ? e.touches[0] : e;
+    var canvas = document.getElementById('se-map-canvas');
+    var rect = canvas.getBoundingClientRect();
+    var dw = ((pt.clientX - startX) / rect.width) * 100;
+    var dh = ((pt.clientY - startY) / rect.height) * 100;
+    el.style.width = Math.max(2, origW + dw) + '%';
+    el.style.height = Math.max(2, origH + dh) + '%';
+  }
+  function onUp() {
+    el.style.cursor = 'pointer';
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+    saveUndoState();
+    updateInsertedImageData(el);
+  }
+  el.addEventListener('mousedown', onDown);
+  el.addEventListener('touchstart', onDown, { passive: false });
+};
+
+// ─── 画像の差し替え ───
+window.replaceElementImage = function() {
+  if (!_mapEditorState.selectedElement) return;
+  showDialog('画像の差し替え', [
+    { label: '画像URL', id: 'se-replace-url', type: 'url', placeholder: 'https://...' }
+  ], function(values) {
+    var url = values['se-replace-url'];
+    if (!url) return;
+    var el = _mapEditorState.selectedElement;
+    // img要素を探すか、背景として設定
+    var img = el.querySelector('img');
+    if (img) {
+      img.src = url;
+    } else if (el.tagName === 'IMG') {
+      el.src = url;
+    } else {
+      el.style.backgroundImage = 'url(' + url + ')';
+      el.style.backgroundSize = 'cover';
+      el.style.backgroundPosition = 'center';
+    }
+    saveUndoState();
+    updateInsertedImageData(el);
+  });
+};
+
+function updateInsertedImageData(el) {
+  if (!el.dataset || !el.dataset.imgName) return;
+  var name = el.dataset.imgName;
+  _mapEditorState.insertedImages.forEach(function(img) {
+    if (img.name === name) {
+      img.x = parseFloat(el.style.left) || 0;
+      img.y = parseFloat(el.style.top) || 0;
+      img.w = parseFloat(el.style.width) || 20;
+      img.h = parseFloat(el.style.height) || 20;
+      var imgEl = el.querySelector('img');
+      if (imgEl) img.url = imgEl.src;
+    }
+  });
+}
+
+// ─── Undo/Redo ───
+function saveUndoState() {
+  var canvas = document.getElementById('se-map-canvas');
+  _mapEditorState.undoStack.push(canvas.innerHTML);
+  _mapEditorState.redoStack = [];
+  // 最大50件
+  if (_mapEditorState.undoStack.length > 50) _mapEditorState.undoStack.shift();
+}
+
+window.mapEditorUndo = function() {
+  if (_mapEditorState.undoStack.length <= 1) return;
+  var canvas = document.getElementById('se-map-canvas');
+  _mapEditorState.redoStack.push(_mapEditorState.undoStack.pop());
+  canvas.innerHTML = _mapEditorState.undoStack[_mapEditorState.undoStack.length - 1];
+  rebindCanvasEvents();
+};
+
+window.mapEditorRedo = function() {
+  if (_mapEditorState.redoStack.length === 0) return;
+  var canvas = document.getElementById('se-map-canvas');
+  var state = _mapEditorState.redoStack.pop();
+  _mapEditorState.undoStack.push(state);
+  canvas.innerHTML = state;
+  rebindCanvasEvents();
+};
+
+function rebindCanvasEvents() {
+  var canvas = document.getElementById('se-map-canvas');
+  var room = canvas.querySelector('[id^="se-editing"]') || canvas.firstElementChild;
+  if (room) makeElementsClickable(room);
+  // 挿入画像のイベント再バインド
+  canvas.querySelectorAll('.se-inserted-image').forEach(function(el) {
+    el.onclick = function(e) { e.stopPropagation(); selectEditorElement(el, el.dataset.imgName || 'image'); };
+  });
+}
+
+// ─── 再生/停止 ───
+window.mapEditorPlay = function() {
+  _mapEditorState.isPlaying = true;
+  document.getElementById('se-btn-play').style.display = 'none';
+  document.getElementById('se-btn-stop').style.display = 'inline-flex';
+  // NPC移動やBGMのプレビューなどのシンプルなアニメーション
+  var canvas = document.getElementById('se-map-canvas');
+  var npcs = canvas.querySelectorAll('.npc-el');
+  npcs.forEach(function(n) { n.style.display = ''; });
+};
+
+window.mapEditorStop = function() {
+  _mapEditorState.isPlaying = false;
+  document.getElementById('se-btn-play').style.display = 'inline-flex';
+  document.getElementById('se-btn-stop').style.display = 'none';
+};
+
+// ─── 入口表示/非表示 ───
+window.mapEditorShowEntrances = function() {
+  _mapEditorState.showEntrances = true;
+  document.getElementById('se-btn-entrance-show').style.display = 'none';
+  document.getElementById('se-btn-entrance-hide').style.display = 'inline-flex';
+  var canvas = document.getElementById('se-map-canvas');
+  // 入口エリア（action-btnで移動可能な範囲）を可視化
+  var entranceAreas = findEntranceAreas(_mapEditorState.currentMapId);
+  entranceAreas.forEach(function(area) {
+    var marker = document.createElement('div');
+    marker.className = 'se-entrance-marker se-entrance-visible';
+    marker.style.cssText = 'position:absolute;left:' + area.x + '%;top:' + area.y + '%;width:' + area.w + '%;height:' + area.h + '%;z-index:50;';
+    marker.innerHTML = '<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#333;font-size:1.4vmin;font-weight:bold;white-space:nowrap;">' + escapeHtml(area.label) + '</span>';
+    marker.onclick = function(e) { e.stopPropagation(); selectEditorElement(marker, '入口: ' + area.label); };
+    canvas.appendChild(marker);
+  });
+};
+
+window.mapEditorHideEntrances = function() {
+  _mapEditorState.showEntrances = false;
+  document.getElementById('se-btn-entrance-show').style.display = 'inline-flex';
+  document.getElementById('se-btn-entrance-hide').style.display = 'none';
+  var canvas = document.getElementById('se-map-canvas');
+  canvas.querySelectorAll('.se-entrance-marker').forEach(function(m) { m.remove(); });
+};
+
+function findEntranceAreas(mapId) {
+  // 既存のマップ遷移ロジックに基づいて入口エリアを定義
+  var areas = [];
+  var defs = {
+    'room-parking': [
+      { x: 85, y: 60, w: 15, h: 40, label: '→ 前面道路' }
+    ],
+    'room-street': [
+      { x: 0, y: 60, w: 10, h: 40, label: '← 駐車場' },
+      { x: 20, y: 40, w: 30, h: 60, label: '→ エントランス' }
+    ],
+    'room-entrance': [
+      { x: 0, y: 60, w: 10, h: 40, label: '← 前面道路' },
+      { x: 85, y: 10, w: 15, h: 50, label: '→ 階段' }
+    ],
+    'room-stairs': [
+      { x: 0, y: 60, w: 15, h: 40, label: '← エントランス' },
+      { x: 85, y: 60, w: 15, h: 40, label: '→ 地下街' }
+    ],
+    'room-corridor1': [
+      { x: 5, y: 10, w: 25, h: 50, label: '101号室 扉' },
+      { x: 70, y: 10, w: 25, h: 50, label: '102号室 扉' },
+      { x: 85, y: 60, w: 15, h: 40, label: '→ 階段' }
+    ],
+    'room-corridor2': [
+      { x: 5, y: 10, w: 25, h: 50, label: '201号室 扉' },
+      { x: 70, y: 10, w: 25, h: 50, label: '202号室 扉' },
+      { x: 85, y: 60, w: 15, h: 40, label: '→ 階段' }
+    ],
+    'room-basement': [
+      { x: 0, y: 60, w: 15, h: 40, label: '← 階段' },
+      { x: 85, y: 60, w: 15, h: 40, label: '→ 焼き鳥屋' }
+    ],
+    'room-hallway': [
+      { x: 0, y: 60, w: 5, h: 40, label: '← 共用廊下' },
+      { x: 20, y: 10, w: 20, h: 50, label: 'トイレ' },
+      { x: 60, y: 10, w: 20, h: 50, label: '脱衣所' },
+      { x: 85, y: 10, w: 15, h: 50, label: '台所→' }
+    ],
+    'room-hallway-b': [
+      { x: 0, y: 60, w: 5, h: 40, label: '← 共用廊下' },
+      { x: 20, y: 10, w: 20, h: 50, label: 'トイレ' },
+      { x: 60, y: 10, w: 20, h: 50, label: '脱衣所' },
+      { x: 85, y: 10, w: 15, h: 50, label: '台所→' }
+    ]
+  };
+  return defs[mapId] || [];
+}
+
+// ─── 画像の挿入 ───
+window.mapEditorInsertImage = function() {
+  showDialog('画像の挿入', [
+    { label: '画像名称（英数字）', id: 'se-img-name', type: 'text', placeholder: 'my_image_01' },
+    { label: '画像URL', id: 'se-img-url', type: 'url', placeholder: 'https://...' }
+  ], function(values) {
+    var name = values['se-img-name'];
+    var url = values['se-img-url'];
+    if (!name || !url) return;
+    // 英数字チェック
+    if (!/^[a-zA-Z0-9_]+$/.test(name)) {
+      alert('画像名称は英数字とアンダースコアのみ使用できます。');
+      return;
+    }
+    var canvas = document.getElementById('se-map-canvas');
+    addInsertedImageToCanvas(canvas, { name: name, url: url, x: 10, y: 10, w: 20, h: 20 });
+    saveUndoState();
+  });
+};
+
+// ─── 既存マップから複製 ───
+window.mapEditorCloneFrom = function() {
+  var maps = getExistingMaps();
+  var list = maps.map(function(m) { return m.name; });
+  var choice = prompt('複製元のマップ名を入力してください：\n\n' + list.join('\n'));
+  if (!choice) return;
+  var target = null;
+  maps.forEach(function(m) { if (m.name === choice) target = m; });
+  if (!target || !target.element) { alert('マップが見つかりませんでした。'); return; }
+
+  var canvas = document.getElementById('se-map-canvas');
+  canvas.innerHTML = '';
+  var clone = target.element.cloneNode(true);
+  clone.id = 'se-editing-room';
+  clone.classList.remove('active');
+  clone.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
+  var toHide = clone.querySelectorAll('.player-el, .npc-el, .van-visual, .placed-item');
+  toHide.forEach(function(el) { el.style.display = 'none'; });
+  canvas.appendChild(clone);
+  makeElementsClickable(clone);
+  saveUndoState();
+};
+
+// ─── 編集終了 ───
+window.mapEditorFinish = function() {
+  // 挿入画像データを保存
+  var imgDataList = [];
+  _mapEditorState.insertedImages.forEach(function(img) {
+    imgDataList.push({ name: img.name, url: img.url, x: img.x, y: img.y, w: img.w, h: img.h });
+  });
+
+  if (_mapEditorState.isNewMap) {
+    var mapName = prompt('マップ名を入力してください：');
+    if (!mapName) return;
+    var mapId = 'room-custom-' + Date.now();
+    _stageEditorData.maps.push({
+      id: mapId,
+      name: mapName,
+      insertedImages: imgDataList,
+      html: document.getElementById('se-map-canvas').innerHTML
+    });
+  } else {
+    // 既存マップの編集データを保存
+    var cm = findCustomMapData(_mapEditorState.currentMapId);
+    if (cm) {
+      cm.insertedImages = imgDataList;
+      cm.html = document.getElementById('se-map-canvas').innerHTML;
+    } else {
+      _stageEditorData.maps.push({
+        id: _mapEditorState.currentMapId,
+        name: document.getElementById('se-map-name-display').textContent,
+        insertedImages: imgDataList,
+        html: document.getElementById('se-map-canvas').innerHTML
+      });
+    }
+  }
+
+  // 入口マーカーを消す
+  mapEditorHideEntrances();
+  deselectEditorElement();
+  document.getElementById('scene-map-editor').classList.remove('active');
+  document.getElementById('scene-map-list').classList.add('active');
+  renderMapGrid();
+};
+
+// ─── 新規マップ作成 ───
+window.createNewMap = function() {
+  var mapId = 'room-custom-' + Date.now();
+  openMapEditor(mapId, '新規マップ', true);
+};
+
+// ================================================================
+// ステージ構成作成・編集
+// ================================================================
+
+window.openStageComposerList = function() {
+  document.getElementById('scene-stage-editor').classList.remove('active');
+  document.getElementById('scene-stage-list').classList.add('active');
+  renderStageList();
+};
+
+window.closeStageComposerList = function() {
+  document.getElementById('scene-stage-list').classList.remove('active');
+  document.getElementById('scene-stage-editor').classList.add('active');
+};
+
+function renderStageList() {
+  var list = document.getElementById('se-stage-list');
+  list.innerHTML = '';
+  _stageEditorData.stages.forEach(function(stage, idx) {
+    var item = document.createElement('div');
+    item.className = 'se-stage-item';
+    item.innerHTML =
+      '<div class="se-stage-num">' + (idx + 1) + '</div>' +
+      '<div class="se-stage-name">' + escapeHtml(stage.name || '(名称未設定)') + '</div>' +
+      '<div class="se-stage-actions">' +
+        '<button class="se-btn se-btn-primary" onclick="event.stopPropagation();openStageComposer(' + idx + ')">編集</button>' +
+        '<button class="se-btn se-btn-danger" onclick="event.stopPropagation();deleteStageConfig(' + idx + ')">削除</button>' +
+      '</div>';
+    item.onclick = function() { openStageComposer(idx); };
+    list.appendChild(item);
+  });
+  if (_stageEditorData.stages.length === 0) {
+    list.innerHTML = '<div style="color:#90a4ae;text-align:center;padding:5vmin;font-size:2vmin;">ステージ構成がありません。「新規ステージ構成作成」で追加してください。</div>';
+  }
+}
+
+window.createNewStageConfig = function() {
+  if (_stageEditorData.stages.length >= 30) {
+    alert('ステージ構成は最大30件までです。');
+    return;
+  }
+  var name = prompt('新しいステージ構成の名称を入力してください：');
+  if (!name) return;
+  _stageEditorData.stages.push({
+    name: name,
+    maps: ['駐車場'],
+    connections: [],
+    bgm: {},
+    nodePositions: { '駐車場': { x: 50, y: 50 } }
+  });
+  renderStageList();
+};
+
+window.deleteStageConfig = function(idx) {
+  if (!confirm('ステージ構成「' + (_stageEditorData.stages[idx].name || '') + '」を削除しますか？')) return;
+  _stageEditorData.stages.splice(idx, 1);
+  renderStageList();
+};
+
+// ─── ステージ構成エディタ（リレーション画面） ───
+window.openStageComposer = function(idx) {
+  _composerState.currentStageIdx = idx;
+  _composerState.selectedNode = null;
+  _composerState.connectingFrom = null;
+
+  document.getElementById('scene-stage-list').classList.remove('active');
+  document.getElementById('scene-stage-composer').classList.add('active');
+
+  var stage = _stageEditorData.stages[idx];
+  document.getElementById('se-composer-name').textContent = stage.name;
+  renderComposerCanvas(stage);
+};
+
+window.stageComposerBack = function() {
+  document.getElementById('scene-stage-composer').classList.remove('active');
+  document.getElementById('scene-stage-list').classList.add('active');
+  renderStageList();
+};
+
+window.stageComposerEditName = function() {
+  var stage = _stageEditorData.stages[_composerState.currentStageIdx];
+  var name = prompt('ステージ構成名称：', stage.name);
+  if (name !== null) {
+    stage.name = name;
+    document.getElementById('se-composer-name').textContent = name;
+  }
+};
+
+window.stageComposerSave = function() {
+  saveStageEditorData();
+  alert('ステージ構成を保存しました。');
+};
+
+window.stageComposerAddMap = function() {
+  var stage = _stageEditorData.stages[_composerState.currentStageIdx];
+  var allMaps = getExistingMaps();
+  // カスタムマップも追加
+  _stageEditorData.maps.forEach(function(cm) {
+    var found = false;
+    allMaps.forEach(function(m) { if (m.id === cm.id) found = true; });
+    if (!found) allMaps.push({ id: cm.id, name: cm.name });
+  });
+  var available = allMaps.filter(function(m) { return stage.maps.indexOf(m.name) === -1; });
+  if (available.length === 0) { alert('追加可能なマップがありません。'); return; }
+
+  var names = available.map(function(m) { return m.name; });
+  var choice = prompt('追加するマップ名を入力してください：\n\n利用可能:\n' + names.join('\n'));
+  if (!choice) return;
+  var found = available.some(function(m) { return m.name === choice; });
+  if (!found) { alert('マップが見つかりませんでした。'); return; }
+
+  stage.maps.push(choice);
+  if (!stage.nodePositions) stage.nodePositions = {};
+  // 空いている位置に配置
+  var maxX = 50;
+  Object.keys(stage.nodePositions).forEach(function(k) {
+    if (stage.nodePositions[k].x > maxX) maxX = stage.nodePositions[k].x;
+  });
+  stage.nodePositions[choice] = { x: maxX + 140, y: 50 };
+  renderComposerCanvas(stage);
+};
+
+function renderComposerCanvas(stage) {
+  var canvas = document.getElementById('se-composer-canvas');
+  var svg = document.getElementById('se-composer-svg');
+
+  // 既存ノードを削除
+  canvas.querySelectorAll('.se-node').forEach(function(n) { n.remove(); });
+  svg.innerHTML = '';
+
+  if (!stage.nodePositions) stage.nodePositions = {};
+
+  // ノードを配置
+  stage.maps.forEach(function(mapName, i) {
+    var pos = stage.nodePositions[mapName] || { x: 50 + i * 140, y: 50 };
+    stage.nodePositions[mapName] = pos;
+
+    var node = document.createElement('div');
+    node.className = 'se-node';
+    node.dataset.mapName = mapName;
+    node.style.left = pos.x + 'px';
+    node.style.top = pos.y + 'px';
+
+    // ヘッダー
+    var header = document.createElement('div');
+    header.className = 'se-node-header';
+    header.textContent = mapName;
+    node.appendChild(header);
+
+    // サムネイル
+    var thumbDiv = document.createElement('div');
+    thumbDiv.className = 'se-node-thumb';
+    var roomEl = findRoomElementByName(mapName);
+    if (roomEl) {
+      var tn = createMapThumbnail(roomEl);
+      var img = document.createElement('img');
+      img.src = tn;
+      thumbDiv.appendChild(img);
+    } else {
+      thumbDiv.innerHTML = '<span style="color:#90a4ae;font-size:1.2vmin;">No Preview</span>';
+    }
+    node.appendChild(thumbDiv);
+
+    // ポート（接続点）
+    var ports = document.createElement('div');
+    ports.className = 'se-node-ports';
+    var entrances = getMapEntrances(mapName);
+    entrances.forEach(function(ent) {
+      var port = document.createElement('div');
+      port.className = 'se-node-port';
+      port.textContent = ent;
+      port.dataset.entrance = ent;
+      // 接続済みチェック
+      if (stage.connections) {
+        stage.connections.forEach(function(conn) {
+          if ((conn.from === mapName || conn.to === mapName) && conn.condition === ent) {
+            port.classList.add('se-port-connected');
+          }
+        });
+      }
+      port.onclick = function(e) {
+        e.stopPropagation();
+        handlePortClick(mapName, ent);
+      };
+      ports.appendChild(port);
+    });
+    node.appendChild(ports);
+
+    // ドラッグ
+    enableNodeDrag(node, mapName, stage);
+
+    // 右クリック
+    node.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      showNodeContextMenu(e, mapName, stage);
+    });
+
+    canvas.appendChild(node);
+  });
+
+  // コネクション線を描画
+  renderConnections(stage, svg, canvas);
+}
+
+function findRoomElementByName(name) {
+  var ROOM_IDS = {
+    '駐車場': 'room-parking',
+    '前面道路': 'room-street',
+    '1Fエントランス': 'room-entrance',
+    '階段': 'room-stairs',
+    '地下街': 'room-basement',
+    '1F共用廊下': 'room-corridor1',
+    '2F共用廊下': 'room-corridor2',
+    '101号室 廊下': 'room-hallway',
+    '101号室': 'room-hallway',
+    'トイレ(A)': 'room-toilet',
+    '脱衣所(A)': 'room-changing',
+    '浴室(A)': 'room-bath',
+    '台所(A)': 'room-kitchen',
+    '寝室(A)': 'room-bedroom',
+    '102号室 廊下': 'room-hallway-b',
+    '102号室': 'room-hallway-b',
+    'トイレ(B)': 'room-toilet-b',
+    '脱衣所(B)': 'room-changing-b',
+    '浴室(B)': 'room-bath-b',
+    '台所(B)': 'room-kitchen-b',
+    '寝室(B)': 'room-bedroom-b',
+    '焼き鳥屋': 'room-yakitori',
+    'ラーメン屋': 'room-ramen-shop'
+  };
+  var id = ROOM_IDS[name];
+  if (id) return document.getElementById(id);
+  return null;
+}
+
+function getMapEntrances(mapName) {
+  var entrances = {
+    '駐車場': ['右端→前面道路'],
+    '前面道路': ['左端→駐車場', '扉→エントランス'],
+    '1Fエントランス': ['←前面道路', '→階段', '→1F共用廊下'],
+    '階段': ['←エントランス', '↓地下街', '→2F共用廊下'],
+    '地下街': ['↑階段', '→焼き鳥屋'],
+    '1F共用廊下': ['←エントランス', '101号室扉', '102号室扉'],
+    '2F共用廊下': ['←階段', '201号室扉', '202号室扉'],
+    '101号室': ['←共用廊下'],
+    '102号室': ['←共用廊下'],
+    '201号室': ['←共用廊下'],
+    '202号室': ['←共用廊下'],
+    '焼き鳥屋': ['←地下街', '→ラーメン屋'],
+    'ラーメン屋': ['←焼き鳥屋']
+  };
+  return entrances[mapName] || ['入口1'];
+}
+
+function enableNodeDrag(node, mapName, stage) {
+  var startX, startY, origX, origY;
+  function onDown(e) {
+    if (e.button === 2) return; // 右クリックはスキップ
+    e.preventDefault();
+    var pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX;
+    startY = pt.clientY;
+    origX = parseInt(node.style.left) || 0;
+    origY = parseInt(node.style.top) || 0;
+    node.style.zIndex = '100';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }
+  function onMove(e) {
+    e.preventDefault();
+    var pt = e.touches ? e.touches[0] : e;
+    var dx = pt.clientX - startX;
+    var dy = pt.clientY - startY;
+    node.style.left = (origX + dx) + 'px';
+    node.style.top = (origY + dy) + 'px';
+    // 位置を保存
+    stage.nodePositions[mapName] = { x: origX + dx, y: origY + dy };
+    // 線を再描画
+    renderConnections(stage, document.getElementById('se-composer-svg'), document.getElementById('se-composer-canvas'));
+  }
+  function onUp() {
+    node.style.zIndex = '5';
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+  }
+  node.addEventListener('mousedown', onDown);
+  node.addEventListener('touchstart', onDown, { passive: false });
+}
+
+function renderConnections(stage, svg, canvas) {
+  svg.innerHTML = '';
+  if (!stage.connections) return;
+  var canvasRect = canvas.getBoundingClientRect();
+
+  stage.connections.forEach(function(conn) {
+    var fromNode = canvas.querySelector('.se-node[data-map-name="' + conn.from + '"]');
+    var toNode = canvas.querySelector('.se-node[data-map-name="' + conn.to + '"]');
+    if (!fromNode || !toNode) return;
+
+    var fx = parseInt(fromNode.style.left) + fromNode.offsetWidth / 2;
+    var fy = parseInt(fromNode.style.top) + fromNode.offsetHeight / 2;
+    var tx = parseInt(toNode.style.left) + toNode.offsetWidth / 2;
+    var ty = parseInt(toNode.style.top) + toNode.offsetHeight / 2;
+
+    // ベジェ曲線
+    var mx = (fx + tx) / 2;
+    var my = (fy + ty) / 2;
+    var dx = Math.abs(tx - fx);
+    var cpOffset = Math.min(dx * 0.3, 80);
+
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    var d = 'M' + fx + ',' + fy + ' C' + (fx + cpOffset) + ',' + fy + ' ' + (tx - cpOffset) + ',' + ty + ' ' + tx + ',' + ty;
+    path.setAttribute('d', d);
+    path.setAttribute('class', 'se-connection');
+    path.setAttribute('data-from', conn.from);
+    path.setAttribute('data-to', conn.to);
+    // クリックで削除
+    path.addEventListener('click', function() {
+      if (confirm('「' + conn.from + '」→「' + conn.to + '」の接続を削除しますか？')) {
+        var idx2 = stage.connections.indexOf(conn);
+        if (idx2 !== -1) stage.connections.splice(idx2, 1);
+        renderConnections(stage, svg, canvas);
+      }
+    });
+    path.style.pointerEvents = 'stroke';
+    svg.appendChild(path);
+
+    // ラベル
+    if (conn.condition) {
+      var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('x', mx);
+      label.setAttribute('y', my - 8);
+      label.setAttribute('class', 'se-connection-label');
+      label.textContent = conn.condition;
+      svg.appendChild(label);
+    }
+
+    // 矢印
+    if (!conn.bidirectional) {
+      var arrowSize = 8;
+      var angle = Math.atan2(ty - fy, tx - fx);
+      var ax = tx - Math.cos(angle) * 15;
+      var ay = ty - Math.sin(angle) * 15;
+      var arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      var p1 = ax + ',' + ay;
+      var p2 = (ax - arrowSize * Math.cos(angle - 0.5)) + ',' + (ay - arrowSize * Math.sin(angle - 0.5));
+      var p3 = (ax - arrowSize * Math.cos(angle + 0.5)) + ',' + (ay - arrowSize * Math.sin(angle + 0.5));
+      arrow.setAttribute('points', p1 + ' ' + p2 + ' ' + p3);
+      arrow.setAttribute('fill', '#7c4dff');
+      svg.appendChild(arrow);
+    }
+  });
+
+  // SVGのサイズを調整
+  var maxX = 100, maxY = 100;
+  canvas.querySelectorAll('.se-node').forEach(function(n) {
+    var r = parseInt(n.style.left) + n.offsetWidth + 50;
+    var b = parseInt(n.style.top) + n.offsetHeight + 50;
+    if (r > maxX) maxX = r;
+    if (b > maxY) maxY = b;
+  });
+  svg.setAttribute('width', maxX);
+  svg.setAttribute('height', maxY);
+  svg.style.width = maxX + 'px';
+  svg.style.height = maxY + 'px';
+}
+
+// ─── ポートクリック（接続作成） ───
+function handlePortClick(mapName, entrance) {
+  if (!_composerState.connectingFrom) {
+    _composerState.connectingFrom = { map: mapName, entrance: entrance };
+    // ポートをハイライト
+    var ports = document.querySelectorAll('.se-node-port');
+    ports.forEach(function(p) {
+      var node = p.closest('.se-node');
+      if (node && node.dataset.mapName === mapName && p.dataset.entrance === entrance) {
+        p.style.background = '#ffab00';
+      }
+    });
+    return;
+  }
+
+  // 2つ目のポートが選択された → 接続作成
+  var from = _composerState.connectingFrom;
+  _composerState.connectingFrom = null;
+
+  if (from.map === mapName) {
+    // 同じマップ内の接続は不可
+    resetPortHighlights();
+    return;
+  }
+
+  var stage = _stageEditorData.stages[_composerState.currentStageIdx];
+  var condition = prompt('移行条件を入力（例：扉、階段降りる、画面左端）：', from.entrance);
+  if (condition === null) { resetPortHighlights(); return; }
+
+  var bidirectional = confirm('双方向の接続にしますか？');
+
+  stage.connections.push({
+    from: from.map,
+    to: mapName,
+    condition: condition,
+    bidirectional: bidirectional
+  });
+
+  resetPortHighlights();
+  renderComposerCanvas(stage);
+}
+
+function resetPortHighlights() {
+  document.querySelectorAll('.se-node-port').forEach(function(p) {
+    p.style.background = '';
+  });
+}
+
+// ─── 右クリックメニュー ───
+function showNodeContextMenu(e, mapName, stage) {
+  closeContextMenu();
+  var menu = document.createElement('div');
+  menu.className = 'se-context-menu';
+  menu.id = 'se-context-menu';
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+
+  var items = [
+    { label: '接続を作成', action: function() { _composerState.connectingFrom = { map: mapName, entrance: '' }; alert('接続先のマップのポートをクリックしてください。'); } },
+    { label: 'BGMを設定', action: function() {
+      var url = prompt('BGMのURL（mp3/ogg）:', stage.bgm && stage.bgm[mapName] || '');
+      if (url !== null) {
+        if (!stage.bgm) stage.bgm = {};
+        stage.bgm[mapName] = url;
+      }
+    }},
+    { label: 'BGMを削除', action: function() {
+      if (stage.bgm) delete stage.bgm[mapName];
+    }},
+    { separator: true },
+    { label: '移行条件を編集', action: function() {
+      var conns = stage.connections.filter(function(c) { return c.from === mapName || c.to === mapName; });
+      if (conns.length === 0) { alert('このマップには接続がありません。'); return; }
+      var desc = conns.map(function(c, i) { return (i + 1) + ': ' + c.from + ' → ' + c.to + ' [' + (c.condition || 'なし') + ']'; }).join('\n');
+      var num = prompt('編集する接続番号を入力：\n\n' + desc);
+      if (!num) return;
+      var ci = parseInt(num) - 1;
+      if (ci >= 0 && ci < conns.length) {
+        var newCond = prompt('新しい移行条件：', conns[ci].condition);
+        if (newCond !== null) conns[ci].condition = newCond;
+      }
+    }},
+    { separator: true },
+    { label: 'マップを編集', action: function() {
+      var roomEl = findRoomElementByName(mapName);
+      if (roomEl) {
+        document.getElementById('scene-stage-composer').classList.remove('active');
+        document.getElementById('scene-map-list').classList.add('active');
+        openMapEditor(roomEl.id, mapName, false);
+      } else {
+        alert('マップの編集画面を開けませんでした。');
+      }
+    }},
+    { label: 'このマップを削除', action: function() {
+      if (mapName === '駐車場') { alert('駐車場は必須のため削除できません。'); return; }
+      if (!confirm('「' + mapName + '」をステージ構成から削除しますか？')) return;
+      stage.maps = stage.maps.filter(function(m) { return m !== mapName; });
+      stage.connections = stage.connections.filter(function(c) { return c.from !== mapName && c.to !== mapName; });
+      delete stage.nodePositions[mapName];
+      renderComposerCanvas(stage);
+    }}
+  ];
+
+  items.forEach(function(item) {
+    if (item.separator) {
+      var sep = document.createElement('div');
+      sep.className = 'se-context-separator';
+      menu.appendChild(sep);
+      return;
+    }
+    var mi = document.createElement('div');
+    mi.className = 'se-context-item';
+    mi.textContent = item.label;
+    mi.onclick = function() { closeContextMenu(); item.action(); };
+    menu.appendChild(mi);
+  });
+
+  document.body.appendChild(menu);
+  // クリックで閉じる
+  setTimeout(function() {
+    document.addEventListener('click', closeContextMenu, { once: true });
+  }, 10);
+}
+
+function closeContextMenu() {
+  var menu = document.getElementById('se-context-menu');
+  if (menu) menu.remove();
+}
+
+// ─── 汎用ダイアログ ───
+function showDialog(title, fields, onSubmit) {
+  var backdrop = document.createElement('div');
+  backdrop.className = 'se-dialog-backdrop';
+  backdrop.id = 'se-dialog-backdrop';
+
+  var dialog = document.createElement('div');
+  dialog.className = 'se-dialog';
+  dialog.id = 'se-dialog';
+  var html = '<h3>' + escapeHtml(title) + '</h3>';
+  fields.forEach(function(f) {
+    html += '<label>' + escapeHtml(f.label) + '</label>';
+    html += '<input type="' + f.type + '" id="' + f.id + '" placeholder="' + (f.placeholder || '') + '">';
+  });
+  html += '<div class="se-dialog-actions">' +
+    '<button class="se-btn se-btn-secondary" id="se-dialog-cancel">キャンセル</button>' +
+    '<button class="se-btn se-btn-primary" id="se-dialog-ok">挿入</button>' +
+    '</div>';
+  dialog.innerHTML = html;
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(dialog);
+
+  document.getElementById('se-dialog-cancel').onclick = function() { backdrop.remove(); dialog.remove(); };
+  backdrop.onclick = function() { backdrop.remove(); dialog.remove(); };
+  document.getElementById('se-dialog-ok').onclick = function() {
+    var values = {};
+    fields.forEach(function(f) { values[f.id] = document.getElementById(f.id).value; });
+    backdrop.remove();
+    dialog.remove();
+    onSubmit(values);
+  };
+}
+
+// ─── データ保存 ───
+function saveStageEditorData() {
+  var el = document.getElementById('saved-stage-data');
+  if (el) {
+    el.textContent = JSON.stringify(_stageEditorData);
+  }
+}
+
+// ─── HTMLエクスポート ───
+window.stageEditorExportHTML = function() {
+  saveStageEditorData();
+  // シナリオデータも保存
+  try {
+    if (document.getElementById('saved-assets'))
+      document.getElementById('saved-assets').textContent = JSON.stringify(typeof customData !== 'undefined' ? customData : {});
+    if (document.getElementById('saved-scenarios'))
+      document.getElementById('saved-scenarios').textContent = JSON.stringify(typeof scenarioData !== 'undefined' ? scenarioData : []);
+  } catch(e) {}
+
+  var htmlContent = '<!DOCTYPE html>\n<html lang="ja">' + document.documentElement.innerHTML + '</html>';
+  var blob = new Blob([htmlContent], { type: 'text/html' });
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'HOANSOCHI_SIMULATOR_STAGE_EDITED.html';
+  link.click();
+  URL.revokeObjectURL(link.href);
+  alert('HTMLファイルを出力しました。');
+};
+
+// ─── インポート時のステージデータ復元 ───
+(function(){
+  try {
+    var origImport = window.handleImport;
+    if (typeof origImport === 'function' && !origImport.__sePatched) {
+      window.handleImport = function(input) {
+        origImport.call(this, input);
+        setTimeout(function() { initStageEditorData(); }, 500);
+      };
+      window.handleImport.__sePatched = true;
+    }
+  } catch(e) {}
+})();
+
 })();
 </script>
 
