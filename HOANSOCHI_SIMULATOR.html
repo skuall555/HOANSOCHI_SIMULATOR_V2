@@ -4244,6 +4244,8 @@ document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
 document.querySelectorAll('.overlay-screen').forEach(s => s.classList.remove('active'));
 document.getElementById('scene-game').classList.add('active');
 initGame(); applyAllCustoms();
+// ステージ構成に基づく初期ルームのガイドサイン更新
+try{ updateGuideSignsForStage(0); }catch(e){}
 }
 
 function initGame() {
@@ -5779,31 +5781,45 @@ if(!transitionCooldown && !isDetectorMode && !isPlacementMode && !isVentMode) { 
 
 let moved = false;
 if(state.x < 0) {
-if(state.room===0) { changeRoom(1, 95); moved=true; }
-else if(state.room===2) { changeRoom(1, 50); moved=true; }
-else if(state.room===11) { changeRoom(2, 90); moved=true; } // 階段からエントランスへ
-else if(state.room===12) { changeRoom(11, 50); moved=true; } // 地下街から階段へ
-else if(state.room===13) { changeRoom(12, 28); moved=true; } // 焼き鳥屋→地下街
-else if(state.room===14) { changeRoom(12, 72); moved=true; } // ラーメン屋→地下街
-else if(state.room===5) {
-var d=(currentApartmentOwner==='B' && alarmResidentRoom)?alarmResidentRoom:residentRoom;
-changeRoom(entryFloor, (d === 1 || d === 3 ? 15 : 85));
-moved=true;
-}
-else if(state.room===6) { changeRoom(5, 30); moved=true; }
-else if(state.room===7) { changeRoom(5, 70); moved=true; }
-else if(state.room===8) { changeRoom(7, 95); moved=true; }
-else if(state.room===9) { changeRoom(5, 95); moved=true; }
-else if(state.room===10) { changeRoom(9, 90); moved=true; }
-else { state.x = 0; }
+  // ステージ構成がアクティブで、このルームが構成に含まれる場合
+  if(_stageTransitions && _stageMaps && _stageMaps[state.room]) {
+    var _st = _stageTransitions.leftEdge[state.room];
+    if(_st) { changeRoom(_st.room, _st.x); moved=true; }
+    else { state.x = 0; }
+  }
+  // デフォルト遷移（ステージ構成なし、またはルームが構成に含まれない場合）
+  else if(state.room===0) { changeRoom(1, 95); moved=true; }
+  else if(state.room===2) { changeRoom(1, 50); moved=true; }
+  else if(state.room===11) { changeRoom(2, 90); moved=true; } // 階段からエントランスへ
+  else if(state.room===12) { changeRoom(11, 50); moved=true; } // 地下街から階段へ
+  else if(state.room===13) { changeRoom(12, 28); moved=true; } // 焼き鳥屋→地下街
+  else if(state.room===14) { changeRoom(12, 72); moved=true; } // ラーメン屋→地下街
+  else if(state.room===5) {
+    var d=(currentApartmentOwner==='B' && alarmResidentRoom)?alarmResidentRoom:residentRoom;
+    changeRoom(entryFloor, (d === 1 || d === 3 ? 15 : 85));
+    moved=true;
+  }
+  else if(state.room===6) { changeRoom(5, 30); moved=true; }
+  else if(state.room===7) { changeRoom(5, 70); moved=true; }
+  else if(state.room===8) { changeRoom(7, 95); moved=true; }
+  else if(state.room===9) { changeRoom(5, 95); moved=true; }
+  else if(state.room===10) { changeRoom(9, 90); moved=true; }
+  else { state.x = 0; }
 }
 else if(state.x > 100) {
-if(state.room===1) { changeRoom(0, 5); moved=true; }
-else if(state.room===2) { changeRoom(11, 10); moved=true; } // エントランスから階段へ
-else if(state.room >= 3 && state.room <= 4) { state.x = 100; }
-else if(state.room===5) { changeRoom(9, 5); moved=true; }
-else if(state.room===11 || state.room===12 || state.room===13 || state.room===14) { state.x = 100; } // 階段・地下街・店舗は右端に行けない
-else { state.x = 100; }
+  // ステージ構成がアクティブで、このルームが構成に含まれる場合
+  if(_stageTransitions && _stageMaps && _stageMaps[state.room]) {
+    var _st = _stageTransitions.rightEdge[state.room];
+    if(_st) { changeRoom(_st.room, _st.x); moved=true; }
+    else { state.x = 100; }
+  }
+  // デフォルト遷移
+  else if(state.room===1) { changeRoom(0, 5); moved=true; }
+  else if(state.room===2) { changeRoom(11, 10); moved=true; } // エントランスから階段へ
+  else if(state.room >= 3 && state.room <= 4) { state.x = 100; }
+  else if(state.room===5) { changeRoom(9, 5); moved=true; }
+  else if(state.room===11 || state.room===12 || state.room===13 || state.room===14) { state.x = 100; } // 階段・地下街・店舗は右端に行けない
+  else { state.x = 100; }
 }
 if(moved) { input.l = false; input.r = false; }
 
@@ -6122,6 +6138,8 @@ if(r===10) document.getElementById(isResidentB ? 'room-bedroom-b' : 'room-bedroo
   }catch(e){}
   try{ applyWeatherToOutdoor(); }catch(e){}
   updateHUD(); renderInventory(); renderPlacedItems();
+  // ステージ構成に基づくガイドサイン更新
+  try{ updateGuideSignsForStage(r); }catch(e){}
   // (PATCH) Outdoor ambience follow room
   try{ updateOutdoorAmbience(); }catch(e){}
     try{ updateIndoorAmbience(); }catch(e){}
@@ -6870,6 +6888,156 @@ var selectedScenarioIdx = null;
 var activeScenario = null;
 var currentWeather = '晴れ';
 
+// ─── ステージ構成に基づく遷移システム ───
+var _stageTransitions = null; // null = デフォルト遷移を使用
+var _stageMaps = null; // ステージ構成に含まれるルームIDの辞書
+
+var _ROOM_NAME_TO_ID = {
+  '駐車場':0,'前面道路':1,'1Fエントランス':2,
+  '1F共用廊下':3,'2F共用廊下':4,
+  '101号室 廊下':5,'102号室 廊下':5,
+  'トイレ(A)':6,'トイレ(B)':6,
+  '脱衣所(A)':7,'脱衣所(B)':7,
+  '浴室(A)':8,'浴室(B)':8,
+  '台所(A)':9,'台所(B)':9,
+  '寝室(A)':10,'寝室(B)':10,
+  '階段':11,'地下街':12,'焼き鳥屋':13,'ラーメン屋':14
+};
+var _ROOM_ID_TO_NAME = {
+  0:'駐車場',1:'前面道路',2:'エントランス',
+  3:'1F共用廊下',4:'2F共用廊下',5:'号室廊下',
+  6:'トイレ',7:'脱衣所',8:'浴室',
+  9:'台所',10:'寝室',11:'階段',12:'地下街',
+  13:'焼き鳥屋',14:'ラーメン屋'
+};
+var _ROOM_ID_TO_ELEMENT = {
+  0:'room-parking',1:'room-street',2:'room-entrance',
+  3:'room-corridor1',4:'room-corridor2',
+  11:'room-stairs',12:'room-basement',
+  13:'room-yakitori',14:'room-ramen-shop'
+};
+
+function _parseConditionTrigger(condition) {
+  if(!condition) return 'unknown';
+  if(condition==='画面左端') return 'left';
+  if(condition==='画面右端') return 'right';
+  if(condition.indexOf('右端')!==-1) return 'right';
+  if(condition.indexOf('左端')!==-1) return 'left';
+  if(condition.charAt(0)==='←') return 'left';
+  if(condition.charAt(0)==='→') return 'right';
+  return 'action';
+}
+
+function _mapNameToRoomId(name) {
+  if(_ROOM_NAME_TO_ID[name]!==undefined) return _ROOM_NAME_TO_ID[name];
+  for(var k in _ROOM_NAME_TO_ID){
+    if(k.indexOf(name)!==-1||name.indexOf(k)!==-1) return _ROOM_NAME_TO_ID[k];
+  }
+  return -1;
+}
+
+function loadStageComposition(compositionName) {
+  resetGuideSignsToDefault();
+  _stageTransitions = null;
+  _stageMaps = null;
+  if(!compositionName) return;
+
+  var stageData = null;
+  try{
+    if(typeof window.getStageEditorData==='function'){
+      stageData = window.getStageEditorData();
+    } else {
+      var seNode = document.getElementById('saved-stage-data');
+      if(seNode) stageData = JSON.parse(seNode.textContent);
+    }
+  }catch(e){}
+  if(!stageData||!stageData.stages) return;
+
+  var stage = null;
+  for(var i=0;i<stageData.stages.length;i++){
+    if(stageData.stages[i].name===compositionName){ stage=stageData.stages[i]; break; }
+  }
+  if(!stage||!stage.connections) return;
+
+  var transitions = { leftEdge:{}, rightEdge:{} };
+  var mapRoomIds = {};
+  if(stage.maps){
+    stage.maps.forEach(function(mapName){
+      var rid = _mapNameToRoomId(mapName);
+      if(rid!==-1) mapRoomIds[rid]=true;
+    });
+  }
+
+  stage.connections.forEach(function(conn){
+    var fromRoom = _mapNameToRoomId(conn.from);
+    var toRoom = _mapNameToRoomId(conn.to);
+    if(fromRoom===-1||toRoom===-1) return;
+
+    var trigger = _parseConditionTrigger(conn.condition);
+
+    if(trigger==='left'){
+      transitions.leftEdge[fromRoom] = { room:toRoom, x:95, destName:conn.to };
+      if(conn.bidirectional){
+        transitions.rightEdge[toRoom] = { room:fromRoom, x:5, destName:conn.from };
+      }
+    } else if(trigger==='right'){
+      transitions.rightEdge[fromRoom] = { room:toRoom, x:5, destName:conn.to };
+      if(conn.bidirectional){
+        transitions.leftEdge[toRoom] = { room:fromRoom, x:95, destName:conn.from };
+      }
+    }
+  });
+
+  _stageTransitions = transitions;
+  _stageMaps = mapRoomIds;
+}
+
+function resetGuideSignsToDefault() {
+  document.querySelectorAll('.guide-sign:not(.guide-sign-dynamic)').forEach(function(s){
+    s.style.display = '';
+  });
+  document.querySelectorAll('.guide-sign-dynamic').forEach(function(s){ s.remove(); });
+}
+
+function updateGuideSignsForStage(roomId) {
+  if(!_stageTransitions||!_stageMaps||!_stageMaps[roomId]) return;
+
+  var elId = _ROOM_ID_TO_ELEMENT[roomId];
+  if(!elId) return;
+  var roomEl = document.getElementById(elId);
+  if(!roomEl) return;
+
+  // 既存のガイドサインを非表示にする
+  roomEl.querySelectorAll('.guide-sign:not(.guide-sign-dynamic)').forEach(function(s){
+    s.style.display = 'none';
+  });
+  // 以前のダイナミックサインを削除
+  roomEl.querySelectorAll('.guide-sign-dynamic').forEach(function(s){ s.remove(); });
+
+  var leftDest = _stageTransitions.leftEdge[roomId];
+  var rightDest = _stageTransitions.rightEdge[roomId];
+
+  if(leftDest){
+    var destName = leftDest.destName||_ROOM_ID_TO_NAME[leftDest.room]||'';
+    var sign = document.createElement('div');
+    sign.className = 'guide-sign guide-sign-dynamic';
+    sign.style.top = '75%';
+    sign.textContent = '◀ '+destName+'へ';
+    sign.style.pointerEvents = 'none';
+    roomEl.appendChild(sign);
+  }
+
+  if(rightDest){
+    var destName = rightDest.destName||_ROOM_ID_TO_NAME[rightDest.room]||'';
+    var sign = document.createElement('div');
+    sign.className = 'guide-sign right guide-sign-dynamic';
+    sign.style.top = '75%';
+    sign.textContent = destName+'へ ▶';
+    sign.style.pointerEvents = 'none';
+    roomEl.appendChild(sign);
+  }
+}
+
 function setWeather(w){
   currentWeather = (w==='雨'||w==='大雪'||w==='晴れ') ? w : '晴れ';
   forceApplyWeatherSoon();
@@ -7544,6 +7712,8 @@ function confirmStartSetup(){
   }
 
   activeScenario = scenarioData[selectedScenarioIdx];
+  // ステージ構成をロード（シナリオ設定のステージ構成に基づく遷移マップを構築）
+  try{ loadStageComposition(activeScenario ? activeScenario.stageComposition : ''); }catch(e){}
   // ステージ名はシナリオのstageプロパティから取得
   selectedStageName = (activeScenario && activeScenario.stage) ? String(activeScenario.stage) : '集合住宅';
   try{ window.currentScenarioGasKind = (activeScenario && activeScenario.gasKind)?String(activeScenario.gasKind):'13A'; }catch(e){}
@@ -18864,16 +19034,54 @@ window.stageComposerAddMap = function() {
   var allMaps = getExistingMaps();
   var available = allMaps.filter(function(m){ return stage.maps.indexOf(m.name)===-1; });
   if(available.length===0){ alert('追加可能なマップがありません。'); return; }
-  var names = available.map(function(m){ return m.name; });
-  var choice = prompt('追加するマップ名：\n\n'+names.join('\n'));
-  if(!choice) return;
-  if(!available.some(function(m){ return m.name===choice; })){ alert('見つかりません。'); return; }
-  stage.maps.push(choice);
-  if(!stage.nodePositions) stage.nodePositions={};
-  var maxX=50;
-  Object.keys(stage.nodePositions).forEach(function(k){ if(stage.nodePositions[k].x>maxX) maxX=stage.nodePositions[k].x; });
-  stage.nodePositions[choice] = {x:maxX+140, y:50};
-  renderComposerCanvas(stage);
+
+  // ドロップダウン選択ダイアログを表示
+  var backdrop = document.createElement('div');
+  backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  var dialog = document.createElement('div');
+  dialog.style.cssText = 'background:#263238;border-radius:2vmin;padding:3vmin;min-width:300px;max-width:90vw;color:#eceff1;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+  dialog.innerHTML = '<h3 style="margin:0 0 1.5vmin 0;font-size:2.2vmin;color:#fff;">マップを追加</h3>';
+
+  var select = document.createElement('select');
+  select.style.cssText = 'width:100%;padding:1.2vmin;font-size:1.8vmin;border-radius:1vmin;border:1px solid #546e7a;background:#37474f;color:#eceff1;margin-bottom:2vmin;';
+  available.forEach(function(m){
+    var opt = document.createElement('option');
+    opt.value = m.name;
+    opt.textContent = m.name;
+    select.appendChild(opt);
+  });
+  dialog.appendChild(select);
+
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:1vmin;justify-content:flex-end;';
+  var cancelBtn = document.createElement('button');
+  cancelBtn.className = 'se-btn se-btn-secondary';
+  cancelBtn.textContent = 'キャンセル';
+  cancelBtn.style.cssText = 'padding:1vmin 2vmin;font-size:1.6vmin;';
+  var okBtn = document.createElement('button');
+  okBtn.className = 'se-btn se-btn-primary';
+  okBtn.textContent = '追加';
+  okBtn.style.cssText = 'padding:1vmin 2vmin;font-size:1.6vmin;';
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(okBtn);
+  dialog.appendChild(btnRow);
+  backdrop.appendChild(dialog);
+  document.body.appendChild(backdrop);
+
+  function closeDialog(){ backdrop.remove(); }
+  cancelBtn.onclick = closeDialog;
+  backdrop.onclick = function(e){ if(e.target===backdrop) closeDialog(); };
+  okBtn.onclick = function(){
+    var choice = select.value;
+    if(!choice){ closeDialog(); return; }
+    stage.maps.push(choice);
+    if(!stage.nodePositions) stage.nodePositions={};
+    var maxX=50;
+    Object.keys(stage.nodePositions).forEach(function(k){ if(stage.nodePositions[k].x>maxX) maxX=stage.nodePositions[k].x; });
+    stage.nodePositions[choice] = {x:maxX+140, y:50};
+    renderComposerCanvas(stage);
+    closeDialog();
+  };
 };
 
 function renderComposerCanvas(stage) {
