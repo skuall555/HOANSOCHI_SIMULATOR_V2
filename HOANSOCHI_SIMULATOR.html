@@ -17706,24 +17706,40 @@ window._tantouGenerateReply = function(rawText){
   // ──────────────────────────────────────────────────────────────
   // シナリオ開始時の火災イベント有効化
   // ──────────────────────────────────────────────────────────────
+  function _fireCheckAfterStart(){
+    try{
+      var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+      _scenarioHasFire = (sc && sc.fireEvent === '集合住宅');
+      if(_scenarioHasFire){
+        setTimeout(function(){
+          activateFireEvent();
+          hookEntranceBlock();
+        }, 500);
+      }
+    }catch(e){}
+  }
+
   function hookStartGame(){
-    if(typeof window.startGame !== 'function' || window.startGame.__fireEventHooked) return;
-    var _origStart = window.startGame;
-    window.startGame = function(){
-      var r = _origStart.apply(this, arguments);
-      try{
-        var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
-        _scenarioHasFire = (sc && sc.fireEvent === '集合住宅');
-        if(_scenarioHasFire){
-          setTimeout(function(){
-            activateFireEvent();
-            hookEntranceBlock();
-          }, 500);
-        }
-      }catch(e){}
-      return r;
-    };
-    window.startGame.__fireEventHooked = true;
+    // startGame_original をフック（nextFromCall から直接呼ばれるため）
+    if(typeof window.startGame_original === 'function' && !window.startGame_original.__fireEventHooked){
+      var _origStartOrig = window.startGame_original;
+      window.startGame_original = function(){
+        var r = _origStartOrig.apply(this, arguments);
+        _fireCheckAfterStart();
+        return r;
+      };
+      window.startGame_original.__fireEventHooked = true;
+    }
+    // startGame もフック（フォールバック）
+    if(typeof window.startGame === 'function' && !window.startGame.__fireEventHooked){
+      var _origStart = window.startGame;
+      window.startGame = function(){
+        var r = _origStart.apply(this, arguments);
+        _fireCheckAfterStart();
+        return r;
+      };
+      window.startGame.__fireEventHooked = true;
+    }
   }
 
   // ──────────────────────────────────────────────────────────────
