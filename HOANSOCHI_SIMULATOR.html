@@ -3384,6 +3384,13 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
           <option value="LPG">LPG</option>
         </select>
       </div>
+      <div class="scenario-field" draggable="true" data-field="fireEvent">
+        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="火災発生">火災発生</span></label>
+        <select id="sc-fire-event">
+          <option value="なし">なし</option>
+          <option value="集合住宅">集合住宅</option>
+        </select>
+      </div>
       <div class="scenario-field" draggable="true" data-field="description">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="解説">解説</span></label>
         <textarea id="sc-description" placeholder="このシナリオの解説や補足事項を入力" style="height: 228px;"></textarea>
@@ -6041,15 +6048,12 @@ else if(state.x > 85) {
   if(_stageMaps && _stageMaps[state.room] && !_stageMaps[11]) { showSystemMsg('この先は進めません。'); return; }
   changeRoom(11, 30); didWarp=true;
 }
-else if(roomOpened && residentRoom <= 2) {
-if((residentRoom===1 && state.x>5 && state.x<30) || (residentRoom===2 && state.x>70 && state.x<95)) {
+else if(roomOpened && residentRoom <= 2 && ((residentRoom===1 && state.x>5 && state.x<30) || (residentRoom===2 && state.x>70 && state.x<95))) {
 entryFloor = 3;
 currentApartmentOwner='A';
 changeRoom(5, 5); didWarp=true;
 }
-}
-else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom <= 2) {
-  if((alarmResidentRoom===1 && state.x>5 && state.x<30) || (alarmResidentRoom===2 && state.x>70 && state.x<95)) {
+else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom <= 2 && ((alarmResidentRoom===1 && state.x>5 && state.x<30) || (alarmResidentRoom===2 && state.x>70 && state.x<95))) {
   // 排風なしで入室：安全率-5% + 警告メッセージ（爆発ENDは廃止）
   if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive && typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod !== '在宅している' && !alarmBVentilated){
     var _hs1done = typeof window._hs1Vented!=='undefined' && window._hs1Vented;
@@ -6063,7 +6067,6 @@ else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom <= 2) {
   entryFloor = 3;
   currentApartmentOwner='B';
     changeRoom(5, 5); didWarp=true;
-  }
 }
 }
 else if(state.room===4) {
@@ -6071,15 +6074,12 @@ if(state.x > 85) {
   if(_stageMaps && _stageMaps[state.room] && !_stageMaps[3]) { showSystemMsg('この先は進めません。'); return; }
   changeRoom(3, 10); didWarp=true;
 }
-else if(roomOpened && residentRoom >= 3) {
-if((residentRoom===3 && state.x>5 && state.x<30) || (residentRoom===4 && state.x>70 && state.x<95)) {
+else if(roomOpened && residentRoom >= 3 && ((residentRoom===3 && state.x>5 && state.x<30) || (residentRoom===4 && state.x>70 && state.x<95))) {
 entryFloor = 4;
 currentApartmentOwner='A';
 changeRoom(5, 5); didWarp=true;
 }
-}
-else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom >= 3) {
-  if((alarmResidentRoom===3 && state.x>5 && state.x<30) || (alarmResidentRoom===4 && state.x>70 && state.x<95)) {
+else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom >= 3 && ((alarmResidentRoom===3 && state.x>5 && state.x<30) || (alarmResidentRoom===4 && state.x>70 && state.x<95))) {
   // 排風なしで入室：安全率-5% + 警告メッセージ（爆発ENDは廃止）
   if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive && typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod !== '在宅している' && !alarmBVentilated){
     var _hs1done2 = typeof window._hs1Vented!=='undefined' && window._hs1Vented;
@@ -6093,7 +6093,6 @@ else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom >= 3) {
   entryFloor = 4;
   currentApartmentOwner='B';
     changeRoom(5, 5); didWarp=true;
-  }
 }
 }
 else if(state.room===1 && state.x>20 && state.x<50) { changeRoom(2, 10); didWarp=true; }
@@ -7333,7 +7332,7 @@ function createDefaultScenarioData(){
       reporterRoomNo:'101',
       residentBRoomNo:'102'
     ,indoorLeakRoomNo:'なし',basement:'なし',gasCause:'101号室灯内内管',
-    description:'',difficulty:'B級'});
+    description:'',difficulty:'B級',fireEvent:'なし'});
   }
   return a;
 }
@@ -7371,7 +7370,8 @@ function normalizeScenarioData(arr){
       description:(s.description!=null)?String(s.description):'',
       difficulty:(s.difficulty!=null)?String(s.difficulty):'B級',
       safetyNorma:(s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100,
-      stageComposition:(s.stageComposition!=null)?String(s.stageComposition):''
+      stageComposition:(s.stageComposition!=null)?String(s.stageComposition):'',
+      fireEvent:(s.fireEvent!=null)?String(s.fireEvent):'なし'
     };
   }
   return base;
@@ -7536,6 +7536,7 @@ function openScenarioEdit(idx){
   try{ document.getElementById('sc-description').value = s.description?String(s.description):''; }catch(e){}
   try{ document.getElementById('sc-difficulty').value = s.difficulty?String(s.difficulty):'B級'; }catch(e){}
   try{ document.getElementById('sc-safety-norma').value = (s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100; }catch(e){}
+  try{ document.getElementById('sc-fire-event').value = s.fireEvent?String(s.fireEvent):'なし'; }catch(e){}
 
   // ステージ構成セレクトを動的に更新
   try{
@@ -7664,7 +7665,8 @@ function saveScenario(){
     description: (function(){ try{ var el=document.getElementById('sc-description'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     difficulty: (function(){ try{ var el=document.getElementById('sc-difficulty'); return (el&&el.value)?el.value:'B級'; }catch(e){ return 'B級'; } })(),
     safetyNorma: (function(){ try{ var el=document.getElementById('sc-safety-norma'); var v=parseInt(el&&el.value); return (isNaN(v)||v<1)?100:v; }catch(e){ return 100; } })(),
-    stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })()
+    stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
+    fireEvent: (function(){ try{ var el=document.getElementById('sc-fire-event'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
   };
   renderScenarioList();
   try{ refreshStartScenarioOptions(); }catch(e){}
@@ -11691,7 +11693,8 @@ try{
     { id:'カード_要救助者の介護', name:'カード_要救助者の介護', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E8%A6%81%E6%95%91%E5%8A%A9%E8%80%85%E3%81%AE%E4%BB%8B%E8%AD%B7.png', desc:'入手条件：「警報器鳴動宅の入室方法」が「在宅している」以外の場合のみ、警報器鳴動後に居住者B宅のドアをクリックする。' },
     { id:'カード_避難指示', name:'カード_避難指示', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E9%81%BF%E9%9B%A3%E6%8C%87%E7%A4%BA.png', desc:'入手条件：1F共用部・2F共用部のドアを3箇所以上クリックする。' },
     { id:'カード_火災警戒区域の設定', name:'カード_火災警戒区域の設定', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AB%E7%81%BD%E8%AD%A6%E6%88%92%E5%8C%BA%E5%9F%9F%E3%81%AE%E8%A8%AD%E5%AE%9A.png', desc:'入手条件：警報器鳴動後に前面道路へ向かう。' },
-    { id:'カード_現場広報活動', name:'カード_現場広報活動', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%8F%BE%E5%A0%B4%E5%BA%83%E5%A0%B1%E6%B4%BB%E5%8B%95.png', desc:'入手条件：警報器鳴動100秒後に前面道路へ出現する野次馬をクリックする。' }
+    { id:'カード_現場広報活動', name:'カード_現場広報活動', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%8F%BE%E5%A0%B4%E5%BA%83%E5%A0%B1%E6%B4%BB%E5%8B%95.png', desc:'入手条件：警報器鳴動100秒後に前面道路へ出現する野次馬をクリックする。' },
+    { id:'カード_火災', name:'カード_火災', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AB%E7%81%BD%E8%AD%A6%E6%88%92%E5%8C%BA%E5%9F%9F%E3%81%AE%E8%A8%AD%E5%AE%9A.png', desc:'入手条件：前面道路で集合住宅の火災を発見する。' }
   ];
 
   // per-simulation state
@@ -13330,6 +13333,26 @@ try{
   function finishDragOnZone(cardId){
     const ctx = btState.contextId ? CONTEXTS[btState.contextId] : null;
     if(!ctx || btState.selectedMission<0) return;
+
+    // ★ 火災イベント特別処理：消防コンテキストでカード_火災をドラッグした場合、全ミッション達成
+    if(cardId === 'カード_火災' && ctx.id === 'shobo' && window._fireEventActive){
+      if(!btState.missionSolved[ctx.id]) btState.missionSolved[ctx.id] = ctx.missions.map(()=>false);
+      if(!btState.missionSubmitted[ctx.id]) btState.missionSubmitted[ctx.id] = ctx.missions.map(()=>[]);
+      for(var fi=0; fi<ctx.missions.length; fi++){
+        btState.missionSolved[ctx.id][fi] = true;
+        if(!btState.missionSubmitted[ctx.id][fi]) btState.missionSubmitted[ctx.id][fi] = [];
+        btState.missionSubmitted[ctx.id][fi].push('カード_火災');
+      }
+      setDropZoneState('ok');
+      renderMissions(ctx);
+      if(!btState.cleared[ctx.id]){
+        btState.cleared[ctx.id] = true;
+        try{ var se=$('se-bt-clear'); if(se){ se.currentTime=0; var p=se.play(); if(p&&p.catch) p.catch(()=>{}); } }catch(e){}
+        try{ showSystemMsg('消防の要請が受理されました。'); }catch(e){}
+        setTimeout(function(){ try{ closeBreakthroughUI(); }catch(e){} }, 1800);
+      }
+      return;
+    }
 
     const mIdx = btState.selectedMission;
     const m = ctx.missions[mIdx];
@@ -17421,6 +17444,321 @@ window._tantouGenerateReply = function(rawText){
 })();
 </script>
 
+<script id="patch-fire-event-system">
+// ================================================================
+// 火災発生イベントシステム
+// シナリオ設定「火災発生」が「集合住宅」の場合:
+//   - 前面道路の集合住宅に火災エフェクト表示
+//   - 火災発見時にカード_火災を入手
+//   - 火災音BGM再生、集合住宅への入室ブロック
+//   - 消防の状況突破でカード_火災をドラッグ → 全ミッション達成扱い
+//   - 消防到着後、放水エフェクト → 15秒で鎮火
+// ================================================================
+(function(){
+  if(window.__fireEventSystemInstalled) return;
+  window.__fireEventSystemInstalled = true;
+
+  var FIRE_BGM_URL = 'https://raw.githubusercontent.com/skuall555/game-assets/main/FIRE.mp3';
+  var FIRE_CARD_IMG = 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AB%E7%81%BD%E8%AD%A6%E6%88%92%E5%8C%BA%E5%9F%9F%E3%81%AE%E8%A8%AD%E5%AE%9A.png';
+
+  // --- 状態管理 ---
+  var _fireActive = false;       // 火災エフェクト表示中
+  var _fireCardAwarded = false;  // カード_火災を入手済み
+  var _fireBGM = null;           // 火災音BGM Audio
+  var _fireEffectEl = null;      // 火災エフェクトDOM
+  var _waterEffectEl = null;     // 放水エフェクトDOM
+  var _waterStarted = false;     // 放水開始済み
+  var _fireExtinguished = false; // 鎮火済み
+  var _scenarioHasFire = false;  // 現シナリオに火災あり
+
+  window._fireEventActive = false; // 外部参照用
+
+  function getRoom(){ return (typeof state !== 'undefined') ? state.room : -1; }
+
+  // ──────────────────────────────────────────────────────────────
+  // 火災エフェクトの生成（CSS炎アニメーション）
+  // ──────────────────────────────────────────────────────────────
+  function createFireEffect(){
+    if(_fireEffectEl) return;
+    var street = document.getElementById('room-street');
+    if(!street) return;
+
+    var el = document.createElement('div');
+    el.id = 'fire-event-effect';
+    el.style.cssText = 'position:absolute;bottom:42%;left:23%;width:34%;height:40%;z-index:4;pointer-events:none;overflow:visible;';
+    el.innerHTML =
+      '<div style="position:absolute;bottom:0;left:10%;width:80%;height:100%;display:flex;justify-content:center;align-items:flex-end;">' +
+        '<div class="fire-flame-group" style="position:relative;width:100%;height:100%;">' +
+          '<div class="fire-flame f1"></div>' +
+          '<div class="fire-flame f2"></div>' +
+          '<div class="fire-flame f3"></div>' +
+          '<div class="fire-flame f4"></div>' +
+          '<div class="fire-flame f5"></div>' +
+        '</div>' +
+      '</div>';
+    street.appendChild(el);
+    _fireEffectEl = el;
+  }
+
+  // 火災CSSの注入
+  function injectFireCSS(){
+    if(document.getElementById('fire-event-css')) return;
+    var style = document.createElement('style');
+    style.id = 'fire-event-css';
+    style.textContent =
+      '@keyframes fireFlicker{' +
+        '0%{transform:scaleY(1) scaleX(1) translateY(0);opacity:0.9;}' +
+        '25%{transform:scaleY(1.15) scaleX(0.9) translateY(-3%);opacity:1;}' +
+        '50%{transform:scaleY(0.95) scaleX(1.05) translateY(-1%);opacity:0.85;}' +
+        '75%{transform:scaleY(1.1) scaleX(0.95) translateY(-4%);opacity:1;}' +
+        '100%{transform:scaleY(1) scaleX(1) translateY(0);opacity:0.9;}' +
+      '}' +
+      '.fire-flame{' +
+        'position:absolute;bottom:0;border-radius:50% 50% 20% 20%;' +
+        'animation:fireFlicker 0.4s infinite ease-in-out;' +
+        'filter:blur(2px);' +
+      '}' +
+      '.fire-flame.f1{left:15%;width:30%;height:70%;background:linear-gradient(to top,#ff4500,#ff8c00,#ffd700,rgba(255,215,0,0));animation-duration:0.35s;}' +
+      '.fire-flame.f2{left:35%;width:35%;height:85%;background:linear-gradient(to top,#ff0000,#ff6600,#ffcc00,rgba(255,204,0,0));animation-duration:0.45s;animation-delay:0.1s;}' +
+      '.fire-flame.f3{left:50%;width:28%;height:65%;background:linear-gradient(to top,#ff4500,#ff8c00,#ffd700,rgba(255,215,0,0));animation-duration:0.38s;animation-delay:0.2s;}' +
+      '.fire-flame.f4{left:5%;width:22%;height:55%;background:linear-gradient(to top,#ff6600,#ffaa00,#ffe066,rgba(255,224,102,0));animation-duration:0.42s;animation-delay:0.15s;}' +
+      '.fire-flame.f5{left:60%;width:25%;height:60%;background:linear-gradient(to top,#ff3300,#ff7700,#ffbb33,rgba(255,187,51,0));animation-duration:0.5s;animation-delay:0.05s;}' +
+      /* 煙エフェクト */
+      '#fire-event-effect::before{' +
+        'content:"";position:absolute;top:-30%;left:20%;width:60%;height:50%;' +
+        'background:radial-gradient(ellipse,rgba(80,80,80,0.5),rgba(60,60,60,0.2),transparent);' +
+        'animation:fireSmoke 2s infinite ease-in-out;border-radius:50%;' +
+      '}' +
+      '@keyframes fireSmoke{' +
+        '0%{transform:translateY(0) scale(1);opacity:0.4;}' +
+        '50%{transform:translateY(-20%) scale(1.2);opacity:0.6;}' +
+        '100%{transform:translateY(0) scale(1);opacity:0.4;}' +
+      '}' +
+      /* 放水エフェクト */
+      '@keyframes waterSpray{' +
+        '0%{opacity:0.7;transform:scaleX(1);}' +
+        '50%{opacity:1;transform:scaleX(1.05);}' +
+        '100%{opacity:0.7;transform:scaleX(1);}' +
+      '}' +
+      '#fire-water-effect{' +
+        'position:absolute;bottom:30%;left:5%;width:35%;height:8%;z-index:53;pointer-events:none;' +
+        'background:linear-gradient(90deg,rgba(100,180,255,0.9),rgba(150,210,255,0.7),rgba(200,230,255,0.3));' +
+        'border-radius:0 50% 50% 0;animation:waterSpray 0.3s infinite;' +
+        'box-shadow:0 0 2vmin rgba(100,180,255,0.5);' +
+        'transform-origin:left center;' +
+      '}';
+    document.head.appendChild(style);
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // 火災音BGM
+  // ──────────────────────────────────────────────────────────────
+  function startFireBGM(){
+    try{
+      if(_fireBGM) return;
+      _fireBGM = new Audio(FIRE_BGM_URL);
+      _fireBGM.loop = true;
+      _fireBGM.__bplanSrc = FIRE_BGM_URL;
+      updateFireBGMVolume();
+      if(typeof window.isMuted === 'undefined' || !window.isMuted){
+        _fireBGM.play().catch(function(){});
+      }
+    }catch(e){}
+  }
+
+  function stopFireBGM(){
+    try{
+      if(_fireBGM){ _fireBGM.pause(); _fireBGM.currentTime = 0; _fireBGM = null; }
+    }catch(e){}
+  }
+
+  function updateFireBGMVolume(){
+    try{
+      if(!_fireBGM) return;
+      if(typeof window.isMuted !== 'undefined' && window.isMuted){
+        _fireBGM.volume = 0; return;
+      }
+      var room = getRoom();
+      if(room === 0){ _fireBGM.volume = 0.2; }       // 駐車場
+      else if(room === 1){ _fireBGM.volume = 1.0; }   // 前面道路
+      else if(room === 2){ _fireBGM.volume = 0.6; }   // エントランス
+      else { _fireBGM.volume = 0.3; }                 // その他
+    }catch(e){}
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // 火災イベント開始
+  // ──────────────────────────────────────────────────────────────
+  function activateFireEvent(){
+    if(_fireActive) return;
+    _fireActive = true;
+    window._fireEventActive = true;
+
+    injectFireCSS();
+    createFireEffect();
+    startFireBGM();
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // カード_火災入手（前面道路で火災を発見）
+  // ──────────────────────────────────────────────────────────────
+  function checkFireDiscovery(){
+    if(!_fireActive || _fireCardAwarded || _fireExtinguished) return;
+    var room = getRoom();
+    if(room === 1){ // 前面道路
+      _fireCardAwarded = true;
+      try{ window.__awardCard && window.__awardCard('カード_火災'); }catch(e){}
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // エントランス入室ブロック（集合住宅への入室を防止）
+  // ──────────────────────────────────────────────────────────────
+  function hookEntranceBlock(){
+    // changeRoom をフック：fire active 中は前面道路からエントランスへの移動をブロック
+    if(typeof window.changeRoom !== 'function' || window.changeRoom.__fireBlocked) return;
+    var _origCR = window.changeRoom;
+    window.changeRoom = function(r, x){
+      // 火災中に前面道路(1)からエントランス(2)へ移動しようとした場合ブロック
+      if(_fireActive && !_fireExtinguished && r === 2 && getRoom() === 1){
+        try{ showSystemMsg('危険だ！まずは消防を要請しましょう。'); }catch(e){}
+        return;
+      }
+      return _origCR.apply(this, arguments);
+    };
+    window.changeRoom.__fireBlocked = true;
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // 放水エフェクト（消防到着後）
+  // ──────────────────────────────────────────────────────────────
+  function startWaterSpray(){
+    if(_waterStarted || !_fireActive) return;
+    _waterStarted = true;
+
+    var street = document.getElementById('room-street');
+    if(!street) return;
+
+    var el = document.createElement('div');
+    el.id = 'fire-water-effect';
+    street.appendChild(el);
+    _waterEffectEl = el;
+
+    // 15秒後に鎮火
+    setTimeout(function(){
+      extinguishFire();
+    }, 15000);
+  }
+
+  function extinguishFire(){
+    if(_fireExtinguished) return;
+    _fireExtinguished = true;
+    window._fireEventActive = false;
+
+    // 火災エフェクト非表示
+    if(_fireEffectEl){
+      _fireEffectEl.style.transition = 'opacity 1s';
+      _fireEffectEl.style.opacity = '0';
+      setTimeout(function(){
+        try{ _fireEffectEl.remove(); }catch(e){} _fireEffectEl = null;
+      }, 1200);
+    }
+
+    // 放水エフェクト非表示
+    if(_waterEffectEl){
+      setTimeout(function(){
+        if(_waterEffectEl){
+          _waterEffectEl.style.transition = 'opacity 1s';
+          _waterEffectEl.style.opacity = '0';
+          setTimeout(function(){
+            try{ _waterEffectEl.remove(); }catch(e){} _waterEffectEl = null;
+          }, 1200);
+        }
+      }, 2000);
+    }
+
+    // 火災音停止
+    stopFireBGM();
+
+    try{ showSystemMsg('鎮火しました。集合住宅への入室が可能になりました。'); }catch(e){}
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // 消防到着後の放水開始チェック（ポーリング）
+  // ──────────────────────────────────────────────────────────────
+  setInterval(function(){
+    try{
+      if(!_fireActive || _fireExtinguished) return;
+
+      // BGM音量更新
+      updateFireBGMVolume();
+
+      // カード_火災発見チェック
+      checkFireDiscovery();
+
+      // 消防到着後に放水開始
+      if(!_waterStarted && window._shoboFireActive){
+        startWaterSpray();
+      }
+    }catch(e){}
+  }, 300);
+
+  // ──────────────────────────────────────────────────────────────
+  // シナリオ開始時の火災イベント有効化
+  // ──────────────────────────────────────────────────────────────
+  function hookStartGame(){
+    if(typeof window.startGame !== 'function' || window.startGame.__fireEventHooked) return;
+    var _origStart = window.startGame;
+    window.startGame = function(){
+      var r = _origStart.apply(this, arguments);
+      try{
+        var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+        _scenarioHasFire = (sc && sc.fireEvent === '集合住宅');
+        if(_scenarioHasFire){
+          setTimeout(function(){
+            activateFireEvent();
+            hookEntranceBlock();
+          }, 500);
+        }
+      }catch(e){}
+      return r;
+    };
+    window.startGame.__fireEventHooked = true;
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // initGame リセット
+  // ──────────────────────────────────────────────────────────────
+  function hookInitForReset(){
+    if(typeof window.initGame !== 'function' || window.initGame.__fireEventReset) return;
+    var _origInit = window.initGame;
+    window.initGame = function(){
+      _fireActive = false; _fireCardAwarded = false; _waterStarted = false;
+      _fireExtinguished = false; _scenarioHasFire = false;
+      window._fireEventActive = false;
+      stopFireBGM();
+      if(_fireEffectEl){ try{ _fireEffectEl.remove(); }catch(e){} _fireEffectEl = null; }
+      if(_waterEffectEl){ try{ _waterEffectEl.remove(); }catch(e){} _waterEffectEl = null; }
+      return _origInit.apply(this, arguments);
+    };
+    window.initGame.__fireEventReset = true;
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // 初期化
+  // ──────────────────────────────────────────────────────────────
+  function init(){
+    hookStartGame();
+    hookInitForReset();
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 1200); });
+  } else {
+    setTimeout(init, 1200);
+  }
+})();
+</script>
 
 <script>
 // ============================================================
