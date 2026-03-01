@@ -6392,7 +6392,7 @@ el.innerHTML = '<div class="npc-visual">🚶</div>';
 document.getElementById('room-street').appendChild(el);
 state.npcs = [{el:el, x:120}];
 if(customData['npc']) el.querySelector('.npc-visual').innerHTML = `<img src="${customData['npc']}" style="width:100%; height:100%; object-fit:contain;">`;
-el.addEventListener('click', function(){
+function _npcClickHandler(){
   try{
     var g=document.getElementById('scene-game');
     if(!g || !g.classList.contains('active')) return;
@@ -6401,6 +6401,11 @@ el.addEventListener('click', function(){
       if(typeof window.__awardCard==='function') window.__awardCard('カード_制限');
     }
   }catch(e){}
+}
+el.addEventListener('click', _npcClickHandler);
+el.addEventListener('touchend', function(ev){
+  try{ ev.preventDefault(); }catch(e){}
+  _npcClickHandler();
 });
 }
 
@@ -6661,6 +6666,7 @@ document.querySelectorAll('.overlay-screen').forEach(s => s.classList.remove('ac
 document.querySelectorAll('.se-overlay').forEach(function(s){ s.classList.remove('active'); });
 document.querySelectorAll('.se-composer').forEach(function(s){ s.classList.remove('active'); });
 document.querySelectorAll('.se-map-editor').forEach(function(s){ s.classList.remove('active'); });
+try{ document.body.classList.remove('se-editing'); }catch(e){}
 document.getElementById('scene-title').classList.add('active');
 
 const htmlContent = "<!DOCTYPE html>\n<html lang='ja'>" + document.documentElement.innerHTML + "</html>";
@@ -11946,12 +11952,27 @@ try{
     window.sendComm.__memoCardHooked=true;
   }
 
-  // npc click on street
-  document.addEventListener('click', function(ev){
+  // npc click on street (click + touch for mobile)
+  function _npcStreetCardHandler(ev){
     if(!isSimRunning()) return;
     var t=ev.target; if(!t) return;
     var npc=t.closest ? t.closest('.npc') : null;
     if(!npc) return;
+    // exclude yakaji (spectator) NPC
+    if(npc.id === 'yakaji-npc') return;
+    var activeRoom=document.querySelector('.room.active');
+    if(activeRoom && activeRoom.id==='room-street') awardCard('カード_制限');
+  }
+  document.addEventListener('click', _npcStreetCardHandler, true);
+  document.addEventListener('touchend', function(ev){
+    if(!isSimRunning()) return;
+    var touch = ev.changedTouches && ev.changedTouches[0];
+    if(!touch) return;
+    var t = document.elementFromPoint(touch.clientX, touch.clientY);
+    if(!t) return;
+    var npc = t.closest ? t.closest('.npc') : null;
+    if(!npc) return;
+    if(npc.id === 'yakaji-npc') return;
     var activeRoom=document.querySelector('.room.active');
     if(activeRoom && activeRoom.id==='room-street') awardCard('カード_制限');
   }, true);
@@ -18145,8 +18166,8 @@ window._tantouGenerateReply = function(rawText){
 .se-map-editor.active{display:flex!important;}
 .se-map-toolbar{width:100%;background:rgba(17,17,17,0.92);color:#fff;padding:0.8vmin 1.5vmin;display:flex;align-items:center;gap:1vmin;flex-shrink:0;flex-wrap:wrap;z-index:960;box-sizing:border-box;pointer-events:auto;}
 .se-map-toolbar .se-btn{font-size:1.6vmin;padding:0.6vmin 1.2vmin;}
-/* scene-game内の編集中room: pointer-events有効化 */
-.room.active *{pointer-events:auto;}
+/* scene-game内の編集中room: pointer-events有効化（マップ編集中のみ） */
+body.se-editing .room.active *{pointer-events:auto;}
 
 /* 選択されたエレメントの虹色枠 */
 @keyframes rainbowBorder{0%{outline-color:#ff0000;}14%{outline-color:#ff8800;}28%{outline-color:#ffff00;}42%{outline-color:#00ff00;}57%{outline-color:#0088ff;}71%{outline-color:#0000ff;}85%{outline-color:#8800ff;}100%{outline-color:#ff0000;}}
@@ -18605,6 +18626,7 @@ function openMapEditor(mapId, mapName, isNew) {
   document.getElementById('scene-map-list').classList.remove('active');
   ensureOverlaysInBody();
   document.getElementById('scene-map-editor').classList.add('active');
+  try{ document.body.classList.add('se-editing'); }catch(e){}
 
   // scene-game内のroom要素にクリックイベントをバインド
   if(roomEl) {
@@ -19155,6 +19177,7 @@ window.mapEditorFinish = function() {
   // 画面遷移
   ensureOverlaysInBody();
   document.getElementById('scene-map-editor').classList.remove('active');
+  try{ document.body.classList.remove('se-editing'); }catch(e){}
   document.getElementById('scene-map-list').classList.add('active');
   try{ renderMapGrid(); }catch(e){ console.warn('renderMapGrid error:', e); }
 };
@@ -19963,6 +19986,7 @@ window.stageEditorExportHTML = function() {
   document.querySelectorAll('.se-overlay').forEach(function(s){ s.classList.remove('active'); });
   document.querySelectorAll('.se-composer').forEach(function(s){ s.classList.remove('active'); });
   document.querySelectorAll('.se-map-editor').forEach(function(s){ s.classList.remove('active'); });
+  try{ document.body.classList.remove('se-editing'); }catch(e){}
   document.getElementById('scene-title').classList.add('active');
 
   var html='<!DOCTYPE html>\n<html lang="ja">'+document.documentElement.innerHTML+'</html>';
