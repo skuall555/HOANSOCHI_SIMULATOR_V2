@@ -5853,7 +5853,6 @@ else if(state.room===11) {
 else if(state.room===12) {
   if(state.x > 22 && state.x < 40) icon="🚪"; // 焼き鳥屋入口
   else if(state.x > 63 && state.x < 83) icon="🚪"; // ラーメン屋入口
-  else if(state.x > 5 && state.x < 22) icon="🔼"; // 地下街から階段へ
 }
 else if(state.room===13 && state.x < 10) icon="🚪"; // 焼き鳥屋→地下街
 else if(state.room===14 && state.x < 10) icon="🚪"; // ラーメン屋→地下街
@@ -5965,16 +5964,18 @@ let failMsg = false;
 // エントランスから階段への遷移は削除（右端移動で自動遷移）
 // 階段での上下移動
 if(state.room===11) {
-  if(state.x > 58 && state.x < 92) { 
+  if(state.x > 58 && state.x < 92) {
     // 上の階段（1F共用部へ）
-    changeRoom(3, 80); 
-    didWarp=true; 
+    if(_stageMaps && _stageMaps[state.room] && !_stageMaps[3]) { showSystemMsg('この先は進めません。'); return; }
+    changeRoom(3, 80);
+    didWarp=true;
   }
-  else if(state.x > 25 && state.x < 59) { 
+  else if(state.x > 25 && state.x < 59) {
     // 下の階段（地下へ）
+    if(_stageMaps && _stageMaps[state.room] && !_stageMaps[12]) { showSystemMsg('この先は進めません。'); return; }
     // 地下街の有無をチェック
     if(typeof activeScenario !== 'undefined' && activeScenario && activeScenario.basement === 'あり'){
-      changeRoom(12, 20); 
+      changeRoom(12, 20);
       didWarp=true;
     } else {
       // カラーコーンで塞がれている
@@ -5986,19 +5987,21 @@ if(state.room===11) {
 // 地下街
 else if(state.room===12) {
   if(state.x > 22 && state.x < 40) {
+    if(_stageMaps && _stageMaps[state.room] && !_stageMaps[13]) { showSystemMsg('この先は進めません。'); return; }
     enterShop('yakitori'); input.j=false; return;
   } else if(state.x > 63 && state.x < 83) {
+    if(_stageMaps && _stageMaps[state.room] && !_stageMaps[14]) { showSystemMsg('この先は進めません。'); return; }
     enterShop('ramen'); input.j=false; return;
-  } else if(state.x > 5 && state.x < 22) {
-    changeRoom(11, 30); didWarp=true;
   }
 }
 // 焼き鳥屋から地下街へ
 else if(state.room===13 && state.x < 10) {
+  if(_stageMaps && _stageMaps[state.room] && !_stageMaps[12]) { showSystemMsg('この先は進めません。'); return; }
   changeRoom(12, 28); didWarp=true;
 }
 // ラーメン屋から地下街へ
 else if(state.room===14 && state.x < 10) {
+  if(_stageMaps && _stageMaps[state.room] && !_stageMaps[12]) { showSystemMsg('この先は進めません。'); return; }
   changeRoom(12, 72); didWarp=true;
 }
 else if(state.room===2 && state.x > 75) {
@@ -6006,8 +6009,14 @@ else if(state.room===2 && state.x > 75) {
   // アイコンは🚪になっているが、実際の遷移は右端移動で行う
 }
 else if(state.room===3) {
-if(state.x < 15) { changeRoom(4, 85); didWarp=true; }
-else if(state.x > 85) { changeRoom(11, 30); didWarp=true; }
+if(state.x < 15) {
+  if(_stageMaps && _stageMaps[state.room] && !_stageMaps[4]) { showSystemMsg('この先は進めません。'); return; }
+  changeRoom(4, 85); didWarp=true;
+}
+else if(state.x > 85) {
+  if(_stageMaps && _stageMaps[state.room] && !_stageMaps[11]) { showSystemMsg('この先は進めません。'); return; }
+  changeRoom(11, 30); didWarp=true;
+}
 else if(roomOpened && residentRoom <= 2) {
 if((residentRoom===1 && state.x>5 && state.x<30) || (residentRoom===2 && state.x>70 && state.x<95)) {
 entryFloor = 3;
@@ -6034,7 +6043,10 @@ else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom <= 2) {
 }
 }
 else if(state.room===4) {
-if(state.x > 85) { changeRoom(3, 10); didWarp=true; }
+if(state.x > 85) {
+  if(_stageMaps && _stageMaps[state.room] && !_stageMaps[3]) { showSystemMsg('この先は進めません。'); return; }
+  changeRoom(3, 10); didWarp=true;
+}
 else if(roomOpened && residentRoom >= 3) {
 if((residentRoom===3 && state.x>5 && state.x<30) || (residentRoom===4 && state.x>70 && state.x<95)) {
 entryFloor = 4;
@@ -6975,15 +6987,31 @@ function loadStageComposition(compositionName) {
 
     var trigger = _parseConditionTrigger(conn.condition);
 
+    // 行き方向の遷移を設定
     if(trigger==='left'){
       transitions.leftEdge[fromRoom] = { room:toRoom, x:95, destName:conn.to };
-      if(conn.bidirectional){
-        transitions.rightEdge[toRoom] = { room:fromRoom, x:5, destName:conn.from };
-      }
     } else if(trigger==='right'){
       transitions.rightEdge[fromRoom] = { room:toRoom, x:5, destName:conn.to };
-      if(conn.bidirectional){
-        transitions.leftEdge[toRoom] = { room:fromRoom, x:95, destName:conn.from };
+    }
+
+    // 戻り方向の遷移を設定
+    if(conn.bidirectional){
+      if(conn.conditionReturn){
+        // 戻り条件が個別に設定されている場合
+        var retTrigger = _parseConditionTrigger(conn.conditionReturn);
+        if(retTrigger==='left'){
+          transitions.leftEdge[toRoom] = { room:fromRoom, x:95, destName:conn.from };
+        } else if(retTrigger==='right'){
+          transitions.rightEdge[toRoom] = { room:fromRoom, x:5, destName:conn.from };
+        }
+        // retTrigger==='action' の場合はエッジ遷移を作成しない（アクションボタンで処理）
+      } else {
+        // 戻り条件が未設定の場合は行きの逆方向を自動設定（従来動作）
+        if(trigger==='left'){
+          transitions.rightEdge[toRoom] = { room:fromRoom, x:5, destName:conn.from };
+        } else if(trigger==='right'){
+          transitions.leftEdge[toRoom] = { room:fromRoom, x:95, destName:conn.from };
+        }
       }
     }
   });
@@ -19231,7 +19259,15 @@ function renderConnections(stage, svg, canvas) {
       var label=document.createElementNS('http://www.w3.org/2000/svg','text');
       label.setAttribute('x',mx); label.setAttribute('y',my-8);
       label.setAttribute('class','se-connection-label');
-      label.textContent=conn.condition;
+      var labelText = '→ ' + conn.condition;
+      if(conn.bidirectional) {
+        var retText = conn.conditionReturn || '(自動)';
+        labelText += ' / ← ' + retText;
+      }
+      if(!conn.bidirectional) {
+        labelText += ' (一方通行)';
+      }
+      label.textContent=labelText;
       svg.appendChild(label);
     }
   });
@@ -19262,7 +19298,12 @@ function handlePortClick(mapName, entrance, stage) {
   var condition=prompt('移行条件（例：扉、階段降りる）：',from.entrance);
   if(condition===null){ resetPortHL(); return; }
   var bi=confirm('双方向の接続？');
-  stage.connections.push({from:from.map, to:mapName, condition:condition, bidirectional:bi});
+  var conn={from:from.map, to:mapName, condition:condition, bidirectional:bi};
+  if(bi){
+    var retCond=prompt('戻り方向の条件（行きと同じ場合は空欄）：','');
+    if(retCond) conn.conditionReturn=retCond;
+  }
+  stage.connections.push(conn);
   resetPortHL();
   renderComposerCanvas(stage);
 }
@@ -19298,11 +19339,23 @@ function showNodeContextMenu(e, mapName, stage) {
     {label:'移行条件を編集',action:function(){
       var conns=stage.connections.filter(function(c){ return c.from===mapName||c.to===mapName; });
       if(conns.length===0){ alert('接続がありません。'); return; }
-      var desc=conns.map(function(c,i){ return (i+1)+': '+c.from+' → '+c.to+' ['+( c.condition||'なし')+']'; }).join('\n');
+      var desc=conns.map(function(c,i){
+        var retInfo = c.bidirectional ? (c.conditionReturn ? ' 戻り['+c.conditionReturn+']' : ' 戻り[自動]') : ' (一方通行)';
+        return (i+1)+': '+c.from+' → '+c.to+' 行き['+( c.condition||'なし')+']'+retInfo;
+      }).join('\n');
       var num=prompt('編集する接続番号：\n\n'+desc);
       if(!num) return;
       var ci=parseInt(num)-1;
-      if(ci>=0&&ci<conns.length){ var nc=prompt('新しい条件：',conns[ci].condition); if(nc!==null) conns[ci].condition=nc; }
+      if(ci>=0&&ci<conns.length){
+        var nc=prompt('行き方向の条件：',conns[ci].condition);
+        if(nc!==null) conns[ci].condition=nc;
+        if(conns[ci].bidirectional){
+          var nrc=prompt('戻り方向の条件（空欄で自動）：',conns[ci].conditionReturn||'');
+          if(nrc!==null){ if(nrc) conns[ci].conditionReturn=nrc; else delete conns[ci].conditionReturn; }
+        }
+        renderComposerCanvas(stage);
+        saveStageEditorData();
+      }
     }},
     {sep:true},
     {label:'マップを編集',action:function(){
@@ -19363,7 +19416,9 @@ var _cwState = {
   stage: null,
   selectedMethod: null, // 'edge-left','edge-right','entrance-existing','entrance-new'
   selectedEntrance: null,
-  newEntrances: [] // ウィザード内で作成した新しい入口
+  newEntrances: [], // ウィザード内で作成した新しい入口
+  step: 1,              // 1=行き方向, 2=戻り方向
+  forwardCondition: null // 行き方向の条件（step2で使用）
 };
 
 function openConnectWizard(fromMap, toMap, stage) {
@@ -19373,18 +19428,31 @@ function openConnectWizard(fromMap, toMap, stage) {
   _cwState.selectedMethod = null;
   _cwState.selectedEntrance = null;
   _cwState.newEntrances = [];
+  _cwState.step = 1;
+  _cwState.forwardCondition = null;
 
+  _renderCwStep(fromMap, toMap, 1);
+}
+
+function _renderCwStep(sourceMap, destMap, step) {
   var wizard = document.getElementById('se-connect-wizard');
-  document.getElementById('se-cw-title').textContent = '「' + fromMap + '」と「' + toMap + '」を接続します';
-  document.getElementById('se-cw-desc').textContent = '「' + fromMap + '」の移動手段を選択してください';
+
+  if(step === 1) {
+    document.getElementById('se-cw-title').textContent = '「' + sourceMap + '」→「' + destMap + '」の接続';
+    document.getElementById('se-cw-desc').textContent = '「' + sourceMap + '」からの移動手段を選択してください';
+  } else {
+    document.getElementById('se-cw-title').textContent = '「' + destMap + '」→「' + sourceMap + '」の戻り方法';
+    document.getElementById('se-cw-desc').textContent = '「' + destMap + '」からの戻り方法を選択してください';
+  }
+
+  var mapForPreview = (step === 1) ? sourceMap : destMap;
 
   // サムネイル表示
   var preview = document.getElementById('se-cw-room-preview');
   preview.innerHTML = '';
-  var rid = ROOM_MAP_REV[fromMap];
+  var rid = ROOM_MAP_REV[mapForPreview];
   var roomEl = rid ? document.getElementById(rid) : null;
   if(roomEl) {
-    // 一時的にroomを表示してサムネ生成
     var gameScreen = document.getElementById('scene-game');
     var gsWas = gameScreen ? gameScreen.classList.contains('active') : false;
     if(gameScreen && !gsWas){ gameScreen.style.visibility='hidden'; gameScreen.classList.add('active'); }
@@ -19401,13 +19469,24 @@ function openConnectWizard(fromMap, toMap, stage) {
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
     preview.appendChild(img);
   } else {
-    preview.innerHTML = '<div style="color:#90a4ae;font-size:2vmin;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">'+escHtml(fromMap)+'</div>';
+    preview.innerHTML = '<div style="color:#90a4ae;font-size:2vmin;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">'+escHtml(mapForPreview)+'</div>';
   }
 
   // 既存入口の表示
   var existingDiv = document.getElementById('se-cw-existing-entrances');
   existingDiv.innerHTML = '';
-  var ents = getMapEntrances(fromMap);
+
+  // Step 2では「一方通行（戻りなし）」ボタンを追加
+  if(step === 2) {
+    var onewayBtn = document.createElement('button');
+    onewayBtn.className = 'se-cw-btn cw-oneway';
+    onewayBtn.textContent = '一方通行（戻りなし）';
+    onewayBtn.style.cssText = 'background:#78909c;color:#fff;margin-bottom:1vmin;width:100%;';
+    onewayBtn.onclick = function() { _seCwSelectOneway(); };
+    existingDiv.appendChild(onewayBtn);
+  }
+
+  var ents = getMapEntrances(mapForPreview);
   if(ents && ents.length > 0) {
     var title = document.createElement('div');
     title.style.cssText = 'width:100%;color:#b0bec5;font-size:1.5vmin;text-align:center;margin-bottom:0.5vmin;';
@@ -19423,7 +19502,8 @@ function openConnectWizard(fromMap, toMap, stage) {
   }
 
   // 入口マーカーをサムネイル上に表示
-  renderCwEntranceMarkers(fromMap);
+  _cwState.newEntrances = [];
+  renderCwEntranceMarkers(mapForPreview);
 
   wizard.classList.add('active');
 }
@@ -19505,11 +19585,30 @@ function enableCwEntranceDrag(el, data, container) {
 // ウィザード操作
 window._seCwSelectEdge = function(side) {
   var condition = (side === 'left') ? '画面左端' : '画面右端';
-  finalizeConnection(condition);
+  _handleCwConditionSelected(condition);
 };
 
 function _seCwSelectExistingEntrance(entranceName) {
-  finalizeConnection(entranceName);
+  _handleCwConditionSelected(entranceName);
+}
+
+// 一方通行（戻りなし）選択
+window._seCwSelectOneway = function() {
+  // Step2で一方通行を選択：bidirectional=falseで保存
+  finalizeConnection(_cwState.forwardCondition, null, false);
+};
+
+// 条件選択のハンドラ（step1/step2を制御）
+function _handleCwConditionSelected(condition) {
+  if(_cwState.step === 1) {
+    // Step1完了：行き方向の条件を保存してStep2へ
+    _cwState.forwardCondition = condition;
+    _cwState.step = 2;
+    _renderCwStep(_cwState.fromMap, _cwState.toMap, 2);
+  } else {
+    // Step2完了：戻り条件とともに接続を確定
+    finalizeConnection(_cwState.forwardCondition, condition, true);
+  }
 }
 
 window._seCwCreateEntrance = function(type) {
@@ -19518,10 +19617,11 @@ window._seCwCreateEntrance = function(type) {
   if(!name) return;
   var ne = { x: 40, y: 40, w: 15, h: 20, label: name, type: type };
   _cwState.newEntrances.push(ne);
-  renderCwEntranceMarkers(_cwState.fromMap);
+  var currentMap = (_cwState.step === 1) ? _cwState.fromMap : _cwState.toMap;
+  renderCwEntranceMarkers(currentMap);
 
   // マップ編集画面にも入口を追加（saved-stage-dataに反映）
-  var rid = ROOM_MAP_REV[_cwState.fromMap];
+  var rid = ROOM_MAP_REV[currentMap];
   if(rid) {
     var roomEl = document.getElementById(rid);
     if(roomEl) {
@@ -19540,19 +19640,23 @@ window._seCwCreateEntrance = function(type) {
 function _seCwSelectNewEntrance(idx) {
   var ne = _cwState.newEntrances[idx];
   if(!ne) return;
-  finalizeConnection(ne.label);
+  _handleCwConditionSelected(ne.label);
 }
 
-function finalizeConnection(condition) {
+function finalizeConnection(condition, conditionReturn, bidirectional) {
   var stage = _cwState.stage;
   if(!stage) return;
   if(!stage.connections) stage.connections = [];
-  stage.connections.push({
+  var conn = {
     from: _cwState.fromMap,
     to: _cwState.toMap,
     condition: condition,
-    bidirectional: true
-  });
+    bidirectional: (bidirectional !== false)
+  };
+  if(conditionReturn) {
+    conn.conditionReturn = conditionReturn;
+  }
+  stage.connections.push(conn);
   // ウィザードを閉じて再描画
   document.getElementById('se-connect-wizard').classList.remove('active');
   clearConnectingHighlight();
