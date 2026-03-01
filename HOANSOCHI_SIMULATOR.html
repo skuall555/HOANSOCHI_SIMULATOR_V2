@@ -3248,6 +3248,12 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
           <option value="A級">A級</option>
           <option value="S級">S級</option>
         </select>
+      </div><div class="scenario-field" draggable="true" data-field="stageComposition">
+        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="ステージ構成">ステージ構成</span></label>
+        <select id="sc-stage-composition">
+          <option value="">(デフォルト)</option>
+        </select>
+        <div style="font-size:80%;color:#666;margin-top:0.3em;">ステージ作成・編集で作成したステージ構成を選択できます</div>
       </div><div class="scenario-field" draggable="true" data-field="safetyNorma">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="安全率ノルマ">安全率ノルマ<br><span style="font-size:80%;color:#666;">（クリア必要な内部値。表示は最大100%に正規化）</span></span></label>
         <input id="sc-safety-norma" type="number" min="1" max="9999" step="1" placeholder="例: 100" value="100" style="width:100%;box-sizing:border-box;padding:0.8vmin;">
@@ -6549,6 +6555,23 @@ try {
   }
 } catch(err) {}
 
+// ステージ構成データの復元
+try {
+  const startToken3 = '<script id="saved-stage-data" type="application/json">';
+  let s3 = text.indexOf(startToken3);
+  if(s3 !== -1) {
+    s3 += startToken3.length;
+    let e4 = text.indexOf(endToken, s3);
+    if(e4 !== -1) {
+      const loaded3 = JSON.parse(text.substring(s3, e4) || '{}');
+      var seNode = document.getElementById('saved-stage-data');
+      if(seNode) seNode.textContent = JSON.stringify(loaded3);
+      try{ if(typeof initStageEditorData === 'function') initStageEditorData(); }catch(e){}
+      restored = true;
+    }
+  }
+} catch(err) {}
+
 if(restored) {
   try{ renderScenarioList(); }catch(e){}
   try{ refreshStartScenarioOptions(); }catch(e){}
@@ -6563,9 +6586,15 @@ reader.readAsText(file);
 function saveAndDownload() {
 if(document.getElementById('saved-assets')) document.getElementById('saved-assets').textContent = JSON.stringify(customData);
 if(document.getElementById('saved-scenarios')) document.getElementById('saved-scenarios').textContent = JSON.stringify(scenarioData);
+// ステージ構成データも保存
+try{ if(typeof saveStageEditorData === 'function') saveStageEditorData(); }catch(e){}
 
 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
 document.querySelectorAll('.overlay-screen').forEach(s => s.classList.remove('active'));
+// ステージエディタ系画面もリセット
+document.querySelectorAll('.se-overlay').forEach(function(s){ s.classList.remove('active'); });
+document.querySelectorAll('.se-composer').forEach(function(s){ s.classList.remove('active'); });
+document.querySelectorAll('.se-map-editor').forEach(function(s){ s.classList.remove('active'); });
 document.getElementById('scene-title').classList.add('active');
 
 const htmlContent = "<!DOCTYPE html>\n<html lang='ja'>" + document.documentElement.innerHTML + "</html>";
@@ -7103,7 +7132,8 @@ function normalizeScenarioData(arr){
       gasCause:(s.gasCause!=null)?String(s.gasCause):(s.gasLeakCause!=null?String(s.gasLeakCause):'101号室灯内内管'),
       description:(s.description!=null)?String(s.description):'',
       difficulty:(s.difficulty!=null)?String(s.difficulty):'B級',
-      safetyNorma:(s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100
+      safetyNorma:(s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100,
+      stageComposition:(s.stageComposition!=null)?String(s.stageComposition):''
     };
   }
   return base;
@@ -7268,7 +7298,29 @@ function openScenarioEdit(idx){
   try{ document.getElementById('sc-description').value = s.description?String(s.description):''; }catch(e){}
   try{ document.getElementById('sc-difficulty').value = s.difficulty?String(s.difficulty):'B級'; }catch(e){}
   try{ document.getElementById('sc-safety-norma').value = (s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100; }catch(e){}
-  
+
+  // ステージ構成セレクトを動的に更新
+  try{
+    var scSelect = document.getElementById('sc-stage-composition');
+    if(scSelect){
+      scSelect.innerHTML = '<option value="">(デフォルト)</option>';
+      var stageData = null;
+      try{
+        var seNode = document.getElementById('saved-stage-data');
+        if(seNode) stageData = JSON.parse(seNode.textContent);
+      }catch(e2){}
+      if(stageData && stageData.stages){
+        stageData.stages.forEach(function(st, si){
+          var opt = document.createElement('option');
+          opt.value = st.name;
+          opt.textContent = st.name;
+          scSelect.appendChild(opt);
+        });
+      }
+      scSelect.value = s.stageComposition ? String(s.stageComposition) : '';
+    }
+  }catch(e){}
+
   // コピー元のセレクトボックスを動的に更新
   try{
     var copySelect = document.getElementById('sc-copy-from');
@@ -7373,7 +7425,8 @@ function saveScenario(){
     gasCause: (function(){ try{ var el=document.getElementById('sc-gas-cause'); return (el&&el.value)?el.value:'101号室灯内内管'; }catch(e){ return '101号室灯内内管'; } })(),
     description: (function(){ try{ var el=document.getElementById('sc-description'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     difficulty: (function(){ try{ var el=document.getElementById('sc-difficulty'); return (el&&el.value)?el.value:'B級'; }catch(e){ return 'B級'; } })(),
-    safetyNorma: (function(){ try{ var el=document.getElementById('sc-safety-norma'); var v=parseInt(el&&el.value); return (isNaN(v)||v<1)?100:v; }catch(e){ return 100; } })()
+    safetyNorma: (function(){ try{ var el=document.getElementById('sc-safety-norma'); var v=parseInt(el&&el.value); return (isNaN(v)||v<1)?100:v; }catch(e){ return 100; } })(),
+    stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })()
   };
   renderScenarioList();
   try{ refreshStartScenarioOptions(); }catch(e){}
@@ -11053,6 +11106,7 @@ function _applyScenarioToForm(s){
   try{ document.getElementById('sc-gas-cause').value = s.gasCause?String(s.gasCause):(s.gasLeakCause?String(s.gasLeakCause):''); }catch(e){}
   try{ document.getElementById('sc-description').value = (s.description!=null)?String(s.description):''; }catch(e){}
   try{ document.getElementById('sc-safety-norma').value = (s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100; }catch(e){}
+  try{ document.getElementById('sc-stage-composition').value = s.stageComposition?String(s.stageComposition):''; }catch(e){}
 }
 function copyScenarioFromSelected(){
   try{
@@ -11092,7 +11146,8 @@ function _collectScenarioFromForm(){
     difficulty: (function(){ try{ var el=document.getElementById('sc-difficulty'); return (el&&el.value)?el.value:'B級'; }catch(e){ return 'B級'; } })(),
     gasCause: (function(){ try{ var el=document.getElementById('sc-gas-cause'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     description: (function(){ try{ var el=document.getElementById('sc-description'); return (el&&el.value!=null)?String(el.value):''; }catch(e){ return ''; } })(),
-    safetyNorma: (function(){ try{ var el=document.getElementById('sc-safety-norma'); var v=parseInt(el&&el.value,10); return (isNaN(v)||v<1)?100:v; }catch(e){ return 100; } })()
+    safetyNorma: (function(){ try{ var el=document.getElementById('sc-safety-norma'); var v=parseInt(el&&el.value,10); return (isNaN(v)||v<1)?100:v; }catch(e){ return 100; } })(),
+    stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })()
   };
 }
 function updateStartScenarioSelectOptions(){
@@ -17703,16 +17758,13 @@ window._tantouGenerateReply = function(rawText){
 .se-map-thumb .se-thumb-placeholder{color:#90a4ae;font-size:2vmin;text-align:center;}
 .se-map-name{padding:1vmin;color:#fff;font-size:1.8vmin;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
-/* === マップ編集画面 === */
-.se-map-editor{position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:950;display:none;flex-direction:column;}
+/* === マップ編集画面（ツールバーのみオーバーレイ、scene-game自体を利用） === */
+.se-map-editor{position:fixed;top:0;left:0;width:100%;height:auto;z-index:950;display:none;flex-direction:column;pointer-events:none;}
 .se-map-editor.active{display:flex!important;}
-.se-map-toolbar{width:100%;background:#111;color:#fff;padding:0.8vmin 1.5vmin;display:flex;align-items:center;gap:1vmin;flex-shrink:0;flex-wrap:wrap;z-index:960;box-sizing:border-box;}
+.se-map-toolbar{width:100%;background:rgba(17,17,17,0.92);color:#fff;padding:0.8vmin 1.5vmin;display:flex;align-items:center;gap:1vmin;flex-shrink:0;flex-wrap:wrap;z-index:960;box-sizing:border-box;pointer-events:auto;}
 .se-map-toolbar .se-btn{font-size:1.6vmin;padding:0.6vmin 1.2vmin;}
-.se-map-canvas-area{flex:1;position:relative;overflow:hidden;background:#f0f0f0;}
-
-/* エディタ内のroom表示 */
-.se-map-canvas-area>#se-edit-room{position:absolute!important;top:0;left:0;width:100%!important;height:100%!important;display:block!important;}
-.se-map-canvas-area>#se-edit-room *{pointer-events:auto!important;}
+/* scene-game内の編集中room: pointer-events有効化 */
+.room.active *{pointer-events:auto;}
 
 /* 選択されたエレメントの虹色枠 */
 @keyframes rainbowBorder{0%{outline-color:#ff0000;}14%{outline-color:#ff8800;}28%{outline-color:#ffff00;}42%{outline-color:#00ff00;}57%{outline-color:#0088ff;}71%{outline-color:#0000ff;}85%{outline-color:#8800ff;}100%{outline-color:#ff0000;}}
@@ -17739,6 +17791,17 @@ window._tantouGenerateReply = function(rawText){
 .se-dialog input[type="text"],.se-dialog input[type="url"]{width:100%;padding:0.8vmin;border:1px solid #ccc;border-radius:0.5vmin;font-size:1.6vmin;box-sizing:border-box;}
 .se-dialog-actions{display:flex;gap:1vmin;justify-content:flex-end;margin-top:2vmin;}
 .se-dialog-backdrop{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:975;}
+
+/* === レイヤー順序ウィンドウ === */
+.se-layer-win{position:fixed;top:10%;right:2%;width:28vmin;max-height:70vh;background:rgba(20,20,40,0.95);border:1px solid #7c4dff;border-radius:1.2vmin;z-index:975;display:none;flex-direction:column;overflow:hidden;box-shadow:0 0.5vmin 3vmin rgba(0,0,0,0.6);}
+.se-layer-win.active{display:flex!important;}
+.se-layer-win-header{background:#7c4dff;color:#fff;padding:0.6vmin 1vmin;font-size:1.5vmin;font-weight:bold;display:flex;justify-content:space-between;align-items:center;}
+.se-layer-win-body{overflow-y:auto;padding:0.5vmin;flex:1;}
+.se-layer-item{padding:0.6vmin 0.8vmin;margin:0.3vmin 0;background:#263238;color:#fff;font-size:1.3vmin;border-radius:0.5vmin;cursor:grab;display:flex;align-items:center;gap:0.5vmin;border:2px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.se-layer-item:active{cursor:grabbing;}
+.se-layer-item.se-layer-drag-over{border-color:#7c4dff;background:#37474f;}
+.se-layer-item.se-layer-selected{background:#1a237e;border-color:#448aff;}
+.se-layer-item .se-layer-idx{color:#7c4dff;font-weight:bold;min-width:2.5vmin;text-align:center;}
 
 /* === ステージ構成エディタ（リレーション画面） === */
 .se-composer{position:fixed;top:0;left:0;width:100%;height:100%;background:#1a1a2e;z-index:950;display:none;flex-direction:column;}
@@ -17775,6 +17838,38 @@ window._tantouGenerateReply = function(rawText){
 .se-stage-item .se-stage-num{color:#7c4dff;font-size:2.5vmin;font-weight:bold;min-width:4vmin;text-align:center;}
 .se-stage-item .se-stage-name{color:#fff;font-size:2vmin;flex:1;}
 .se-stage-item .se-stage-actions{display:flex;gap:1vmin;}
+
+/* === 接続ウィザード === */
+@keyframes seNodeGlow{0%{box-shadow:0 0 2vmin rgba(255,215,0,0.6);}50%{box-shadow:0 0 4vmin rgba(255,215,0,1),0 0 6vmin rgba(255,200,0,0.5);}100%{box-shadow:0 0 2vmin rgba(255,215,0,0.6);}}
+.se-node.se-node-connecting{border-color:#ffd700;animation:seNodeGlow 1s infinite;z-index:50;}
+
+.se-connect-wizard{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:980;display:none;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;}
+.se-connect-wizard.active{display:flex!important;}
+.se-connect-wizard-inner{background:#1a1a2e;border:0.3vmin solid #7c4dff;border-radius:2vmin;padding:3vmin;max-width:90vmin;width:90%;max-height:85vh;overflow-y:auto;box-sizing:border-box;}
+.se-connect-wizard h3{color:#fff;font-size:2.5vmin;margin:0 0 2vmin 0;text-align:center;}
+.se-connect-wizard-thumb{position:relative;width:100%;height:40vmin;background:#263238;border-radius:1.5vmin;overflow:hidden;margin:1.5vmin 0;border:0.2vmin solid #455a64;}
+.se-connect-wizard-thumb .se-cw-room-preview{width:100%;height:100%;position:relative;overflow:hidden;}
+.se-connect-wizard-btns{display:flex;gap:1.5vmin;justify-content:center;flex-wrap:wrap;margin:1.5vmin 0;}
+.se-cw-btn{padding:1.2vmin 2.5vmin;border:none;border-radius:1vmin;cursor:pointer;font-size:1.8vmin;font-weight:bold;transition:transform 0.1s,box-shadow 0.2s;color:#fff;}
+.se-cw-btn:hover{transform:scale(1.05);}
+.se-cw-btn:active{transform:scale(0.95);}
+.se-cw-btn.cw-edge-left{background:linear-gradient(135deg,#1565c0,#0d47a1);}
+.se-cw-btn.cw-edge-right{background:linear-gradient(135deg,#1565c0,#0d47a1);}
+.se-cw-btn.cw-door{background:linear-gradient(135deg,#e65100,#bf360c);}
+.se-cw-btn.cw-stairs{background:linear-gradient(135deg,#6a1b9a,#4a148c);}
+.se-cw-btn.cw-cancel{background:#455a64;}
+.se-cw-btn.cw-entrance{background:linear-gradient(135deg,#2e7d32,#1b5e20);margin:0.5vmin;}
+.se-connect-wizard-sides{display:flex;align-items:center;gap:1vmin;width:100%;}
+.se-connect-wizard-sides .cw-side-btn{flex:0 0 auto;}
+.se-connect-wizard-sides .se-connect-wizard-thumb{flex:1;}
+
+/* 接続ウィザード内の入口マーカー */
+.se-cw-entrance{position:absolute;background:rgba(255,255,0,0.4);outline:0.3vmin dashed rgba(255,200,0,0.8);cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;border-radius:0.5vmin;transition:background 0.2s;}
+.se-cw-entrance:hover{background:rgba(255,255,0,0.6);}
+.se-cw-entrance.se-cw-entrance-selected{background:rgba(0,255,100,0.5);outline-color:#00e676;}
+.se-cw-entrance span{color:#333;font-size:1.2vmin;font-weight:bold;white-space:nowrap;text-shadow:0 0 0.3vmin #fff;}
+.se-cw-new-entrance{position:absolute;background:rgba(0,200,255,0.4);outline:0.3vmin dashed rgba(0,180,255,0.8);cursor:move;z-index:15;display:flex;align-items:center;justify-content:center;border-radius:0.5vmin;}
+.se-cw-new-entrance span{color:#fff;font-size:1.1vmin;font-weight:bold;white-space:nowrap;text-shadow:0 0 0.3vmin #000;}
 </style>
 
 <!-- ステージエディタ モード選択画面 -->
@@ -17824,12 +17919,11 @@ window._tantouGenerateReply = function(rawText){
     <button class="se-btn se-btn-secondary" id="se-btn-entrance-hide" onclick="mapEditorHideEntrances()" style="display:none;">入口非表示</button>
     <span style="width:1vmin;"></span>
     <button class="se-btn se-btn-purple" onclick="mapEditorInsertImage()">画像の挿入</button>
+    <button class="se-btn se-btn-warn" id="se-btn-layer" onclick="toggleLayerWindow()">レイヤー順序</button>
     <button class="se-btn se-btn-secondary" id="se-btn-clone" onclick="mapEditorCloneFrom()" style="display:none;">既存マップから複製</button>
     <span style="flex:1;"></span>
     <span id="se-map-name-display" style="color:#fff;font-size:1.8vmin;margin-right:1vmin;"></span>
     <button class="se-btn se-btn-danger" onclick="mapEditorFinish()">編集を終了する</button>
-  </div>
-  <div class="se-map-canvas-area" id="se-map-canvas">
   </div>
 </div>
 
@@ -17858,6 +17952,29 @@ window._tantouGenerateReply = function(rawText){
   </div>
   <div class="se-composer-canvas" id="se-composer-canvas">
     <svg id="se-composer-svg"></svg>
+  </div>
+</div>
+
+<!-- 接続ウィザード -->
+<div id="se-connect-wizard" class="se-connect-wizard">
+  <div class="se-connect-wizard-inner">
+    <h3 id="se-cw-title">接続設定</h3>
+    <p id="se-cw-desc" style="color:#b0bec5;text-align:center;font-size:1.8vmin;margin:0 0 1vmin 0;">移動手段を選択してください</p>
+    <div class="se-connect-wizard-sides">
+      <button class="se-cw-btn cw-edge-left" id="se-cw-edge-left" onclick="window._seCwSelectEdge('left')">画面左端</button>
+      <div class="se-connect-wizard-thumb" id="se-cw-thumb-container">
+        <div class="se-cw-room-preview" id="se-cw-room-preview"></div>
+      </div>
+      <button class="se-cw-btn cw-edge-right" id="se-cw-edge-right" onclick="window._seCwSelectEdge('right')">画面右端</button>
+    </div>
+    <div class="se-connect-wizard-btns">
+      <button class="se-cw-btn cw-door" onclick="window._seCwCreateEntrance('door')">扉を作成</button>
+      <button class="se-cw-btn cw-stairs" onclick="window._seCwCreateEntrance('stairs')">階段を作成</button>
+    </div>
+    <div id="se-cw-existing-entrances" style="display:flex;flex-wrap:wrap;gap:0.5vmin;justify-content:center;margin:1vmin 0;"></div>
+    <div class="se-connect-wizard-btns" style="margin-top:2vmin;">
+      <button class="se-cw-btn cw-cancel" onclick="window._seCwCancel()">キャンセル</button>
+    </div>
   </div>
 </div>
 
@@ -17983,7 +18100,7 @@ function createMapThumbnail(roomEl) {
 
 // ─── body直下に移動 ───
 function ensureOverlaysInBody() {
-  ['scene-stage-editor','scene-map-list','scene-map-editor','scene-stage-list','scene-stage-composer'].forEach(function(id){
+  ['scene-stage-editor','scene-map-list','scene-map-editor','scene-stage-list','scene-stage-composer','se-connect-wizard'].forEach(function(id){
     var el = document.getElementById(id);
     if(el && el.parentElement !== document.body) document.body.appendChild(el);
   });
@@ -18016,22 +18133,24 @@ function renderMapGrid() {
   grid.innerHTML = '';
   var maps = getExistingMaps();
 
-  // サムネ生成のためroomを一時表示
-  var gameScreen = document.getElementById('scene-game');
-  var wasActive = gameScreen && gameScreen.classList.contains('active');
-  if(gameScreen && !wasActive){ gameScreen.style.visibility='hidden'; gameScreen.classList.add('active'); }
-
   maps.forEach(function(m){
     var card = document.createElement('div');
     card.className = 'se-map-card';
     var thumb = document.createElement('div');
     thumb.className = 'se-map-thumb';
     if(m.element){
-      // 一時表示してサムネ生成
-      var wasDisplay = m.element.style.display;
+      // 一時的にroomを表示してサムネ生成
+      var gameScreen = document.getElementById('scene-game');
+      var gsWas = gameScreen ? gameScreen.classList.contains('active') : false;
+      if(gameScreen && !gsWas){ gameScreen.style.visibility='hidden'; gameScreen.classList.add('active'); }
+      var prevDisp = m.element.style.display;
+      var prevCls = m.element.className;
       m.element.style.display = 'block';
+      m.element.classList.add('active');
       var tn = createMapThumbnail(m.element);
-      m.element.style.display = wasDisplay;
+      m.element.style.display = prevDisp;
+      m.element.className = prevCls;
+      if(gameScreen && !gsWas){ gameScreen.classList.remove('active'); gameScreen.style.visibility=''; }
       var img = document.createElement('img');
       img.src = tn;
       thumb.appendChild(img);
@@ -18049,9 +18168,6 @@ function renderMapGrid() {
     card.onclick = function(){ openMapEditor(m.id, m.name, false); };
     grid.appendChild(card);
   });
-
-  // scene-game非表示に戻す
-  if(gameScreen && !wasActive){ gameScreen.classList.remove('active'); gameScreen.style.visibility=''; }
 }
 
 // =====================================================================
@@ -18072,96 +18188,82 @@ function openMapEditor(mapId, mapName, isNew) {
 
   document.getElementById('se-map-name-display').textContent = mapName || '新規マップ';
   document.getElementById('se-btn-clone').style.display = isNew ? 'inline-flex' : 'none';
-
-  var canvas = document.getElementById('se-map-canvas');
-  canvas.innerHTML = '';
   removeSelectPanel();
   removeModeBadge();
 
-  // scene-gameを強制表示（room要素を使うため）
+  // scene-gameを表示し、対象roomをactiveにする（CSS完全一致）
   var gameScreen = document.getElementById('scene-game');
-  if(gameScreen) { gameScreen.style.visibility='hidden'; gameScreen.classList.add('active'); }
+  if(gameScreen) gameScreen.classList.add('active');
 
+  // 全roomのactiveを外して対象roomだけactiveに
+  document.querySelectorAll('.room').forEach(function(r){ r.classList.remove('active'); });
   var roomEl = document.getElementById(mapId);
   if(roomEl && !isNew) {
-    // 実際のroom要素をキャンバスに移動（編集終了時に戻す）
-    _me._origParent = roomEl.parentElement;
-    _me._origNext = roomEl.nextSibling;
-    _me._origClass = roomEl.className;
-    _me._origStyle = roomEl.getAttribute('style') || '';
-
-    roomEl.id = 'se-edit-room';
-    roomEl.className = 'room';
-    roomEl.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
-
-    // ゲームUI要素は非表示に
-    hideGameUI(roomEl);
-
-    canvas.appendChild(roomEl);
-
-    // クリックイベントをバインド
-    bindClickEvents(canvas);
-    saveUndoSnapshot();
-  } else if(isNew) {
-    // 新規：白紙
-    var blank = document.createElement('div');
-    blank.id = 'se-edit-room';
-    blank.className = 'room';
-    blank.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;background:#fff;';
-    canvas.appendChild(blank);
-    bindClickEvents(canvas);
-    saveUndoSnapshot();
+    roomEl.classList.add('active');
   }
 
+  // ゲームUIを全て非表示（プレイヤー・操作パッド・HUD等）
+  _me._hiddenGameUI = [];
+  var uiSelectors = ['#player','#game-ui-layer','.controls-l','.controls-r','#danger-panel','#safety-panel','#parking-msg','#gas-result-box','#odor-meter-panel'];
+  uiSelectors.forEach(function(sel){
+    var els = document.querySelectorAll(sel);
+    els.forEach(function(el){
+      if(el.style.display !== 'none'){
+        _me._hiddenGameUI.push({ el:el, prev:el.style.display });
+        el.style.display = 'none';
+      }
+    });
+  });
+
+  // ゲームループを一時停止
+  _me._wasPaused = (typeof isPaused !== 'undefined') ? isPaused : false;
+  if(typeof isPaused !== 'undefined') isPaused = true;
+
+  // マップ一覧を閉じてツールバーを表示
   document.getElementById('scene-map-list').classList.remove('active');
+  ensureOverlaysInBody();
   document.getElementById('scene-map-editor').classList.add('active');
+
+  // scene-game内のroom要素にクリックイベントをバインド
+  if(roomEl) {
+    bindClickEvents(roomEl);
+  }
+  saveUndoSnapshot();
 }
 
-function hideGameUI(roomEl) {
-  // プレイヤー、配置アイテム、van-gridなどのゲームUI要素を非表示
-  var selectors = ['.van-grid','.placed-item','.guide-sign'];
-  selectors.forEach(function(sel){
-    roomEl.querySelectorAll(sel).forEach(function(el){ el.dataset.seHidden='1'; el.style.display='none'; });
-  });
-}
-
-function restoreGameUI(roomEl) {
-  roomEl.querySelectorAll('[data-se-hidden="1"]').forEach(function(el){
-    el.style.display='';
-    delete el.dataset.seHidden;
-  });
-}
+// hideGameUI/restoreGameUI は不要になった（ゲームUIはopenMapEditorで直接非表示にする）
 
 // ─── クリックでの要素選択（全要素対応） ───
-function bindClickEvents(canvas) {
-  canvas.onclick = function(e) {
-    // 選択パネルのボタンクリックは無視
+function bindClickEvents(room) {
+  // 既存バインドを解除
+  if(_me._boundClickHandler) {
+    try{ _me._boundRoom.removeEventListener('click', _me._boundClickHandler); }catch(e){}
+  }
+  _me._boundRoom = room;
+  _me._boundClickHandler = function(e) {
+    // 選択パネルやツールバーのクリックは無視
     if(e.target.closest('.se-select-panel')) return;
     if(e.target.closest('.se-map-toolbar')) return;
     if(e.target.closest('.se-entrance-marker')) {
-      // 入口マーカーは選択可能
       selectElement(e.target.closest('.se-entrance-marker'));
       return;
     }
 
-    // クリック対象を特定 - canvas直下のroom内の要素
     var target = e.target;
-    var room = document.getElementById('se-edit-room');
-    if(!room) return;
 
     // room自体をクリック → 選択解除
-    if(target === room || target === canvas) {
+    if(target === room) {
       deselectElement();
       return;
     }
 
-    // 最も適切な選択対象を見つける:
-    // roomの直接の子、またはimg要素を含む意味のある親
+    // 最も適切な選択対象を見つける
     var best = findBestSelectable(target, room);
     if(best) {
       selectElement(best);
     }
   };
+  room.addEventListener('click', _me._boundClickHandler);
 }
 
 function findBestSelectable(target, room) {
@@ -18213,9 +18315,8 @@ function selectElement(el) {
     '<button class="se-btn se-btn-primary" id="se-btn-pos" onclick="window._seStartPos()">位置を編集</button>' +
     '<button class="se-btn se-btn-success" id="se-btn-size" onclick="window._seStartSize()">サイズを編集</button>' +
     '<button class="se-btn se-btn-purple" onclick="window._seReplaceImg()">画像の差し替え</button>' +
-    '<button class="se-btn se-btn-warn" onclick="window._seBringForward()">前面へ</button>' +
-    '<button class="se-btn se-btn-warn" onclick="window._seSendBackward()">背面へ</button>' +
-    '<button class="se-btn se-btn-danger" onclick="window._seDeselectEl()">選択解除</button>';
+    '<button class="se-btn se-btn-danger" onclick="window._seDeleteEl()">削除</button>' +
+    '<button class="se-btn se-btn-secondary" onclick="window._seDeselectEl()">選択解除</button>';
   document.body.appendChild(panel);
 }
 
@@ -18242,6 +18343,18 @@ function deselectElement() {
   removeModeBadge();
 }
 window._seDeselectEl = deselectElement;
+
+// ─── 選択中の要素を削除 ───
+window._seDeleteEl = function() {
+  if(!_me.selEl) return;
+  var name = getElementName(_me.selEl);
+  if(!confirm('「' + name + '」を削除しますか？')) return;
+  var el = _me.selEl;
+  deselectElement();
+  el.remove();
+  saveUndoSnapshot();
+  try{ refreshLayerList(); }catch(e){}
+};
 
 function removeSelectPanel() {
   var p = document.getElementById('se-select-panel');
@@ -18394,34 +18507,97 @@ window._seReplaceImg = function() {
   });
 };
 
-// ─── 前面/背面（z-index操作） ───
-window._seBringForward = function() {
-  if(!_me.selEl) return;
-  var el = _me.selEl;
-  var cur = parseInt(window.getComputedStyle(el).zIndex) || 0;
-  el.style.zIndex = cur + 1;
-  // DOM順でも前面に（次の兄弟の後に移動）
-  if(el.nextElementSibling) {
-    el.parentElement.insertBefore(el.nextElementSibling, el);
+// ─── レイヤー順序ウィンドウ ───
+window.toggleLayerWindow = function() {
+  var win = document.getElementById('se-layer-win');
+  if(!win) {
+    // ウィンドウ初回作成
+    win = document.createElement('div');
+    win.className = 'se-layer-win';
+    win.id = 'se-layer-win';
+    win.innerHTML = '<div class="se-layer-win-header"><span>レイヤー順序（上=前面）</span><button class="se-btn se-btn-secondary" style="padding:0.3vmin 0.6vmin;font-size:1.2vmin;" onclick="toggleLayerWindow()">✕</button></div><div class="se-layer-win-body" id="se-layer-body"></div>';
+    document.body.appendChild(win);
   }
-  saveUndoSnapshot();
+  if(win.classList.contains('active')) {
+    win.classList.remove('active');
+  } else {
+    win.classList.add('active');
+    refreshLayerList();
+  }
 };
 
-window._seSendBackward = function() {
-  if(!_me.selEl) return;
-  var el = _me.selEl;
-  var cur = parseInt(window.getComputedStyle(el).zIndex) || 0;
-  el.style.zIndex = Math.max(0, cur - 1);
-  // DOM順でも背面に（前の兄弟の前に移動）
-  if(el.previousElementSibling) {
-    el.parentElement.insertBefore(el, el.previousElementSibling);
+function refreshLayerList() {
+  var body = document.getElementById('se-layer-body');
+  if(!body) return;
+  body.innerHTML = '';
+  var room = getEditingRoom();
+  if(!room) return;
+  // 子要素を逆順（DOM最後=最前面）で表示
+  var children = Array.from(room.children);
+  for(var i = children.length - 1; i >= 0; i--) {
+    var ch = children[i];
+    // 非表示やマーカーは除外
+    if(ch.classList.contains('se-entrance-marker')) continue;
+    if(ch.dataset && ch.dataset.seHidden === '1') continue;
+    var item = document.createElement('div');
+    item.className = 'se-layer-item';
+    item.draggable = true;
+    item.dataset.childIdx = String(i);
+    var name = getElementName(ch);
+    var idx = children.length - i;
+    item.innerHTML = '<span class="se-layer-idx">' + idx + '</span><span>' + escHtml(name) + '</span>';
+    // 選択中ハイライト
+    if(_me.selEl === ch) item.classList.add('se-layer-selected');
+    // クリックで選択
+    (function(el){
+      item.onclick = function(){ selectElement(el); refreshLayerList(); };
+    })(ch);
+    // ドラッグで順序入れ替え
+    (function(srcIdx, srcEl){
+      item.addEventListener('dragstart', function(e){
+        e.dataTransfer.setData('text/plain', srcIdx);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      item.addEventListener('dragover', function(e){
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        item.classList.add('se-layer-drag-over');
+      });
+      item.addEventListener('dragleave', function(){
+        item.classList.remove('se-layer-drag-over');
+      });
+      item.addEventListener('drop', function(e){
+        e.preventDefault();
+        item.classList.remove('se-layer-drag-over');
+        var fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+        var toIdx = srcIdx;
+        if(fromIdx === toIdx) return;
+        // DOM順序を入れ替え
+        var allCh = Array.from(room.children);
+        var fromEl = allCh[fromIdx];
+        var toEl = allCh[toIdx];
+        if(!fromEl || !toEl) return;
+        // toElの位置にfromElを挿入
+        if(fromIdx > toIdx) {
+          room.insertBefore(fromEl, toEl.nextSibling);
+        } else {
+          room.insertBefore(fromEl, toEl);
+        }
+        saveUndoSnapshot();
+        refreshLayerList();
+      });
+    })(i, ch);
+    body.appendChild(item);
   }
-  saveUndoSnapshot();
-};
+}
 
 // ─── Undo/Redo（実DOMのスナップショット） ───
+function getEditingRoom() {
+  return document.getElementById(_me.mapId) || document.querySelector('.room.active');
+}
+
 function saveUndoSnapshot() {
-  var room = document.getElementById('se-edit-room');
+  var room = getEditingRoom();
   if(!room) return;
   // outerHTMLは重すぎるので、子要素のstyle属性とsrc属性のみ保存
   var snapshot = [];
@@ -18435,7 +18611,7 @@ function saveUndoSnapshot() {
 }
 
 function restoreSnapshot(json) {
-  var room = document.getElementById('se-edit-room');
+  var room = getEditingRoom();
   if(!room) return;
   try {
     var snapshot = JSON.parse(json);
@@ -18486,7 +18662,8 @@ window.mapEditorShowEntrances = function() {
   _me.showEnt = true;
   document.getElementById('se-btn-entrance-show').style.display='none';
   document.getElementById('se-btn-entrance-hide').style.display='inline-flex';
-  var canvas = document.getElementById('se-map-canvas');
+  var canvas = getEditingRoom();
+  if(!canvas) return;
   var defs = {
     'room-parking':[{x:85,y:60,w:15,h:40,label:'→前面道路'}],
     'room-street':[{x:0,y:60,w:10,h:40,label:'←駐車場'},{x:20,y:40,w:30,h:60,label:'→エントランス'}],
@@ -18524,7 +18701,7 @@ window.mapEditorInsertImage = function() {
     var name = vals['se-iname'], url = vals['se-iurl'];
     if(!name || !url) return;
     if(!/^[a-zA-Z0-9_]+$/.test(name)){ alert('英数字とアンダースコアのみ'); return; }
-    var room = document.getElementById('se-edit-room');
+    var room = getEditingRoom();
     if(!room) return;
     var wrapper = document.createElement('div');
     wrapper.id = 'se-img-' + name;
@@ -18548,16 +18725,11 @@ window.mapEditorCloneFrom = function() {
   if(!choice) return;
   var target = maps.find(function(m){ return m.name===choice; });
   if(!target||!target.element){ alert('マップが見つかりません。'); return; }
-  var canvas = document.getElementById('se-map-canvas');
-  var room = document.getElementById('se-edit-room');
-  if(room) room.remove();
-  var clone = target.element.cloneNode(true);
-  clone.id = 'se-edit-room';
-  clone.className = 'room';
-  clone.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
-  hideGameUI(clone);
-  canvas.appendChild(clone);
-  bindClickEvents(canvas);
+  // 現在のroomに複製元の子要素をコピー
+  var room = getEditingRoom();
+  if(!room) return;
+  room.innerHTML = target.element.innerHTML;
+  bindClickEvents(room);
   saveUndoSnapshot();
 };
 
@@ -18566,46 +18738,36 @@ window.mapEditorFinish = function() {
   try{ deselectElement(); }catch(e){}
   try{ mapEditorHideEntrances(); }catch(e){}
 
-  var editRoom = document.getElementById('se-edit-room');
-
   if(_me.isNew) {
     var mapName = prompt('マップ名を入力してください：');
-    if(!mapName) {
-      // キャンセル→エディタに留まる
-      return;
-    }
-    var mapId = 'room-custom-' + Date.now();
-    if(editRoom) {
-      editRoom.id = mapId;
-      _sed.maps.push({ id:mapId, name:mapName, html:editRoom.outerHTML });
-    }
-  } else {
-    // 既存マップ: 元の位置に戻す
-    if(editRoom) {
-      editRoom.id = _me.mapId;
-      editRoom.className = _me._origClass || 'room';
-      editRoom.style.cssText = _me._origStyle || '';
-      try{ restoreGameUI(editRoom); }catch(e){}
-      try{
-        if(_me._origParent && _me._origParent.isConnected) {
-          if(_me._origNext && _me._origNext.isConnected) {
-            _me._origParent.insertBefore(editRoom, _me._origNext);
-          } else {
-            _me._origParent.appendChild(editRoom);
-          }
-        } else {
-          // フォールバック: scene-gameに戻す
-          var sg = document.getElementById('scene-game');
-          if(sg) sg.appendChild(editRoom);
-        }
-      }catch(e){ console.warn('Room restore error:', e); }
-    }
+    if(!mapName) return; // キャンセル→エディタに留まる
+    // 新規マップデータを保存
+    _sed.maps.push({ id:'room-custom-'+Date.now(), name:mapName });
   }
+
+  // 編集内容を永続保存（シミュレーション後も復元できるよう）
+  try{ saveEditedMapState(_me.mapId); }catch(e){ console.warn('saveEditedMapState error:', e); }
+
+  // ゲームUIを復元
+  if(_me._hiddenGameUI) {
+    _me._hiddenGameUI.forEach(function(item){
+      item.el.style.display = item.prev || '';
+    });
+    _me._hiddenGameUI = [];
+  }
+
+  // ゲームループ復元
+  if(typeof isPaused !== 'undefined') isPaused = _me._wasPaused || false;
+
+  // roomのactiveを元に戻す（駐車場=初期状態）
+  document.querySelectorAll('.room').forEach(function(r){ r.classList.remove('active'); });
+  var parkingRoom = document.getElementById('room-parking');
+  if(parkingRoom) parkingRoom.classList.add('active');
 
   // scene-gameを隠す
   try{
     var gameScreen = document.getElementById('scene-game');
-    if(gameScreen){ gameScreen.classList.remove('active'); gameScreen.style.visibility=''; }
+    if(gameScreen) gameScreen.classList.remove('active');
   }catch(e){}
 
   // 画面遷移
@@ -18768,6 +18930,13 @@ function renderComposerCanvas(stage) {
 
     enableNodeDrag(node, mapName, stage, svg, canvas);
     node.addEventListener('contextmenu', function(e){ e.preventDefault(); showNodeContextMenu(e,mapName,stage); });
+    // 左クリック：接続モード中なら接続先として選択
+    node.addEventListener('click', function(e){
+      if(_composerState.connectMode && _composerState.connectingFrom && _composerState.connectingFrom.map !== mapName) {
+        e.stopPropagation();
+        openConnectWizard(_composerState.connectingFrom.map, mapName, stage);
+      }
+    });
     canvas.appendChild(node);
   });
 
@@ -18787,13 +18956,16 @@ function getMapEntrances(name) {
 }
 
 function enableNodeDrag(node, mapName, stage, svg, canvas) {
-  var sx,sy,ox,oy;
+  var sx,sy,ox,oy,dragged;
   function onDown(e){
     if(e.button===2) return;
+    // 接続モード中はドラッグせずクリック検出のみ
+    if(_composerState.connectMode) return;
     e.preventDefault();
     var pt=e.touches?e.touches[0]:e;
     sx=pt.clientX; sy=pt.clientY;
     ox=parseInt(node.style.left)||0; oy=parseInt(node.style.top)||0;
+    dragged=false;
     node.style.zIndex='100';
     document.addEventListener('mousemove',onMove);
     document.addEventListener('mouseup',onUp);
@@ -18802,6 +18974,7 @@ function enableNodeDrag(node, mapName, stage, svg, canvas) {
   }
   function onMove(e){
     e.preventDefault();
+    dragged=true;
     var pt=e.touches?e.touches[0]:e;
     node.style.left=(ox+pt.clientX-sx)+'px';
     node.style.top=(oy+pt.clientY-sy)+'px';
@@ -18893,11 +19066,21 @@ function resetPortHL(){
 // ─── 右クリックメニュー ───
 function showNodeContextMenu(e, mapName, stage) {
   closeContextMenu();
+  // 右クリック時に選択状態にする
+  _composerState.selectedNode = mapName;
+  highlightSelectedNode(mapName);
+
   var menu=document.createElement('div');
   menu.className='se-context-menu'; menu.id='se-context-menu';
   menu.style.left=e.clientX+'px'; menu.style.top=e.clientY+'px';
   var items=[
-    {label:'接続を作成',action:function(){ _composerState.connectingFrom={map:mapName,entrance:''}; alert('接続先マップのポートをクリック'); }},
+    {label:'接続先を作成',action:function(){
+      // 選択中マップを光らせ、次のクリックを待つ
+      _composerState.connectingFrom={map:mapName,entrance:''};
+      _composerState.connectMode = true;
+      highlightConnectingNode(mapName);
+    }},
+    {sep:true},
     {label:'BGMを設定',action:function(){
       var url=prompt('BGM URL (mp3/ogg):', stage.bgm&&stage.bgm[mapName]||'');
       if(url!==null){ if(!stage.bgm) stage.bgm={}; stage.bgm[mapName]=url; }
@@ -18946,6 +19129,234 @@ function closeContextMenu() {
   var m=document.getElementById('se-context-menu'); if(m) m.remove();
 }
 
+// ─── ノードの選択/接続ハイライト ───
+function highlightSelectedNode(mapName) {
+  document.querySelectorAll('.se-node').forEach(function(n){ n.classList.remove('se-node-selected'); });
+  var node = document.querySelector('.se-node[data-map-name="'+mapName+'"]');
+  if(node) node.classList.add('se-node-selected');
+}
+
+function highlightConnectingNode(mapName) {
+  document.querySelectorAll('.se-node').forEach(function(n){ n.classList.remove('se-node-connecting'); });
+  var node = document.querySelector('.se-node[data-map-name="'+mapName+'"]');
+  if(node) node.classList.add('se-node-connecting');
+}
+
+function clearConnectingHighlight() {
+  document.querySelectorAll('.se-node').forEach(function(n){ n.classList.remove('se-node-connecting'); });
+  _composerState.connectMode = false;
+  _composerState.connectingFrom = null;
+}
+
+// ─── 接続ウィザード ───
+var _cwState = {
+  fromMap: '',
+  toMap: '',
+  stage: null,
+  selectedMethod: null, // 'edge-left','edge-right','entrance-existing','entrance-new'
+  selectedEntrance: null,
+  newEntrances: [] // ウィザード内で作成した新しい入口
+};
+
+function openConnectWizard(fromMap, toMap, stage) {
+  _cwState.fromMap = fromMap;
+  _cwState.toMap = toMap;
+  _cwState.stage = stage;
+  _cwState.selectedMethod = null;
+  _cwState.selectedEntrance = null;
+  _cwState.newEntrances = [];
+
+  var wizard = document.getElementById('se-connect-wizard');
+  document.getElementById('se-cw-title').textContent = '「' + fromMap + '」と「' + toMap + '」を接続します';
+  document.getElementById('se-cw-desc').textContent = '「' + fromMap + '」の移動手段を選択してください';
+
+  // サムネイル表示
+  var preview = document.getElementById('se-cw-room-preview');
+  preview.innerHTML = '';
+  var rid = ROOM_MAP_REV[fromMap];
+  var roomEl = rid ? document.getElementById(rid) : null;
+  if(roomEl) {
+    // 一時的にroomを表示してサムネ生成
+    var gameScreen = document.getElementById('scene-game');
+    var gsWas = gameScreen ? gameScreen.classList.contains('active') : false;
+    if(gameScreen && !gsWas){ gameScreen.style.visibility='hidden'; gameScreen.classList.add('active'); }
+    var prevDisp = roomEl.style.display;
+    var prevCls = roomEl.className;
+    roomEl.style.display = 'block';
+    roomEl.classList.add('active');
+    var tn = createMapThumbnail(roomEl);
+    roomEl.style.display = prevDisp;
+    roomEl.className = prevCls;
+    if(gameScreen && !gsWas){ gameScreen.classList.remove('active'); gameScreen.style.visibility=''; }
+    var img = document.createElement('img');
+    img.src = tn;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+    preview.appendChild(img);
+  } else {
+    preview.innerHTML = '<div style="color:#90a4ae;font-size:2vmin;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">'+escHtml(fromMap)+'</div>';
+  }
+
+  // 既存入口の表示
+  var existingDiv = document.getElementById('se-cw-existing-entrances');
+  existingDiv.innerHTML = '';
+  var ents = getMapEntrances(fromMap);
+  if(ents && ents.length > 0) {
+    var title = document.createElement('div');
+    title.style.cssText = 'width:100%;color:#b0bec5;font-size:1.5vmin;text-align:center;margin-bottom:0.5vmin;';
+    title.textContent = '既存の入口を選択：';
+    existingDiv.appendChild(title);
+    ents.forEach(function(ent) {
+      var btn = document.createElement('button');
+      btn.className = 'se-cw-btn cw-entrance';
+      btn.textContent = ent;
+      btn.onclick = function() { _seCwSelectExistingEntrance(ent); };
+      existingDiv.appendChild(btn);
+    });
+  }
+
+  // 入口マーカーをサムネイル上に表示
+  renderCwEntranceMarkers(fromMap);
+
+  wizard.classList.add('active');
+}
+
+function renderCwEntranceMarkers(mapName) {
+  var preview = document.getElementById('se-cw-room-preview');
+  // 既存マーカーを削除
+  preview.querySelectorAll('.se-cw-entrance,.se-cw-new-entrance').forEach(function(m){ m.remove(); });
+
+  var defs = {
+    'room-parking':[{x:85,y:60,w:15,h:40,label:'→前面道路'}],
+    'room-street':[{x:0,y:60,w:10,h:40,label:'←駐車場'},{x:20,y:40,w:30,h:60,label:'→エントランス'}],
+    'room-entrance':[{x:0,y:60,w:10,h:40,label:'←前面道路'},{x:85,y:10,w:15,h:50,label:'→階段'}],
+    'room-stairs':[{x:0,y:60,w:15,h:40,label:'←エントランス'},{x:85,y:60,w:15,h:40,label:'→地下街'}],
+    'room-corridor1':[{x:5,y:10,w:25,h:50,label:'101号室扉'},{x:70,y:10,w:25,h:50,label:'102号室扉'},{x:85,y:60,w:15,h:40,label:'→階段'}],
+    'room-corridor2':[{x:5,y:10,w:25,h:50,label:'201号室扉'},{x:70,y:10,w:25,h:50,label:'202号室扉'},{x:85,y:60,w:15,h:40,label:'→階段'}],
+    'room-basement':[{x:0,y:60,w:15,h:40,label:'←階段'},{x:85,y:60,w:15,h:40,label:'→焼き鳥屋'}],
+    'room-hallway':[{x:0,y:60,w:5,h:40,label:'←共用廊下'},{x:20,y:10,w:20,h:50,label:'トイレ'},{x:60,y:10,w:20,h:50,label:'脱衣所'},{x:85,y:10,w:15,h:50,label:'台所→'}],
+    'room-hallway-b':[{x:0,y:60,w:5,h:40,label:'←共用廊下'},{x:20,y:10,w:20,h:50,label:'トイレ'},{x:60,y:10,w:20,h:50,label:'脱衣所'},{x:85,y:10,w:15,h:50,label:'台所→'}]
+  };
+  var rid = ROOM_MAP_REV[mapName];
+  var areas = defs[rid] || [];
+  areas.forEach(function(a){
+    var m = document.createElement('div');
+    m.className = 'se-cw-entrance';
+    m.style.cssText = 'left:'+a.x+'%;top:'+a.y+'%;width:'+a.w+'%;height:'+a.h+'%;';
+    m.innerHTML = '<span>'+escHtml(a.label)+'</span>';
+    m.onclick = function(){ _seCwSelectExistingEntrance(a.label); };
+    preview.appendChild(m);
+  });
+
+  // 新規作成された入口も描画
+  _cwState.newEntrances.forEach(function(ne, idx){
+    var m = document.createElement('div');
+    m.className = 'se-cw-new-entrance';
+    m.style.cssText = 'left:'+ne.x+'%;top:'+ne.y+'%;width:'+ne.w+'%;height:'+ne.h+'%;';
+    m.innerHTML = '<span>'+escHtml(ne.label)+'</span>';
+    m.onclick = function(){ _seCwSelectNewEntrance(idx); };
+    enableCwEntranceDrag(m, ne, preview);
+    preview.appendChild(m);
+  });
+}
+
+function enableCwEntranceDrag(el, data, container) {
+  var sx, sy, ox, oy;
+  function onDown(e) {
+    e.preventDefault(); e.stopPropagation();
+    var pt = e.touches ? e.touches[0] : e;
+    sx = pt.clientX; sy = pt.clientY;
+    ox = parseFloat(el.style.left); oy = parseFloat(el.style.top);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('touchend', onUp);
+  }
+  function onMove(e) {
+    e.preventDefault();
+    var pt = e.touches ? e.touches[0] : e;
+    var rect = container.getBoundingClientRect();
+    var dx = ((pt.clientX - sx) / rect.width) * 100;
+    var dy = ((pt.clientY - sy) / rect.height) * 100;
+    var newX = Math.max(0, Math.min(100 - parseFloat(el.style.width) || 10, ox + dx));
+    var newY = Math.max(0, Math.min(100 - parseFloat(el.style.height) || 10, oy + dy));
+    el.style.left = newX + '%';
+    el.style.top = newY + '%';
+    data.x = newX;
+    data.y = newY;
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+  }
+  el.addEventListener('mousedown', onDown);
+  el.addEventListener('touchstart', onDown, {passive:false});
+}
+
+// ウィザード操作
+window._seCwSelectEdge = function(side) {
+  var condition = (side === 'left') ? '画面左端' : '画面右端';
+  finalizeConnection(condition);
+};
+
+function _seCwSelectExistingEntrance(entranceName) {
+  finalizeConnection(entranceName);
+}
+
+window._seCwCreateEntrance = function(type) {
+  var label = (type === 'door') ? '扉' : '階段';
+  var name = prompt(label + 'の名称：', label + '_' + (_cwState.newEntrances.length + 1));
+  if(!name) return;
+  var ne = { x: 40, y: 40, w: 15, h: 20, label: name, type: type };
+  _cwState.newEntrances.push(ne);
+  renderCwEntranceMarkers(_cwState.fromMap);
+
+  // マップ編集画面にも入口を追加（saved-stage-dataに反映）
+  var rid = ROOM_MAP_REV[_cwState.fromMap];
+  if(rid) {
+    var roomEl = document.getElementById(rid);
+    if(roomEl) {
+      var wrapper = document.createElement('div');
+      wrapper.id = 'se-entrance-' + Date.now();
+      wrapper.className = 'se-custom-entrance';
+      wrapper.dataset.entranceType = type;
+      wrapper.dataset.entranceName = name;
+      wrapper.style.cssText = 'position:absolute;left:'+ne.x+'%;top:'+ne.y+'%;width:'+ne.w+'%;height:'+ne.h+'%;z-index:15;background:rgba(255,255,0,0.3);outline:0.3vmin dashed rgba(255,200,0,0.8);display:flex;align-items:center;justify-content:center;';
+      wrapper.innerHTML = '<span style="color:#333;font-size:1.2vmin;font-weight:bold;white-space:nowrap;text-shadow:0 0 0.3vmin #fff;">' + escHtml(name) + '</span>';
+      roomEl.appendChild(wrapper);
+    }
+  }
+};
+
+function _seCwSelectNewEntrance(idx) {
+  var ne = _cwState.newEntrances[idx];
+  if(!ne) return;
+  finalizeConnection(ne.label);
+}
+
+function finalizeConnection(condition) {
+  var stage = _cwState.stage;
+  if(!stage) return;
+  if(!stage.connections) stage.connections = [];
+  stage.connections.push({
+    from: _cwState.fromMap,
+    to: _cwState.toMap,
+    condition: condition,
+    bidirectional: true
+  });
+  // ウィザードを閉じて再描画
+  document.getElementById('se-connect-wizard').classList.remove('active');
+  clearConnectingHighlight();
+  renderComposerCanvas(stage);
+  saveStageEditorData();
+}
+
+window._seCwCancel = function() {
+  document.getElementById('se-connect-wizard').classList.remove('active');
+  clearConnectingHighlight();
+};
+
 // ─── 汎用ダイアログ ───
 function showDialog(title, fields, onSubmit) {
   var bd=document.createElement('div'); bd.className='se-dialog-backdrop'; bd.id='se-dialog-backdrop';
@@ -18966,11 +19377,79 @@ function showDialog(title, fields, onSubmit) {
   };
 }
 
+// ─── 編集済みマップの永続保存（シミュレーション後も復元） ───
+var _editedMapStates = {};
+
+function saveEditedMapState(mapId) {
+  var room = document.getElementById(mapId);
+  if(!room) return;
+  // 子要素のstyle, src, classNameを保存
+  var children = room.querySelectorAll('*');
+  var state = [];
+  children.forEach(function(el, i) {
+    state.push({
+      idx: i,
+      style: el.getAttribute('style') || '',
+      src: el.tagName === 'IMG' ? el.getAttribute('src') : null,
+      cls: el.className,
+      bgImg: el.style.backgroundImage || ''
+    });
+  });
+  // room自体のstyleも保存
+  _editedMapStates[mapId] = {
+    roomStyle: room.getAttribute('style') || '',
+    roomClass: room.className,
+    children: state
+  };
+}
+
+function restoreEditedMapStates() {
+  Object.keys(_editedMapStates).forEach(function(mapId) {
+    var room = document.getElementById(mapId);
+    if(!room) return;
+    var saved = _editedMapStates[mapId];
+    // room自体は復元しない（initGameがactiveクラスを管理するため）
+    var children = room.querySelectorAll('*');
+    saved.children.forEach(function(s) {
+      var el = children[s.idx];
+      if(!el) return;
+      if(s.style) el.setAttribute('style', s.style);
+      if(s.src !== null && el.tagName === 'IMG') el.setAttribute('src', s.src);
+      if(s.cls) el.className = s.cls;
+    });
+  });
+}
+
+// initGameをフックして編集状態を復元
+(function() {
+  function hookInitGame() {
+    if(typeof window.initGame === 'function' && !window.initGame.__seEditHook) {
+      var orig = window.initGame;
+      window.initGame = function() {
+        var result = orig.apply(this, arguments);
+        // initGame完了後に編集状態を復元
+        setTimeout(function() {
+          try { restoreEditedMapStates(); } catch(e) {}
+        }, 100);
+        return result;
+      };
+      window.initGame.__seEditHook = true;
+    }
+  }
+  hookInitGame();
+  setTimeout(hookInitGame, 2000);
+})();
+
 // ─── データ保存 ───
 function saveStageEditorData() {
   var el=document.getElementById('saved-stage-data');
   if(el) el.textContent=JSON.stringify(_sed);
 }
+window.saveStageEditorData = saveStageEditorData;
+window.initStageEditorData = initStageEditorData;
+
+// ステージ構成データへの外部アクセス
+window.getStageEditorData = function() { return _sed; };
 
 // ─── HTMLエクスポート ───
 window.stageEditorExportHTML = function() {
@@ -18981,7 +19460,21 @@ window.stageEditorExportHTML = function() {
     if(document.getElementById('saved-scenarios'))
       document.getElementById('saved-scenarios').textContent=JSON.stringify(typeof scenarioData!=='undefined'?scenarioData:[]);
   }catch(e){}
+
+  // 全画面をリセットしてタイトル画面に戻す（HTML保存時に開始画面がステージ編集にならないようにする）
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.overlay-screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.se-overlay').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.se-composer').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.se-map-editor').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('scene-title').classList.add('active');
+
   var html='<!DOCTYPE html>\n<html lang="ja">'+document.documentElement.innerHTML+'</html>';
+
+  // HTMLを出力後、ステージエディタ画面を再表示
+  document.getElementById('scene-title').classList.remove('active');
+  document.getElementById('scene-stage-editor').classList.add('active');
+
   var blob=new Blob([html],{type:'text/html'});
   var link=document.createElement('a');
   link.href=URL.createObjectURL(blob);
