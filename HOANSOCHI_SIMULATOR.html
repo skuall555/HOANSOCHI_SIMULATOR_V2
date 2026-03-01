@@ -731,7 +731,7 @@ z-index: 100;
 #player-visual img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0.5vmin 0.5vmin rgba(0,0,0,0.5)); }
 #player-hand { position: absolute; bottom: 30%; right: -10%; width: 60%; height: 40%; z-index: 91; transform: rotate(-10deg); }
 
-.npc { position: absolute; bottom: 15%; width: 6%; height: 25%; z-index: 50; }
+.npc { position: absolute; bottom: 15%; width: 6%; height: 25%; z-index: 50; cursor: pointer; pointer-events: auto; }
 .npc-visual { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 15vmin; }
 .npc-visual img { width: 100%; height: 100%; object-fit: contain; }
 
@@ -4342,6 +4342,12 @@ window._reporterGreetedFlag = false;
 window._meterBeforeGreetPenalty = 0;
 window._valveBeforeGreetPenalty = 0;
 window.__valveClosedSafetyApplied = false;
+window._reporterRoomPermission = false;    // 通報者から他の部屋の入室許可を得たか
+window._reporterShelfPermission = false;   // 通報者から棚・点検口の調査許可を得たか
+window._reporterRoomPenaltyApplied = {};   // 部屋ごとのペナルティ適用済みフラグ
+window._reporterShelfPenaltyApplied = {};  // 棚・点検口ごとのペナルティ適用済みフラグ
+window._reporterCustomerPenalty = 0;       // 通報者関連のお客様対応力ペナルティ（%）
+window._reporterCustomerBonus = 0;         // 通報者関連のお客様対応力ボーナス（%）
 window._gameStats = {
   startTime: Date.now(),
   explosionOccurred: false,
@@ -4701,6 +4707,9 @@ function _drawRadarChart(){
     try{ score5 = Math.max(0, score5 - (typeof _meterBeforeGreetPenalty !== 'undefined' ? _meterBeforeGreetPenalty : 0)); }catch(ep2){}
     // 通報者あいさつ前のバルブ閉止ペナルティ
     try{ score5 = Math.max(0, score5 - (typeof _valveBeforeGreetPenalty !== 'undefined' ? _valveBeforeGreetPenalty : 0)); }catch(ep3){}
+    // 通報者関連のお客様対応力ボーナス/ペナルティ（入室・棚調査許可）
+    try{ score5 = Math.min(100, score5 + (typeof _reporterCustomerBonus !== 'undefined' ? _reporterCustomerBonus : 0)); }catch(eb){}
+    try{ score5 = Math.max(0, score5 - (typeof _reporterCustomerPenalty !== 'undefined' ? _reporterCustomerPenalty : 0)); }catch(ep4){}
 
     var scores = [score1, score2, score3, score4, score5];
     var labels = ['安全意識','社内情報共有','迅速な調査','調査の密度','お客さま対応'];
@@ -6383,6 +6392,16 @@ el.innerHTML = '<div class="npc-visual">🚶</div>';
 document.getElementById('room-street').appendChild(el);
 state.npcs = [{el:el, x:120}];
 if(customData['npc']) el.querySelector('.npc-visual').innerHTML = `<img src="${customData['npc']}" style="width:100%; height:100%; object-fit:contain;">`;
+el.addEventListener('click', function(){
+  try{
+    var g=document.getElementById('scene-game');
+    if(!g || !g.classList.contains('active')) return;
+    var activeRoom=document.querySelector('.room.active');
+    if(activeRoom && activeRoom.id==='room-street'){
+      if(typeof window.__awardCard==='function') window.__awardCard('カード_制限');
+    }
+  }catch(e){}
+});
 }
 
 function toggleToolbar() {
@@ -9606,14 +9625,17 @@ function resumeLoopSafe(){
   try{
     if(typeof closeMeterGas==='function'){
       closeMeterGas=function(){
+        var _penaltyShown = false;
         // 店舗メーター（5=焼き鳥屋, 6=ラーメン屋）許可なし閉止ペナルティ
         try{
           if(selectedMeterId===5 && !_yakitoriGasOk){
             _shopGasPenalty = (_shopGasPenalty||0) + 10;
             showSystemMsg('お客さま対応力が減少した（焼き鳥屋店主の許可なくガスを閉止しました）');
+            _penaltyShown = true;
           } else if(selectedMeterId===6 && !_ramenGasOk){
             _shopGasPenalty = (_shopGasPenalty||0) + 10;
             showSystemMsg('お客さま対応力が減少した（ラーメン屋店主の許可なくガスを閉止しました）');
+            _penaltyShown = true;
           }
         }catch(ep){}
         // 通報者にあいさつ前にガスメーター閉止 → お客様対応力10%減少
@@ -9621,6 +9643,7 @@ function resumeLoopSafe(){
           if(!window.roomOpened && !window._reporterGreetedFlag){
             window._meterBeforeGreetPenalty = (window._meterBeforeGreetPenalty||0) + 10;
             showSystemMsg('お客さま対応力が減少した（通報者へのあいさつ前にガスメーターを閉止しました）');
+            _penaltyShown = true;
           }
         }catch(ep2){}
         meterStatus[selectedMeterId]=true;
@@ -9630,7 +9653,15 @@ function resumeLoopSafe(){
           if(!safetyMeasures.meterClosed){
             safetyMeasures.meterClosed = true;
             if(window._gameStats) window._gameStats.meterClosedDone = true;
-            addSafety(5, "【保安措置】メーターガス栓を閉止！安全率+5%");
+            if(_penaltyShown){
+              // ペナルティメッセージ優先：安全率は上昇するがメッセージは遅延表示
+              safetyValue = Math.min(100, safetyValue + 5);
+              updateSafetyUI();
+              playAudio('se_coin', [880, 1047, 1319]);
+              setTimeout(function(){ try{ showSystemMsg("【保安措置】メーターガス栓を閉止！安全率+5%"); }catch(e){} }, 4000);
+            } else {
+              addSafety(5, "【保安措置】メーターガス栓を閉止！安全率+5%");
+            }
             dangerValue = Math.max(0, dangerValue - 5);
             dangerRate = Math.max(0.1, dangerRate - 0.2);
             updateDangerUI();
@@ -10520,6 +10551,28 @@ function generateCommReply(userText){
   if(_commContainsAny(t,['避難','移動'])){
     _commShowMoveSelect();
     return 'どこに移動（または避難）すればいい？下のリストから選んでね。';
+  }
+
+  // 通報者への「調」「入」→ 他の部屋の入室許可
+  if(commContext && commContext.partner==='reporter' && _commContainsAny(t,['調','入'])){
+    if(!window._reporterRoomPermission){
+      window._reporterRoomPermission = true;
+      window._reporterCustomerBonus = (window._reporterCustomerBonus||0) + 5;
+      try{ showSystemMsg('お客様対応力が5%上昇した'); }catch(e){}
+    }
+    try{window._commDecStress&&window._commDecStress('reporter',13);}catch(_){}
+    return 'どの部屋でも入って調査していいよ。';
+  }
+
+  // 通報者への「点」「棚」→ 棚・点検口の調査許可
+  if(commContext && commContext.partner==='reporter' && _commContainsAny(t,['点','棚'])){
+    if(!window._reporterShelfPermission){
+      window._reporterShelfPermission = true;
+      window._reporterCustomerBonus = (window._reporterCustomerBonus||0) + 5;
+      try{ showSystemMsg('お客様対応力が5%上昇した'); }catch(e){}
+    }
+    try{window._commDecStress&&window._commDecStress('reporter',13);}catch(_){}
+    return 'どこでも調査してください。';
   }
 
   var out=[];
@@ -15016,6 +15069,9 @@ function saveClearResult(){
       try{ scores.customer = Math.max(0, scores.customer - (typeof _meterBeforeGreetPenalty !== 'undefined' ? _meterBeforeGreetPenalty : 0)); }catch(ep2){}
       // 通報者あいさつ前のバルブ閉止ペナルティ
       try{ scores.customer = Math.max(0, scores.customer - (typeof _valveBeforeGreetPenalty !== 'undefined' ? _valveBeforeGreetPenalty : 0)); }catch(ep3){}
+      // 通報者関連のお客様対応力ボーナス/ペナルティ（入室・棚調査許可）
+      try{ scores.customer = Math.min(100, scores.customer + (typeof _reporterCustomerBonus !== 'undefined' ? _reporterCustomerBonus : 0)); }catch(eb){}
+      try{ scores.customer = Math.max(0, scores.customer - (typeof _reporterCustomerPenalty !== 'undefined' ? _reporterCustomerPenalty : 0)); }catch(ep4){}
     }catch(e){}
 
     var record = {
@@ -19936,6 +19992,101 @@ window.stageEditorExportHTML = function() {
       window.handleImport.__sePatched = true;
     }
   } catch(e) {}
+})();
+
+/* ==================================================================
+   通報者許可なしの入室・棚調査ペナルティ
+   - 「調」「入」を送信して入室許可を得る前にトイレ/脱衣所/浴室/寝室に入室 → お客様対応力5%減少
+   - 「点」「棚」を送信して調査許可を得る前に棚/点検口を開ける → お客様対応力5%減少
+   ================================================================== */
+(function(){
+  'use strict';
+
+  /* ---- ① 入室許可なしの部屋入室ペナルティ ---- */
+  function hookChangeRoomForPermission(){
+    if(typeof window.changeRoom !== 'function' || window.changeRoom.__roomPermHooked) return;
+    var _origChangeRoom = window.changeRoom;
+    window.changeRoom = function(r, x){
+      var ret = _origChangeRoom.apply(this, arguments);
+      try{
+        var owner = (typeof window.currentApartmentOwner !== 'undefined') ? window.currentApartmentOwner : 'A';
+        if(owner !== 'A') return ret;
+        var restrictedRooms = {6:'トイレ', 7:'脱衣所', 8:'浴室', 10:'寝室'};
+        if(restrictedRooms[r] && !window._reporterRoomPermission){
+          var roomKey = 'room_' + r;
+          if(!window._reporterRoomPenaltyApplied[roomKey]){
+            window._reporterRoomPenaltyApplied[roomKey] = true;
+            window._reporterCustomerPenalty = (window._reporterCustomerPenalty||0) + 5;
+            try{ showSystemMsg('お客様対応力が5%減少した（入室許可を得ずに' + restrictedRooms[r] + 'に入室しました）'); }catch(e){}
+          }
+        }
+      }catch(e){}
+      return ret;
+    };
+    window.changeRoom.__roomPermHooked = true;
+  }
+
+  /* ---- ② 棚・点検口の調査許可なしペナルティ ---- */
+  function hookDraggableForShelfPermission(){
+    if(typeof window.setupDraggable !== 'function' || window.setupDraggable.__shelfPermHooked) return;
+    var _origSetup = window.setupDraggable;
+    window.setupDraggable = function(){
+      var ret = _origSetup.apply(this, arguments);
+      try{
+        var shelfDoors = document.querySelectorAll('.shelf-door.ps-door, .bed-shelf-door.ps-door, .ceiling-hatch-lid.ps-door, .hatch-lid.ps-door');
+        shelfDoors.forEach(function(d){
+          if(d.__shelfPermHooked) return;
+          d.__shelfPermHooked = true;
+          var checkPermission = function(){
+            try{
+              var owner = (typeof window.currentApartmentOwner !== 'undefined') ? window.currentApartmentOwner : 'A';
+              if(owner !== 'A') return;
+              var matrix = new WebKitCSSMatrix(window.getComputedStyle(d).transform);
+              var pos = matrix.m41;
+              if(pos <= 0) return;
+              if(window._reporterShelfPermission) return;
+              var elId = d.id || d.className;
+              var shelfKey = 'shelf_' + elId + '_' + (d.parentElement ? d.parentElement.id : '');
+              if(!window._reporterShelfPenaltyApplied[shelfKey]){
+                window._reporterShelfPenaltyApplied[shelfKey] = true;
+                window._reporterCustomerPenalty = (window._reporterCustomerPenalty||0) + 5;
+                try{ showSystemMsg('お客様対応力が5%減少した（調査許可を得ずに棚・点検口を開けました）'); }catch(e){}
+              }
+            }catch(e){}
+          };
+          d.addEventListener('mouseup', checkPermission);
+          d.addEventListener('touchend', checkPermission);
+        });
+      }catch(e){}
+      return ret;
+    };
+    window.setupDraggable.__shelfPermHooked = true;
+  }
+
+  /* ---- ③ initGame リセット ---- */
+  function hookInitGameForPermReset(){
+    if(typeof window.initGame !== 'function' || window.initGame.__permResetHooked) return;
+    var _origInit = window.initGame;
+    window.initGame = function(){
+      window._reporterRoomPermission = false;
+      window._reporterShelfPermission = false;
+      window._reporterRoomPenaltyApplied = {};
+      window._reporterShelfPenaltyApplied = {};
+      window._reporterCustomerPenalty = 0;
+      window._reporterCustomerBonus = 0;
+      return _origInit.apply(this, arguments);
+    };
+    window.initGame.__permResetHooked = true;
+  }
+
+  hookChangeRoomForPermission();
+  hookDraggableForShelfPermission();
+  hookInitGameForPermReset();
+  setTimeout(function(){
+    hookChangeRoomForPermission();
+    hookDraggableForShelfPermission();
+    hookInitGameForPermReset();
+  }, 2000);
 })();
 
 })();
