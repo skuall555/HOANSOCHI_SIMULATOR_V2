@@ -4338,6 +4338,10 @@ safetyMeasures = {
 };
 
 // ゲーム統計初期化（レーダーチャート用）
+window._reporterGreetedFlag = false;
+window._meterBeforeGreetPenalty = 0;
+window._valveBeforeGreetPenalty = 0;
+window.__valveClosedSafetyApplied = false;
 window._gameStats = {
   startTime: Date.now(),
   explosionOccurred: false,
@@ -4367,6 +4371,11 @@ window.__clearResultSaved = false;
 
 function updateDanger() {
 if(isPaused) return;
+// コミュニケーションウィンドウが表示されている間は危険度の上昇をストップ
+try{
+  var commWin = document.getElementById('comm-window');
+  if(commWin && commWin.classList.contains('active')) return;
+}catch(e){}
 dangerValue += dangerRate;
 if(dangerValue >= 100) { dangerValue=100; try{ stopCityGasAlarm(); }catch(e){} gameOver("爆発！ゲームオーバー"); }
 updateDangerUI();
@@ -4688,6 +4697,10 @@ function _drawRadarChart(){
     score5 = Math.min(100, Math.round(totalComm / maxComm * 100));
     // 店主許可なしメーター閉止ペナルティ
     try{ score5 = Math.max(0, score5 - (typeof _shopGasPenalty !== 'undefined' ? _shopGasPenalty : 0)); }catch(ep){}
+    // 通報者あいさつ前のガスメーター閉止ペナルティ
+    try{ score5 = Math.max(0, score5 - (typeof _meterBeforeGreetPenalty !== 'undefined' ? _meterBeforeGreetPenalty : 0)); }catch(ep2){}
+    // 通報者あいさつ前のバルブ閉止ペナルティ
+    try{ score5 = Math.max(0, score5 - (typeof _valveBeforeGreetPenalty !== 'undefined' ? _valveBeforeGreetPenalty : 0)); }catch(ep3){}
 
     var scores = [score1, score2, score3, score4, score5];
     var labels = ['安全意識','社内情報共有','迅速な調査','調査の密度','お客さま対応'];
@@ -4878,12 +4891,14 @@ isPaused = true;
 function closeMeterGas() {
 meterStatus[selectedMeterId] = true;
 updateMeterVisual(selectedMeterId);
-// 保安措置：メーターガス栓閉止
+// 保安措置：ガスメーター閉止 → 安全率5%上昇 + 危険度5%減少 + 危険度上昇率0.2減少
 if(!safetyMeasures.meterClosed){
   safetyMeasures.meterClosed = true;
   try{ if(window._gameStats) window._gameStats.meterClosedDone = true; }catch(e){}
-  addSafety(20, "【保安措置】メーターガス栓を閉止しました！");
-  dangerRate = Math.max(0.1, dangerRate - 0.4); // 危険度上昇率を大幅に低下
+  addSafety(5, "【保安措置】メーターガス栓を閉止！安全率+5%");
+  dangerValue = Math.max(0, dangerValue - 5);
+  dangerRate = Math.max(0.1, dangerRate - 0.2);
+  updateDangerUI();
 }
 document.getElementById('meter-modal').classList.remove('active');
 isPaused = false;
@@ -6265,46 +6280,48 @@ function checkItemSafetyBonus(item, isPlacing) {
             var hsCenterX = rect.x + rect.w / 2;
             var hsCenterY = rect.y + rect.h / 2;
 
-            // アイテムがhotspotの周囲50%以内（app幅/高さ基準）に存在し、かつhotspotより上にある
+            // X座標の一致判定（app幅基準で50%以内）
             var threshX = appRect.width * 0.50;
-            var threshY = appRect.height * 0.50;
-            var inRange = Math.abs(itemX - hsCenterX) < threshX && Math.abs(itemY - hsCenterY) < threshY;
-            var itemIsHigher = itemY < hsCenterY;
+            var sameX = Math.abs(itemX - hsCenterX) < threshX;
 
-            if(inRange && itemIsHigher){
-                var owner = currentApartmentOwner || 'A';
-                var key = owner + '-' + item.type + '-' + hsId + '-' + item.room;
-
-                if(isPlacing){
-                    if(item.type === 'alm'){
+            if(item.type === 'alm'){
+                // ポケット警報器：反応箇所と同じX座標で同じY座標以上の場所に設置
+                var itemIsHigherOrSame = itemY <= hsCenterY;
+                if(sameX && itemIsHigherOrSame){
+                    // 同じ反応箇所に2つ以上置いても上昇率は変わらない（hsIdで重複防止）
+                    var owner = currentApartmentOwner || 'A';
+                    var key = owner + '-alm-' + hsId + '-' + item.room;
+                    if(isPlacing){
                         if(!safetyMeasures.alarms[key]){
                             safetyMeasures.alarms[key] = true;
                             try{ if(window._gameStats) window._gameStats.alarmsPlaced++; }catch(e){}
-                            addSafety(15, "【保安措置】反応箇所近くに警報器を設置！");
-                            dangerRate = Math.max(0.1, dangerRate - 0.15);
+                            addSafety(10, "【保安措置】反応箇所近くに警報器を設置！安全率+10%");
                         }
-                    } else if(item.type === 'sign'){
-                        if(!safetyMeasures.signs[key]){
-                            safetyMeasures.signs[key] = true;
-                            try{ if(window._gameStats) window._gameStats.signsPlaced++; }catch(e){}
-                            addSafety(10, "【保安措置】反応箇所近くに火気厳禁シートを設置！");
-                            dangerRate = Math.max(0.1, dangerRate - 0.1);
-                        }
-                    }
-                } else {
-                    if(item.type === 'alm'){
+                    } else {
                         if(safetyMeasures.alarms[key]){
                             safetyMeasures.alarms[key] = false;
-                            safetyValue = Math.max(0, safetyValue - 15);
-                            dangerRate = dangerRate + 0.15;
+                            safetyValue = Math.max(0, safetyValue - 10);
                             updateSafetyUI();
                             showSystemMsg("【警告】警報器を回収したため安全率が低下");
                         }
-                    } else if(item.type === 'sign'){
+                    }
+                }
+            } else if(item.type === 'sign'){
+                // 火気厳禁表示シート：反応箇所と同じX座標に設置（Y座標は無視）
+                if(sameX){
+                    // 同じ反応箇所に2つ以上置いても上昇率は変わらない（hsIdで重複防止）
+                    var owner = currentApartmentOwner || 'A';
+                    var key = owner + '-sign-' + hsId + '-' + item.room;
+                    if(isPlacing){
+                        if(!safetyMeasures.signs[key]){
+                            safetyMeasures.signs[key] = true;
+                            try{ if(window._gameStats) window._gameStats.signsPlaced++; }catch(e){}
+                            addSafety(10, "【保安措置】反応箇所近くに火気厳禁シートを設置！安全率+10%");
+                        }
+                    } else {
                         if(safetyMeasures.signs[key]){
                             safetyMeasures.signs[key] = false;
                             safetyValue = Math.max(0, safetyValue - 10);
-                            dangerRate = dangerRate + 0.1;
                             updateSafetyUI();
                             showSystemMsg("【警告】火気厳禁シートを回収したため安全率が低下");
                         }
@@ -9599,8 +9616,26 @@ function resumeLoopSafe(){
             showSystemMsg('お客さま対応力が減少した（ラーメン屋店主の許可なくガスを閉止しました）');
           }
         }catch(ep){}
+        // 通報者にあいさつ前にガスメーター閉止 → お客様対応力10%減少
+        try{
+          if(!window.roomOpened && !window._reporterGreetedFlag){
+            window._meterBeforeGreetPenalty = (window._meterBeforeGreetPenalty||0) + 10;
+            showSystemMsg('お客さま対応力が減少した（通報者へのあいさつ前にガスメーターを閉止しました）');
+          }
+        }catch(ep2){}
         meterStatus[selectedMeterId]=true;
         updateMeterVisual(selectedMeterId);
+        // 保安措置：ガスメーター閉止 → 安全率5%上昇 + 危険度5%減少 + 危険度上昇率0.2減少
+        try{
+          if(!safetyMeasures.meterClosed){
+            safetyMeasures.meterClosed = true;
+            if(window._gameStats) window._gameStats.meterClosedDone = true;
+            addSafety(5, "【保安措置】メーターガス栓を閉止！安全率+5%");
+            dangerValue = Math.max(0, dangerValue - 5);
+            dangerRate = Math.max(0.1, dangerRate - 0.2);
+            updateDangerUI();
+          }
+        }catch(es){}
         document.getElementById('meter-modal').classList.remove('active');
         resumeLoopSafe();
       };
@@ -10474,6 +10509,8 @@ function generateCommReply(userText){
       commContext.awaitingId=false;
       try{ _unlockEntryFromKnock(); }catch(e){}
       try{ showSystemMsg('扉が開き、入室可能になりました。'); }catch(e){}
+      // 通報者に〇〇ガスとあいさつ済みフラグ
+      try{ window._reporterGreetedFlag = true; }catch(e){}
       return 'どうぞ、ガスは使ってません。台所で待っています。';
     }
     return 'すみません、どちらの方ですか？（例：〇〇ガスです）';
@@ -11151,11 +11188,24 @@ function _commInferStanceFromHs1(){
 
     // 全思考に対してキーワードチェック
     var matched = null;
+    var resolvedCount = 0;
     for(var i=0;i<thoughts.length;i++){
       var t = thoughts[i];
       if(!ps.resolved[t.id] && _matchKeywords(inputText, t.keys)){
         ps.resolved[t.id] = true;
+        resolvedCount++;
         if(!matched) matched = t; // 最初のマッチを記録
+      }
+    }
+    // 相手の認識を変えるたび → 安全率5%上昇 + 危険度5%減少 + 危険度上昇率0.2減少
+    if(resolvedCount > 0){
+      for(var rc=0; rc<resolvedCount; rc++){
+        try{
+          if(typeof addSafety === 'function') addSafety(5, "【コミュニケーション】相手の認識を変えた！安全率+5%");
+          if(typeof dangerValue !== 'undefined') window.dangerValue = Math.max(0, dangerValue - 5);
+          if(typeof dangerRate !== 'undefined') window.dangerRate = Math.max(0.1, dangerRate - 0.2);
+          if(typeof updateDangerUI === 'function') updateDangerUI();
+        }catch(es){}
       }
     }
 
@@ -12638,20 +12688,28 @@ try{
   }
 
   function showDanger(){
+    // 爆発ENDは廃止 → 危険度の上昇率を0.2増加に変更
     try{ var ov=$('scene-delivery-danger'); if(ov) ov.classList.add('active'); }catch(e){}
     try{ var gif=$('delivery-danger-gif'); if(gif) gif.src=INTERCOM_IMG; }catch(e2){}
-    try{ var msg=$('delivery-danger-msg'); if(msg) msg.textContent=MSG; }catch(e3){}
+    try{ var msg=$('delivery-danger-msg'); if(msg) msg.textContent='火気厳禁表示シートが未設置の状態で、配達員にインターホンを押されてしまった。危険度の上昇率が増加した。'; }catch(e3){}
 
     // インターホン音
     playChime();
 
     var ok=$('delivery-danger-ok');
-    if(ok && !ok.__bound){
+    if(ok && !ok.__boundV2){
       ok.addEventListener('click', function(){
         try{ var ov=$('scene-delivery-danger'); if(ov) ov.classList.remove('active'); }catch(e){}
-        try{ if(typeof window.badEnd==='function') window.badEnd(MSG); }catch(e2){}
+        // 爆発ではなく危険度上昇率+0.2
+        try{
+          if(typeof dangerRate!=='undefined') window.dangerRate = (window.dangerRate||dangerRate) + 0.2;
+          if(typeof updateDangerUI==='function') updateDangerUI();
+          if(typeof showSystemMsg==='function') showSystemMsg('危険度の上昇率が0.2増加しました。');
+        }catch(e2){}
+        // 配達員を帰す
+        try{ hideSprite(); st.active=false; st.coolUntil=Date.now()+2500; scheduleNext(); }catch(e3){}
       });
-      ok.__bound=true;
+      ok.__boundV2=true;
     }
   }
 
@@ -12717,7 +12775,7 @@ try{
         }catch(e){}
 
         if(isAlarmDoor){
-          // 分岐2a: 警報器鳴動中 + 居住者B宅ドア → 爆発END
+          // 分岐2a: 警報器鳴動中 + 居住者B宅ドア → 爆発ENDは廃止、危険度上昇率+0.2
           hideSprite();
           st.active=false;
           st.coolUntil = Date.now() + 2500;
@@ -12728,14 +12786,19 @@ try{
             var msg=$('delivery-danger-msg');
             if(ov) ov.classList.add('active');
             if(gif) gif.src=INTERCOM_IMG;
-            if(msg) msg.textContent='警報器が鳴っている部屋のインターホンを押されてしまった。';
+            if(msg) msg.textContent='火気厳禁表示シートが未設置の状態で、警報器が鳴っている部屋のインターホンを押されてしまった。危険度の上昇率が増加した。';
             var ok=$('delivery-danger-ok');
-            if(ok && !ok.__boundAlarm){
+            if(ok && !ok.__boundAlarmV2){
               ok.addEventListener('click', function(){
                 try{ var ov2=$('scene-delivery-danger'); if(ov2) ov2.classList.remove('active'); }catch(e){}
-                try{ if(typeof window.badEnd==='function') window.badEnd('警報器が鳴っている部屋のインターホンを押されてしまった。'); }catch(e2){}
+                // 爆発ではなく危険度上昇率+0.2
+                try{
+                  if(typeof dangerRate!=='undefined') window.dangerRate = (window.dangerRate||dangerRate) + 0.2;
+                  if(typeof updateDangerUI==='function') updateDangerUI();
+                  if(typeof showSystemMsg==='function') showSystemMsg('危険度の上昇率が0.2増加しました。');
+                }catch(e2){}
               });
-              ok.__boundAlarm=true;
+              ok.__boundAlarmV2=true;
             }
           }catch(e){}
           scheduleNext();
@@ -14145,7 +14208,7 @@ try{
 
   function showDeliveryDanger(){
     const msg = $('delivery-danger-msg');
-    if(msg) msg.textContent = '配達員は着火源となる、エレベーターのスイッチを押してしまった。';
+    if(msg) msg.textContent = '火気厳禁表示シートが未設置の状態で、配達員にエレベーターのボタンを押されてしまった。危険度の上昇率が増加した。';
     const ov = $('scene-delivery-danger');
     if(ov) ov.classList.add('active');
     phase = 'danger';
@@ -14154,11 +14217,13 @@ try{
   }
 
   function closeDangerAndExplode(){
+    // 爆発ENDは廃止 → 危険度の上昇率を0.2増加に変更
     const ov = $('scene-delivery-danger');
     if(ov) ov.classList.remove('active');
     try{
-      if(typeof window.gameOver==='function') window.gameOver('配達員は着火源となる、エレベーターのスイッチを押してしまった。');
-      else if(typeof window.badEnd==='function') window.badEnd('配達員は着火源となる、エレベーターのスイッチを押してしまった。');
+      if(typeof dangerRate!=='undefined') window.dangerRate = (window.dangerRate||dangerRate) + 0.2;
+      if(typeof updateDangerUI==='function') updateDangerUI();
+      if(typeof showSystemMsg==='function') showSystemMsg('危険度の上昇率が0.2増加しました。');
     }catch(e){}
     resetNpc();
     phase = 'idle';
@@ -14368,11 +14433,13 @@ try{
     box.appendChild(title);
 
     var floors = [];
-    // 現在の階を除いたフロアを表示
-    if(currentFloorRoomId !== 'room-corridor2') floors.push({label:'2F', roomNum:4, roomId:'room-corridor2'});
-    if(currentFloorRoomId !== 'room-corridor1') floors.push({label:'1F', roomNum:3, roomId:'room-corridor1'});
-    if(currentFloorRoomId !== 'room-entrance') floors.push({label:'1Fエントランス', roomNum:2, roomId:'room-entrance'});
-    if(hasBasement() && currentFloorRoomId !== 'room-basement') floors.push({label:'B1F', roomNum:12, roomId:'room-basement'});
+    // シナリオのステージ構成に存在する階層のみ表示（現在の階を除く）
+    var sm = (typeof _stageMaps !== 'undefined' && _stageMaps) ? _stageMaps : null;
+    // 2F共用部がステージ構成に存在する場合のみ表示
+    if(currentFloorRoomId !== 'room-corridor2' && (!sm || sm[4])) floors.push({label:'2F', roomNum:4, roomId:'room-corridor2'});
+    if(currentFloorRoomId !== 'room-corridor1' && (!sm || sm[3])) floors.push({label:'1F', roomNum:3, roomId:'room-corridor1'});
+    if(currentFloorRoomId !== 'room-entrance' && (!sm || sm[2])) floors.push({label:'1Fエントランス', roomNum:2, roomId:'room-entrance'});
+    if(currentFloorRoomId !== 'room-basement' && (!sm || sm[12]) && hasBasement()) floors.push({label:'地下街', roomNum:12, roomId:'room-basement'});
 
     floors.forEach(function(f){
       var btn = document.createElement('button');
@@ -14430,17 +14497,24 @@ try{
       if(window.isPaused) return;
     }catch(e){ return; }
 
-    // 反応箇所チェック
-    if(hasReactionInRoom('room-entrance')){
-      // 反応箇所あり → 爆発END
-      playElevatorSE();
-      setTimeout(function(){
-        try{ if(typeof window.badEnd==='function') window.badEnd('臭気や反応がある箇所で火気や電気スイッチは使用しない。'); }catch(e){}
-      }, 700);
-      return;
+    // エレベーター使用時の危険度上昇チェック（爆発ENDは廃止）
+    var elevDangerIncrease = 0;
+    // 条件1：1Fエントランス/1F共用部/2F共用部/地下街のいずれかで反応箇所が出現している場合
+    if(hasReactionInRoom('room-entrance') || hasReactionInRoom('room-corridor1') || hasReactionInRoom('room-corridor2') || hasReactionInRoom('room-basement')){
+      elevDangerIncrease += 0.2;
+    }
+    // 条件2：都市ガス警報器が鳴動後
+    try{ if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive) elevDangerIncrease += 0.4; }catch(e){}
+
+    if(elevDangerIncrease > 0){
+      try{
+        if(typeof dangerRate !== 'undefined') window.dangerRate = (window.dangerRate || dangerRate) + elevDangerIncrease;
+        if(typeof updateDangerUI === 'function') updateDangerUI();
+        if(typeof showSystemMsg === 'function') showSystemMsg('エレベーターを使用しました。危険度の上昇率が+' + elevDangerIncrease.toFixed(1) + '増加しました。');
+      }catch(e){}
     }
 
-    // 反応箇所なし → 階選択
+    // 階選択
     try{ window.isPaused = true; }catch(e){}
     showFloorSelect('room-entrance', function(dest){
       elevatorTravel(dest);
@@ -14488,16 +14562,24 @@ try{
       try{ roomId = ELEVATOR_ROOMS[state.room] || null; }catch(e){}
       if(!roomId) return;
 
-      // 反応箇所チェック
-      if(hasReactionInRoom(roomId)){
-        playElevatorSE();
-        setTimeout(function(){
-          try{ if(typeof window.badEnd==='function') window.badEnd('臭気や反応がある箇所で火気や電気スイッチは使用しない。'); }catch(e){}
-        }, 700);
-        return;
+      // エレベーター使用時の危険度上昇チェック（爆発ENDは廃止）
+      var elevDangerInc = 0;
+      // 条件1：1Fエントランス/1F共用部/2F共用部/地下街のいずれかで反応箇所が出現している場合
+      if(hasReactionInRoom('room-entrance') || hasReactionInRoom('room-corridor1') || hasReactionInRoom('room-corridor2') || hasReactionInRoom('room-basement')){
+        elevDangerInc += 0.2;
+      }
+      // 条件2：都市ガス警報器が鳴動後
+      try{ if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive) elevDangerInc += 0.4; }catch(e){}
+
+      if(elevDangerInc > 0){
+        try{
+          if(typeof dangerRate !== 'undefined') window.dangerRate = (window.dangerRate || dangerRate) + elevDangerInc;
+          if(typeof updateDangerUI === 'function') updateDangerUI();
+          if(typeof showSystemMsg === 'function') showSystemMsg('エレベーターを使用しました。危険度の上昇率が+' + elevDangerInc.toFixed(1) + '増加しました。');
+        }catch(e){}
       }
 
-      // 反応箇所なし → 階選択
+      // 階選択
       try{ window.isPaused = true; }catch(e){}
       showFloorSelect(roomId, function(dest){
         elevatorTravel(dest);
@@ -14634,6 +14716,46 @@ try{
       yes.addEventListener('click', function(){
         setValveShown(true);
         try{ window.__valveMode=false; }catch(e){}
+        // バルブピットのバルブをバルブ開閉器で閉止 → 安全率5%上昇 + 危険度10%減少 + 危険度上昇率0.5減少
+        try{
+          if(!window.__valveClosedSafetyApplied){
+            window.__valveClosedSafetyApplied = true;
+            if(typeof addSafety === 'function') addSafety(5, "【保安措置】バルブピットのバルブを閉止！安全率+5%");
+            if(typeof dangerValue !== 'undefined') window.dangerValue = Math.max(0, dangerValue - 10);
+            if(typeof dangerRate !== 'undefined') window.dangerRate = Math.max(0.1, dangerRate - 0.5);
+            if(typeof updateDangerUI === 'function') updateDangerUI();
+          }
+        }catch(es){}
+        // お客様対応力ペナルティ：通報者にあいさつしていない + 焼き鳥屋/ラーメン屋のガス止めOKをもらっていない場合
+        try{
+          if(!window.roomOpened && !window._reporterGreetedFlag){
+            var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+            var sm = (typeof _stageMaps !== 'undefined' && _stageMaps) ? _stageMaps : null;
+            var hasYakitori = sm ? !!sm[13] : !!(sc && sc.stageComposition);
+            var hasRamen = sm ? !!sm[14] : !!(sc && sc.stageComposition);
+            // ステージ構成にラーメン屋or焼き鳥屋が存在するかチェック
+            try{
+              if(sc && sc.stageComposition){
+                var stData = null;
+                if(typeof window.getStageEditorData==='function') stData = window.getStageEditorData();
+                else { var sn=document.getElementById('saved-stage-data'); if(sn) stData=JSON.parse(sn.textContent); }
+                if(stData && stData.stages){
+                  var stg = null;
+                  for(var si=0;si<stData.stages.length;si++){ if(stData.stages[si].name===sc.stageComposition){ stg=stData.stages[si]; break; } }
+                  if(stg && stg.maps){
+                    hasYakitori = stg.maps.some(function(n){ return n.indexOf('焼き鳥')!==-1; });
+                    hasRamen = stg.maps.some(function(n){ return n.indexOf('ラーメン')!==-1; });
+                  }
+                }
+              }
+            }catch(ste){}
+            var needShopOk = (hasYakitori && !window._yakitoriGasOk) || (hasRamen && !window._ramenGasOk);
+            if(needShopOk){
+              window._valveBeforeGreetPenalty = (window._valveBeforeGreetPenalty||0) + 30;
+              if(typeof showSystemMsg === 'function') showSystemMsg('お客さま対応力が30%減少した（通報者へのあいさつ前かつ店舗のガス止め許可なくバルブを閉止しました）');
+            }
+          }
+        }catch(ep){}
         closeModal();
       });
     }
@@ -14888,6 +15010,12 @@ function saveClearResult(){
       var hasManager = sc && (sc.alarmEntry && sc.alarmEntry !== 'なし');
       var maxComm = 1 + (hasAlarmB ? 1 : 0) + (hasManager ? 1 : 0);
       scores.customer = Math.min(100, Math.round(totalComm / maxComm * 100));
+      // 店主許可なしメーター閉止ペナルティ
+      try{ scores.customer = Math.max(0, scores.customer - (typeof _shopGasPenalty !== 'undefined' ? _shopGasPenalty : 0)); }catch(ep){}
+      // 通報者あいさつ前のガスメーター閉止ペナルティ
+      try{ scores.customer = Math.max(0, scores.customer - (typeof _meterBeforeGreetPenalty !== 'undefined' ? _meterBeforeGreetPenalty : 0)); }catch(ep2){}
+      // 通報者あいさつ前のバルブ閉止ペナルティ
+      try{ scores.customer = Math.max(0, scores.customer - (typeof _valveBeforeGreetPenalty !== 'undefined' ? _valveBeforeGreetPenalty : 0)); }catch(ep3){}
     }catch(e){}
 
     var record = {
