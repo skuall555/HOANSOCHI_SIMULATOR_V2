@@ -3382,6 +3382,8 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         <select id="sc-gas-kind">
           <option value="13A">13A</option>
           <option value="LPG">LPG</option>
+          <option value="メタン">メタン</option>
+          <option value="フロン">その他（フロン）</option>
         </select>
       </div>
       <div class="scenario-field" draggable="true" data-field="fireEvent">
@@ -4293,9 +4295,11 @@ d.innerHTML = '';
   try{ forceApplyWeatherSoon(); }catch(e){}
 
 });
-// Reset doors state
+// Reset doors state（各扉・窓の開閉度を0〜20%にランダム初期化）
 document.querySelectorAll('.ps-door').forEach(d => {
-    d.style.transform = 'translateX(0px)';
+    var maxSlide = d.dataset.maxSlide ? parseInt(d.dataset.maxSlide) : 150;
+    var initPx = Math.floor(Math.random() * 0.2 * maxSlide);
+    d.style.transform = 'translateX(' + initPx + 'px)';
     d.dataset.gasCleared = "false";
     d.dataset.isDangerous = "false";
     d.dataset.bonusApplied = "false";
@@ -11697,7 +11701,7 @@ try{
     var CARD_DEFS = [
         { id:'カード_鍵', name:'カード_鍵', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E9%8D%B5.png', desc:'入手条件：鍵を入手する（状況突破のミッション達成用）。' },
         { id:'カード_立入禁止', name:'カード_立入禁止', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%AB%8B%E5%85%A5%E7%A6%81%E6%AD%A2.png', desc:'入手条件：配達員イベントで爆発を回避（火気厳禁表示シート設置 または 配達員をクリックして注意喚起）。' },
-    { id:'カード_13A', name:'カード_13A', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_13A.png', desc:'入手条件：シミュレーション中に初めて、高濃度モードでガス濃度5%以上でクリックする。' },
+    { id:'カード_13A', name:'カード_13A', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_13A.png', desc:'入手条件：シミュレーション中に初めて、高濃度モードでガス濃度3%以上でクリックする（ガス種別が13Aの場合のみ）。' },
     { id:'カード_検知器反応', name:'カード_検知器反応', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E6%A4%9C%E7%9F%A5%E5%99%A8%E5%8F%8D%E5%BF%9C.png', desc:'入手条件：シミュレーション中に初めて、検知器モードで反応箇所１をクリックする。' },
     { id:'カード_臭気情報', name:'カード_臭気情報', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E8%87%AD%E6%B0%97%E6%83%85%E5%A0%B1.png', desc:'入手条件：シミュレーション中に初めて、通報者にコミュニケーションウィンドウで、「どこ」と送信する。' },
     { id:'カード_制限', name:'カード_制限', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E5%88%B6%E9%99%90.png', desc:'入手条件：シミュレーション中に初めて、前面道路の歩行者をクリックする。' },
@@ -12020,7 +12024,7 @@ try{
       try{
         if(typeof window.isGasIdMode!=='undefined' && window.isGasIdMode){
           var m=String(msg||'').match(/LEL\s*([0-9]+)\s*％/);
-          if(m){ var p=parseInt(m[1],10); if(isFinite(p) && p>=5) awardCard('カード_13A'); }
+          if(m){ var p=parseInt(m[1],10); if(isFinite(p) && p>=3){ try{ var gk=getScenarioGasKind(); if(gk==='13A') awardCard('カード_13A'); }catch(e2){ awardCard('カード_13A'); } } }
         }
       }catch(e){}
       return r;
