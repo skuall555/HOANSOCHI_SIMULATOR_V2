@@ -14544,13 +14544,11 @@ try{
     box.appendChild(title);
 
     var floors = [];
-    // シナリオのステージ構成に存在する階層のみ表示（現在の階を除く）
-    var sm = (typeof _stageMaps !== 'undefined' && _stageMaps) ? _stageMaps : null;
-    // 2F共用部がステージ構成に存在する場合のみ表示
-    if(currentFloorRoomId !== 'room-corridor2' && (!sm || sm[4])) floors.push({label:'2F', roomNum:4, roomId:'room-corridor2'});
-    if(currentFloorRoomId !== 'room-corridor1' && (!sm || sm[3])) floors.push({label:'1F', roomNum:3, roomId:'room-corridor1'});
-    if(currentFloorRoomId !== 'room-entrance' && (!sm || sm[2])) floors.push({label:'1Fエントランス', roomNum:2, roomId:'room-entrance'});
-    if(currentFloorRoomId !== 'room-basement' && (!sm || sm[12]) && hasBasement()) floors.push({label:'地下街', roomNum:12, roomId:'room-basement'});
+    // エレベーターは接続された全ての階へ移動可能（ステージ構成の歩行制限に依存しない）
+    if(currentFloorRoomId !== 'room-corridor2') floors.push({label:'2F', roomNum:4, roomId:'room-corridor2'});
+    if(currentFloorRoomId !== 'room-corridor1') floors.push({label:'1F', roomNum:3, roomId:'room-corridor1'});
+    if(currentFloorRoomId !== 'room-entrance') floors.push({label:'1Fエントランス', roomNum:2, roomId:'room-entrance'});
+    if(currentFloorRoomId !== 'room-basement' && hasBasement()) floors.push({label:'地下街', roomNum:12, roomId:'room-basement'});
 
     floors.forEach(function(f){
       var btn = document.createElement('button');
@@ -17548,14 +17546,14 @@ window._tantouGenerateReply = function(rawText){
         '50%{transform:translateY(-20%) scale(1.2);opacity:0.6;}' +
         '100%{transform:translateY(0) scale(1);opacity:0.4;}' +
       '}' +
-      /* 放水エフェクト */
+      /* 放水エフェクト（集合住宅に向かって45度角度） */
       '@keyframes waterSpray{' +
-        '0%{opacity:0.7;transform:scaleX(1);}' +
-        '50%{opacity:1;transform:scaleX(1.05);}' +
-        '100%{opacity:0.7;transform:scaleX(1);}' +
+        '0%{opacity:0.7;transform:rotate(-45deg) scaleX(1);}' +
+        '50%{opacity:1;transform:rotate(-45deg) scaleX(1.05);}' +
+        '100%{opacity:0.7;transform:rotate(-45deg) scaleX(1);}' +
       '}' +
       '#fire-water-effect{' +
-        'position:absolute;bottom:30%;left:5%;width:35%;height:8%;z-index:53;pointer-events:none;' +
+        'position:absolute;bottom:28%;left:8%;width:35%;height:6%;z-index:53;pointer-events:none;' +
         'background:linear-gradient(90deg,rgba(100,180,255,0.9),rgba(150,210,255,0.7),rgba(200,230,255,0.3));' +
         'border-radius:0 50% 50% 0;animation:waterSpray 0.3s infinite;' +
         'box-shadow:0 0 2vmin rgba(100,180,255,0.5);' +
@@ -20581,8 +20579,6 @@ window.stageEditorExportHTML = function() {
   } else {
     setTimeout(init, 1200);
   }
-})();
-
 })();
 </script>
 
