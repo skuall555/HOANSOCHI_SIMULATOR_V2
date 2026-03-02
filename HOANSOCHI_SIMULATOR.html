@@ -14662,8 +14662,9 @@ try{
     img.onerror = function(){ btn.textContent='EV'; btn.style.fontSize='1.8vmin'; btn.style.color='#fff'; btn.style.fontWeight='bold'; };
     btn.appendChild(img);
 
-    btn.addEventListener('click', function(ev){
-      ev.stopPropagation();
+    // エレベーター緑ボタンのアクション（mousedown/touchstart/clickで発火）
+    function onGreenBtnAction(ev){
+      try{ ev.stopPropagation(); ev.stopImmediatePropagation(); }catch(e0){}
       try{ if(window.isPaused) return; }catch(e){}
 
       // 現在のルームを取得
@@ -14693,12 +14694,24 @@ try{
       showFloorSelect(roomId, function(dest){
         elevatorTravel(dest);
       });
-    });
+    }
 
+    // mousedown（デスクトップ）: talk-btn/action-btnと同じパターン
+    btn.addEventListener('mousedown', function(ev){
+      ev.stopPropagation(); ev.stopImmediatePropagation();
+      onGreenBtnAction(ev);
+    }, true);
+
+    // touchstart（モバイル）: talk-btn/action-btnと同じパターン
     btn.addEventListener('touchstart', function(ev){
-      ev.preventDefault();
-      btn.click();
-    }, {passive:false});
+      ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
+      onGreenBtnAction(ev);
+    }, {capture:true, passive:false});
+
+    // click（フォールバック）: capture phaseで確実にキャッチ
+    btn.addEventListener('click', function(ev){
+      ev.stopPropagation(); ev.stopImmediatePropagation();
+    }, true);
 
     // action-btn（青ボタン）の直前に挿入
     var actionBtn = document.getElementById('action-btn');
