@@ -5588,13 +5588,13 @@ function handleGasIdAtHotspots(e){
             // メッセージボックス表示
             var lel=getLELForMsgBox();
             if(lel < 6) showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
-            else showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), true);
+            else showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), getScenarioGasKind()==='13A');
             return true;
           }
         }
       }
     }
-    
+
     // 反応箇所２の処理（排風機使用済みの場合は何も表示しない）
     if(typeof hotspot2!=='undefined' && hotspot2 && hotspot2.rect){
       // その部屋で排風機が使用されていない場合に限り処理
@@ -5605,7 +5605,7 @@ function handleGasIdAtHotspots(e){
             // メッセージボックス表示
             var lel=getLELForMsgBox();
             if(lel < 6) showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
-            else showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), true);
+            else showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), getScenarioGasKind()==='13A');
             return true;
           }
         }
@@ -5619,7 +5619,7 @@ function handleGasIdAtHotspots(e){
         if(pointInRect2(x,y,hotspot3.rect)){
           var lel=getLELForMsgBox();
           if(lel < 6) showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
-          else showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), true);
+          else showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), getScenarioGasKind()==='13A');
           return true;
         }
       }
@@ -5729,7 +5729,7 @@ const handleOverlayClick = (e) => {
                             if(lel < 6){
                                 showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
                             } else {
-                                showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), true);
+                                showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), getScenarioGasKind()==='13A');
                             }
                         }catch(e){}
                     } else if(typeof isDetectorMode!=='undefined' && isDetectorMode){
@@ -8919,7 +8919,8 @@ function showGasResultBox(text, isRed){
   if(_gasBoxTimer) clearTimeout(_gasBoxTimer);
   _gasBoxTimer=setTimeout(function(){
     try{ box.style.display='none'; }catch(e){}
-
+  }, 3000);
+}
 
 function getScenarioGasKind(){
   try{ if(window.currentScenarioGasKind) return String(window.currentScenarioGasKind); }catch(e){}
@@ -8946,9 +8947,6 @@ function getLELForMsgBox(){
     }
   }catch(e){}
   try{ return getLELPercent(); }catch(e2){ return 0; }
-}
-
-  }, 3000);
 }
 
 function setHotspotDebugVisible(on){
@@ -9165,7 +9163,7 @@ function getGasTypeByLel(p){
   // B案V3: LEL6%になった時点で、シナリオ設定のガス種別を『識別済み』として表示
   try{ p = Number(p)||0; }catch(e){ p=0; }
   if(p >= 6){
-    try{ return String(getScenarioGasKind()); }catch(e2){ return '13A'; }
+    try{ return String(getScenarioGasKind()); }catch(e2){ return '識別不可'; }
   }
   return '識別不可';
 }
@@ -12024,7 +12022,7 @@ try{
       try{
         if(typeof window.isGasIdMode!=='undefined' && window.isGasIdMode){
           var m=String(msg||'').match(/LEL\s*([0-9]+)\s*％/);
-          if(m){ var p=parseInt(m[1],10); if(isFinite(p) && p>=3){ try{ var gk=getScenarioGasKind(); if(gk==='13A') awardCard('カード_13A'); }catch(e2){ awardCard('カード_13A'); } } }
+          if(m){ var p=parseInt(m[1],10); if(isFinite(p) && p>=3){ try{ var gk=getScenarioGasKind(); if(gk==='13A') awardCard('カード_13A'); }catch(e2){} } }
         }
       }catch(e){}
       return r;
