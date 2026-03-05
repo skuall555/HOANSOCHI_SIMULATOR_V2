@@ -3404,6 +3404,10 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="解説">解説</span></label>
         <textarea id="sc-description" placeholder="このシナリオの解説や補足事項を入力" style="height: 228px;"></textarea>
       </div>
+      <div class="scenario-field" draggable="true" data-field="hint">
+        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="ヒント">ヒント</span></label>
+        <textarea id="sc-hint" placeholder="ヒントを入力（使用するとクリア扱いにならない）" style="height: 120px;"></textarea>
+      </div>
       
       
     </div>
@@ -3527,6 +3531,9 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="danger-bar-bg"><div id="danger-bar" class="danger-bar-fill" style="width: 54%; background-color: rgb(255, 82, 82);"></div></div>
 <div class="danger-rate" id="danger-rate-text">上昇率: 1.00/秒</div>
 </div>
+<!-- ヒントボタン（臭気メーター左） -->
+<button id="hint-open-btn" onclick="openHintConfirm()" style="position:absolute;top:auto;right:20.5vmin;z-index:201;display:none;pointer-events:auto;background:rgba(255,200,0,0.92);border:0.2vmin solid #c8a000;border-radius:0.6vmin;color:#333;font-size:1.6vmin;font-weight:bold;padding:0.4vmin 1vmin;cursor:pointer;line-height:1.4;white-space:nowrap;">💡ヒント</button>
+
 <div id="odor-meter-panel" style="position:absolute;top:auto;right:1.5vmin;z-index:200;display:flex;flex-direction:column;align-items:center;pointer-events:none;">
   <div id="odor-meter-label" style="font-size:1.6vmin;color:#fff;font-weight:bold;line-height:1.2;white-space:nowrap;background:rgba(0,0,0,0.6);padding:0.3vmin 1vmin;border-radius:0.5vmin 0.5vmin 0 0;width:100%;text-align:center;box-sizing:border-box;">＜臭気メーター＞</div>
   <div style="display:flex;align-items:stretch;background:rgba(0,0,0,0.85);border:0.2vmin solid #fff;border-radius:0 0 0.5vmin 0.5vmin;overflow:hidden;">
@@ -7550,6 +7557,7 @@ function openScenarioEdit(idx){
   try{ document.getElementById('sc-basement').value = s.basement?String(s.basement):'なし'; }catch(e){}
   try{ document.getElementById('sc-gas-cause').value = s.gasCause?String(s.gasCause):'101号室灯内内管'; }catch(e){}
   try{ document.getElementById('sc-description').value = s.description?String(s.description):''; }catch(e){}
+  try{ document.getElementById('sc-hint').value = s.hint?String(s.hint):''; }catch(e){}
   try{ document.getElementById('sc-difficulty').value = s.difficulty?String(s.difficulty):'B級'; }catch(e){}
   try{ document.getElementById('sc-safety-norma').value = (s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100; }catch(e){}
   try{ document.getElementById('sc-fire-event').value = s.fireEvent?String(s.fireEvent):'なし'; }catch(e){}
@@ -7680,6 +7688,7 @@ function saveScenario(){
     basement: (function(){ try{ var el=document.getElementById('sc-basement'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     gasCause: (function(){ try{ var el=document.getElementById('sc-gas-cause'); return (el&&el.value)?el.value:'101号室灯内内管'; }catch(e){ return '101号室灯内内管'; } })(),
     description: (function(){ try{ var el=document.getElementById('sc-description'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
+    hint: (function(){ try{ var el=document.getElementById('sc-hint'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     difficulty: (function(){ try{ var el=document.getElementById('sc-difficulty'); return (el&&el.value)?el.value:'B級'; }catch(e){ return 'B級'; } })(),
     safetyNorma: (function(){ try{ var el=document.getElementById('sc-safety-norma'); var v=parseInt(el&&el.value); return (isNaN(v)||v<1)?100:v; }catch(e){ return 100; } })(),
     stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
@@ -12015,15 +12024,18 @@ try{
     window.handleHotspotCheck2.__memoCardHooked=true;
   }
 
-  // LEL5%+ via showGasResultBox
+  // LEL3%+ via showGasResultBox → カード_13A付与
   function hookGasResultBox(){
     if(typeof window.showGasResultBox!=='function' || window.showGasResultBox.__memoCardHooked) return;
     var orig=window.showGasResultBox;
     window.showGasResultBox=function(msg, is13A){
       var r=orig.apply(this, arguments);
       try{
-        if(typeof window.isGasIdMode!=='undefined' && window.isGasIdMode){
-          var m=String(msg||'').match(/LEL\s*([0-9]+)\s*％/);
+        // isGasIdMode は let 変数のため window ではなく直接参照
+        var _inGasId = (typeof isGasIdMode!=='undefined') ? isGasIdMode : false;
+        if(_inGasId){
+          // 全角・半角 % 両対応
+          var m=String(msg||'').match(/LEL\s*([0-9]+)\s*[%％]/);
           if(m){ var p=parseInt(m[1],10); if(isFinite(p) && p>=3){ try{ var gk=getScenarioGasKind(); if(gk==='13A') awardCard('カード_13A'); }catch(e2){} } }
         }
       }catch(e){}
@@ -12260,17 +12272,9 @@ try{
   }
 
   function goExplosionEnd(){
-    try{
-      var sc = $('scene-smoking-danger');
-      if(sc) sc.classList.remove('active');
-    }catch(e){}
-    try{
-      if(typeof window.gameOver==='function') window.gameOver('通報者はタバコを吸い始めた。');
-      else {
-        var r = $('boom-reason'); if(r) r.textContent='通報者はタバコを吸い始めた。';
-        var ex = $('explosion-overlay'); if(ex) ex.classList.add('active');
-      }
-    }catch(e){}
+    // 爆発ENDは廃止：patch-smoking-event が処理するため、ここは状態リセットのみ
+    smoke.shown = false;
+    try{ var sc = $('scene-smoking-danger'); if(sc) sc.classList.remove('active'); }catch(e){}
   }
 
   function bindSmokeOk(){
@@ -14539,6 +14543,8 @@ try{
     }catch(e){}
     return false;
   }
+  // グローバルに公開（他スクリプトからも参照可能に）
+  window.hasReactionInRoom = hasReactionInRoom;
 
   function hasBasement(){
     try{
@@ -16028,7 +16034,8 @@ function __applySafetyAwarenessRules(labels, values){
       try{
         var _phoneRoomEl = document.querySelector('.room.active');
         var _phoneRoomId = _phoneRoomEl ? _phoneRoomEl.id : null;
-        if(_phoneRoomId && typeof hasReactionInRoom === 'function' && hasReactionInRoom(_phoneRoomId)){
+        var _chkFn = window.hasReactionInRoom || hasReactionInRoom;
+        if(_phoneRoomId && typeof _chkFn === 'function' && _chkFn(_phoneRoomId)){
           if(typeof dangerRate !== 'undefined') dangerRate = dangerRate + 0.2;
           if(typeof updateDangerUI === 'function') updateDangerUI();
           if(typeof showSystemMsg === 'function') showSystemMsg('反応箇所のある画面でスマホを使用した。危険度の上昇率が0.2増加した。');
@@ -20851,6 +20858,405 @@ window.stageEditorExportHTML = function() {
   window._startConcentrationDecrease = startConcentrationDecrease;
   window._resetConcentrationDecreaseState = resetDecreaseState;
 })();
+</script>
+
+<!-- =====================================================================
+     PATCH: 追加機能まとめ
+     ・通報者がいる部屋での棚/点検口開閉 → dangerRate +0.2
+     ・ヒントシステム（確認ダイアログ + 右サイドパネル）
+     ・クリア条件：危険度100到達 or 漏洩系統間違いは「失敗」として記録
+     ・お客さま対応力：保安措置完了時点で平静でないキャラにつき -15%
+     ===================================================================== -->
+
+<!-- ヒント確認ダイアログ -->
+<div id="hint-confirm-dialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:30000;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+  <div style="background:#1a2a3a;border:0.3vmin solid #ffca28;border-radius:1vmin;padding:2.5vmin 3vmin;max-width:45vmin;width:90%;color:#fff;font-size:1.8vmin;line-height:1.7;text-align:center;">
+    <div style="font-size:2.2vmin;font-weight:bold;color:#ffca28;margin-bottom:1.5vmin;">💡 ヒントを使用</div>
+    <div style="margin-bottom:2vmin;">ヒントを使用するとクリア扱いになりません。<br>よろしいですか？</div>
+    <div style="display:flex;gap:1.5vmin;justify-content:center;">
+      <button onclick="confirmUseHint()" style="background:#ffca28;color:#333;border:none;border-radius:0.5vmin;padding:0.7vmin 2.5vmin;font-size:1.8vmin;font-weight:bold;cursor:pointer;">はい</button>
+      <button onclick="cancelUseHint()" style="background:#546e7a;color:#fff;border:none;border-radius:0.5vmin;padding:0.7vmin 2.5vmin;font-size:1.8vmin;cursor:pointer;">いいえ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ヒントパネル（右サイド、スライド式） -->
+<div id="hint-side-panel" style="position:fixed;top:0;right:0;height:100%;width:28vmin;z-index:25000;transition:transform 0.3s ease;transform:translateX(100%);display:flex;align-items:stretch;">
+  <!-- 矢印トグルボタン（パネル左端） -->
+  <button id="hint-panel-toggle" onclick="toggleHintPanel()" style="position:absolute;left:-4.5vmin;top:50%;transform:translateY(-50%);width:4.5vmin;height:8vmin;background:#ffca28;border:none;border-radius:0.6vmin 0 0 0.6vmin;cursor:pointer;font-size:2vmin;color:#333;font-weight:bold;display:flex;align-items:center;justify-content:center;">▶</button>
+  <!-- パネル本体 -->
+  <div style="flex:1;background:#1a2a3a;border-left:0.3vmin solid #ffca28;overflow-y:auto;display:flex;flex-direction:column;">
+    <div style="background:#0d1f3a;padding:1.5vmin;font-size:1.8vmin;font-weight:bold;color:#ffca28;border-bottom:0.2vmin solid #ffca28;display:flex;align-items:center;gap:0.8vmin;">💡 ヒント</div>
+    <div id="hint-panel-content" style="padding:1.5vmin;font-size:1.7vmin;color:#e0e0e0;line-height:1.8;flex:1;white-space:pre-wrap;word-break:break-all;">（ヒントなし）</div>
+  </div>
+</div>
+
+<style>
+#hint-confirm-dialog.active { display: flex !important; }
+#hint-side-panel.open { transform: translateX(0) !important; }
+#hint-side-panel.open #hint-panel-toggle { left: -4.5vmin; }
+#hint-panel-toggle { pointer-events: auto; }
+</style>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   ①  通報者がいる部屋での棚・点検口開閉 → dangerRate +0.2
+   ============================================================ */
+(function hookReporterRoomDoor(){
+  // MutationObserverで data-is-dangerous が true になった要素を検知
+  if(window.__reporterRoomDoorHooked) return;
+  window.__reporterRoomDoorHooked = true;
+
+  var _warned = false; // 1回のゲームで何度も鳴らさないようにするフラグ（ルーム遷移でリセット）
+  var _warnCooldown = 0;
+
+  function isInReporterRoom(){
+    try{
+      // 通報者宅 (owner === 'A') の内部にいる場合
+      if(typeof currentApartmentOwner === 'undefined' || currentApartmentOwner !== 'A') return false;
+      var active = document.querySelector('.room.active');
+      if(!active) return false;
+      // 玄関・廊下・台所・洗面所・浴室・寝室などのA側部屋
+      var id = active.id;
+      return ['room-kitchen','room-bath','room-bedroom','room-hall','room-a1'].indexOf(id) >= 0
+          || id.indexOf('-a') >= 0 || id.indexOf('room-kitchen') >= 0 || id.indexOf('room-bath') >= 0
+          || id.indexOf('room-bedroom') >= 0;
+    }catch(e){ return false; }
+  }
+
+  function onIsDangerousChange(el){
+    if(el.dataset.isDangerous !== 'true') return;
+    if(!isInReporterRoom()) return;
+    var now = Date.now();
+    if(now - _warnCooldown < 5000) return; // 5秒クールダウン
+    _warnCooldown = now;
+    try{
+      if(typeof dangerRate !== 'undefined') dangerRate = dangerRate + 0.2;
+      if(typeof updateDangerUI === 'function') updateDangerUI();
+      if(typeof showSystemMsg === 'function') showSystemMsg('通報者がいる空間で調査は危険。チャットで部屋の移動をお願いしよう。');
+    }catch(e){}
+  }
+
+  var observer = new MutationObserver(function(mutations){
+    mutations.forEach(function(m){
+      if(m.type === 'attributes' && m.attributeName === 'data-is-dangerous'){
+        onIsDangerousChange(m.target);
+      }
+    });
+  });
+
+  function startObserving(){
+    // 全ps-door, shelf-door, hatch-lid, bed-shelf-door を監視
+    var els = document.querySelectorAll('.ps-door, .shelf-door, .hatch-lid, .bed-shelf-door, .ent-hatch-lid');
+    els.forEach(function(el){
+      observer.observe(el, {attributes: true, attributeFilter: ['data-is-dangerous']});
+    });
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(startObserving, 1500); });
+  } else {
+    setTimeout(startObserving, 1500);
+  }
+  // initGame後にも再スキャン（ドアが動的に生成される場合）
+  var _origInit2 = window.initGame;
+  if(typeof _origInit2 === 'function' && !_origInit2.__reporterDoorHooked){
+    window.initGame = function(){
+      var r = _origInit2.apply(this, arguments);
+      setTimeout(startObserving, 2000);
+      _warnCooldown = 0;
+      return r;
+    };
+    window.initGame.__reporterDoorHooked = true;
+  }
+})();
+
+/* ============================================================
+   ②  ヒントシステム
+   ============================================================ */
+var _hintPanelOpen = false;
+window._hintUsed = false;
+
+window.openHintConfirm = function(){
+  try{
+    var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+    if(!sc || !sc.hint || !sc.hint.trim()){
+      if(typeof showSystemMsg === 'function') showSystemMsg('このシナリオにはヒントが設定されていません。');
+      return;
+    }
+    var dlg = document.getElementById('hint-confirm-dialog');
+    if(dlg) dlg.classList.add('active');
+  }catch(e){}
+};
+window.cancelUseHint = function(){
+  try{ document.getElementById('hint-confirm-dialog').classList.remove('active'); }catch(e){}
+};
+window.confirmUseHint = function(){
+  try{ document.getElementById('hint-confirm-dialog').classList.remove('active'); }catch(e){}
+  window._hintUsed = true;
+  // ヒント内容をパネルに表示
+  try{
+    var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+    var txt = (sc && sc.hint) ? String(sc.hint) : '（ヒントなし）';
+    var cont = document.getElementById('hint-panel-content');
+    if(cont) cont.textContent = txt;
+  }catch(e){}
+  // パネルを開く
+  window.openHintPanel();
+  if(typeof showSystemMsg === 'function') showSystemMsg('ヒントを使用しました。このシナリオはクリア扱いになりません。');
+};
+window.openHintPanel = function(){
+  _hintPanelOpen = true;
+  var p = document.getElementById('hint-side-panel');
+  if(p) p.classList.add('open');
+  var btn = document.getElementById('hint-panel-toggle');
+  if(btn) btn.textContent = '▶';
+};
+window.closeHintPanel = function(){
+  _hintPanelOpen = false;
+  var p = document.getElementById('hint-side-panel');
+  if(p) p.classList.remove('open');
+  var btn = document.getElementById('hint-panel-toggle');
+  if(btn) btn.textContent = '◀';
+};
+window.toggleHintPanel = function(){
+  if(_hintPanelOpen) window.closeHintPanel();
+  else window.openHintPanel();
+};
+
+// ゲーム開始時にヒントボタンの表示切替と状態リセット
+function refreshHintButton(){
+  try{
+    var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+    var btn = document.getElementById('hint-open-btn');
+    if(!btn) return;
+    var hasHint = sc && sc.hint && sc.hint.trim();
+    btn.style.display = hasHint ? 'block' : 'none';
+  }catch(e){}
+}
+function resetHintState(){
+  window._hintUsed = false;
+  _hintPanelOpen = false;
+  try{ document.getElementById('hint-side-panel').classList.remove('open'); }catch(e){}
+  try{ document.getElementById('hint-panel-content').textContent = '（ヒントなし）'; }catch(e){}
+}
+
+// startGame / initGame をフックしてヒントボタンを表示制御
+(function(){
+  ['startGame','initGame'].forEach(function(fn){
+    var orig = window[fn];
+    if(typeof orig !== 'function' || orig.__hintHooked) return;
+    window[fn] = function(){
+      var r = orig.apply(this, arguments);
+      setTimeout(function(){ refreshHintButton(); resetHintState(); }, 500);
+      return r;
+    };
+    window[fn].__hintHooked = true;
+  });
+})();
+
+/* ============================================================
+   ③  クリア条件：危険度100到達 or 漏洩系統間違いは「失敗」記録
+   ============================================================ */
+window._dangerHit100 = false;
+
+// updateDanger をフックして dangerValue >= 100 を検知
+(function(){
+  var _origUpdateDanger = window.updateDanger;
+  if(typeof _origUpdateDanger !== 'function' || _origUpdateDanger.__dangerHitHooked) return;
+  window.updateDanger = function(){
+    var r = _origUpdateDanger.apply(this, arguments);
+    try{
+      if(typeof dangerValue !== 'undefined' && dangerValue >= 100){
+        window._dangerHit100 = true;
+      }
+    }catch(e){}
+    return r;
+  };
+  window.updateDanger.__dangerHitHooked = true;
+})();
+
+// submitClearAnswer をフックして失敗フラグを付与
+(function(){
+  var _origSubmit = window.submitClearAnswer;
+  if(typeof _origSubmit !== 'function' || _origSubmit.__clearCondHooked) return;
+  window.submitClearAnswer = function(){
+    var r = _origSubmit.apply(this, arguments);
+    try{
+      // 失敗判定
+      var sel = document.getElementById('clear-answer-select');
+      var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+      var playerAnswer = (sel && sel.value) ? String(sel.value) : '';
+      var correctAnswer = sc ? String(sc.gasCause || '') : '';
+      var isCorrect = (playerAnswer && correctAnswer) ? (playerAnswer === correctAnswer) : false;
+      var isFailure = !isCorrect || window._dangerHit100 || window._hintUsed;
+      window._lastClearIsFailure = isFailure;
+
+      // 失敗の場合、結果画面にバナーを追加
+      if(isFailure){
+        setTimeout(function(){
+          try{
+            var step2 = document.getElementById('clear-step2');
+            if(step2){
+              var existing = document.getElementById('failure-banner');
+              if(!existing){
+                var banner = document.createElement('div');
+                banner.id = 'failure-banner';
+                banner.style.cssText = 'background:#c62828;color:#fff;font-size:1.8vmin;font-weight:bold;padding:1vmin 2vmin;border-radius:0.5vmin;text-align:center;margin-bottom:1vmin;';
+                var reasons = [];
+                if(window._dangerHit100) reasons.push('危険度が100に到達');
+                if(!isCorrect) reasons.push('漏洩系統が不正解');
+                if(window._hintUsed) reasons.push('ヒントを使用');
+                banner.textContent = '⚠ 失敗（' + reasons.join('・') + '）';
+                step2.insertBefore(banner, step2.firstChild);
+              }
+            }
+          }catch(e){}
+        }, 100);
+        // 自動保存はしない（失敗は手動保存に任せる）
+        window.__clearResultSaved = false;
+      }
+
+      // saveClearResult に失敗フラグを含める
+      try{
+        var _origSave = window.saveClearResult;
+        if(typeof _origSave === 'function' && !_origSave.__failurePatchApplied){
+          window.saveClearResult = function(){
+            try{
+              // isFailure フィールドを記録オブジェクトに注入するために
+              // localStorage 保存前に最新レコードを差し替える
+              var key = 'gasGame_clearHistory';
+              // 保存フラグを一時リセットして保存を許可
+              var prevSaved = window.__clearResultSaved;
+              window.__clearResultSaved = false;
+              var ret = _origSave.apply(this, arguments);
+              // 保存されたレコードに isFailure / dangerHit100 / hintUsed を追加
+              try{
+                var list = JSON.parse(localStorage.getItem(key) || '[]');
+                if(Array.isArray(list) && list.length > 0){
+                  list[0].isFailure = window._lastClearIsFailure || false;
+                  list[0].dangerHit100 = window._dangerHit100 || false;
+                  list[0].hintUsed = window._hintUsed || false;
+                  localStorage.setItem(key, JSON.stringify(list));
+                }
+              }catch(e){}
+              return ret;
+            }catch(e){}
+          };
+          window.saveClearResult.__failurePatchApplied = true;
+        }
+      }catch(e){}
+    }catch(e){}
+    return r;
+  };
+  window.submitClearAnswer.__clearCondHooked = true;
+})();
+
+// initGame でフラグリセット
+(function(){
+  var _origInit3 = window.initGame;
+  if(typeof _origInit3 === 'function' && !_origInit3.__clearFlagHooked){
+    window.initGame = function(){
+      window._dangerHit100 = false;
+      window._lastClearIsFailure = false;
+      try{ var b=document.getElementById('failure-banner'); if(b) b.remove(); }catch(e){}
+      return _origInit3.apply(this, arguments);
+    };
+    window.initGame.__clearFlagHooked = true;
+  }
+})();
+
+/* ============================================================
+   ④  お客さま対応力：保安措置完了時点で平静でないキャラ → -15%
+   ============================================================ */
+// completeSafetyMeasures をフックしてストレス値を記録
+(function(){
+  var _origComplete = window.completeSafetyMeasures;
+  if(typeof _origComplete !== 'function' || _origComplete.__stressCapHooked) return;
+  window.completeSafetyMeasures = function(){
+    // ストレス値をスナップショット
+    try{
+      window._stressAtCompletion = {
+        reporter: (window._commStress && window._commStress.reporter !== undefined) ? window._commStress.reporter : 100,
+        alarmB:   (window._commStress && window._commStress.alarmB   !== undefined) ? window._commStress.alarmB   : 100,
+        yakitoriMaster: (window._commStress && window._commStress.yakitoriMaster !== undefined) ? window._commStress.yakitoriMaster : 100,
+        ramenMaster:    (window._commStress && window._commStress.ramenMaster    !== undefined) ? window._commStress.ramenMaster    : 100
+      };
+    }catch(e){}
+    return _origComplete.apply(this, arguments);
+  };
+  window.completeSafetyMeasures.__stressCapHooked = true;
+})();
+
+// _drawRadarChart 内の score5 に平静ペナルティを適用
+// submitClearAnswer → _drawRadarChart の順で呼ばれるため、直前に計算する
+(function(){
+  var _origDraw = window._drawRadarChart;
+  if(typeof _origDraw !== 'function' || _origDraw.__stressPenHooked) return;
+  window._drawRadarChart = function(){
+    // ストレスペナルティをグローバル変数として渡す
+    try{
+      var snap = window._stressAtCompletion || {};
+      var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+      var penalty = 0;
+      // 通報者は常にチェック
+      if((snap.reporter !== undefined ? snap.reporter : 100) > 25) penalty += 15;
+      // 警報器鳴動宅が「在宅している」なら居住者Bもチェック
+      if(sc && sc.alarmEntry === '在宅している'){
+        if((snap.alarmB !== undefined ? snap.alarmB : 100) > 25) penalty += 15;
+      }
+      // 地下街（飲食店フロア）への立入がある場合、ラーメン屋・焼き鳥屋どちらかをチェック
+      var hasBasement2 = sc && (sc.basement === 'あり' || (typeof sc.basement === 'string' && sc.basement !== 'なし' && sc.basement !== ''));
+      if(hasBasement2){
+        var yakiStress = snap.yakitoriMaster !== undefined ? snap.yakitoriMaster : 100;
+        var ramenStress = snap.ramenMaster !== undefined ? snap.ramenMaster : 100;
+        // どちらかが平静（<=25）ならペナルティなし；両方とも不安/興奮ならペナルティ
+        if(yakiStress > 25 && ramenStress > 25) penalty += 15;
+      }
+      window._stressPenalty = penalty;
+    }catch(e){ window._stressPenalty = 0; }
+    return _origDraw.apply(this, arguments);
+  };
+  window._drawRadarChart.__stressPenHooked = true;
+})();
+
+// score5 計算を後付けでパッチ（_drawRadarChart 内では変数スコープの都合でパッチできないため
+// completeSafetyMeasures 後の _drawRadarChart 呼び出し時に _reporterCustomerPenalty を更新）
+(function(){
+  var _origDraw2 = window._drawRadarChart;
+  if(typeof _origDraw2 !== 'function' || _origDraw2.__stressPenApplied) return;
+  window._drawRadarChart = function(){
+    // 平静ペナルティを _reporterCustomerPenalty に上乗せ
+    var prevPen = (typeof _reporterCustomerPenalty !== 'undefined') ? _reporterCustomerPenalty : 0;
+    var stressPen = window._stressPenalty || 0;
+    try{ _reporterCustomerPenalty = prevPen + stressPen; }catch(e){}
+    var r = _origDraw2.apply(this, arguments);
+    // 元に戻す（二重適用防止）
+    try{ _reporterCustomerPenalty = prevPen; }catch(e){}
+    return r;
+  };
+  window._drawRadarChart.__stressPenApplied = true;
+})();
+
+// saveClearResult でも同様に適用
+(function(){
+  var _origSaveCR = window.saveClearResult;
+  if(typeof _origSaveCR !== 'function' || _origSaveCR.__stressPenSaveHooked) return;
+  window.saveClearResult = function(){
+    var prevPen = (typeof _reporterCustomerPenalty !== 'undefined') ? _reporterCustomerPenalty : 0;
+    var stressPen = window._stressPenalty || 0;
+    try{ _reporterCustomerPenalty = prevPen + stressPen; }catch(e){}
+    var r = _origSaveCR.apply(this, arguments);
+    try{ _reporterCustomerPenalty = prevPen; }catch(e){}
+    return r;
+  };
+  window.saveClearResult.__stressPenSaveHooked = true;
+})();
+
+})(); // END IIFE
 </script>
 
 </div></div></body></html>
