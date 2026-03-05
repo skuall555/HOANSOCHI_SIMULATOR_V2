@@ -18435,6 +18435,16 @@ window._tantouGenerateReply = function(rawText){
       var appRect = document.getElementById('app-container').getBoundingClientRect();
       var topPos = (dpRect.bottom - appRect.top);
       op.style.top = topPos + 'px';
+      // ヒントボタンも同じ高さに配置・表示制御
+      var hb = document.getElementById('hint-open-btn');
+      if(hb){
+        hb.style.top = topPos + 'px';
+        try{
+          var _sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+          var _hasHint = _sc && _sc.hint && String(_sc.hint).trim();
+          hb.style.display = _hasHint ? 'block' : 'none';
+        }catch(e){}
+      }
     }catch(e){}
   }
 
