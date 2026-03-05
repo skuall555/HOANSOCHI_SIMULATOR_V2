@@ -4092,9 +4092,10 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         <img id="smoke-danger-gif" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%81%8A%E5%AE%A2%E3%81%95%E3%81%BE%E5%96%AB%E7%85%99.gif" alt="喫煙">
       </div>
     </div>
-    <div class="smoke-danger-msg" id="smoke-danger-msg">通報者はタバコを吸い始めた。</div>
+    <div class="smoke-danger-msg" id="smoke-danger-msg">通報者がタバコを吸い始めた。どうする？</div>
     <div class="smoke-danger-actions">
-      <button id="smoke-danger-ok" type="button">OK</button>
+      <button id="smoke-danger-warn" type="button" style="margin-right:1vmin;">やめるよう伝える</button>
+      <button id="smoke-danger-ok" type="button">そのまま放置</button>
     </div>
     <audio id="se-smoke-danger" preload="auto" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E8%AD%A6%E5%91%8A%E9%9F%B32.mp3"></audio>
   </div>
@@ -12327,8 +12328,9 @@ try{
 // ② 20秒以内にコミュニケーションウィンドウ(sendComm)で通報者へ
 //    「火 / タバコ / 煙草 / たばこ」を含む送信が無ければ危険イベント表示
 // ③ 危険イベント: scene-smoking-danger を表示し、GIFを大きく表示＆効果音
-// ④ OKで爆発END（badEnd/gameOver）
-// ⑤ キーワード送信まで 20秒カウントはループ
+// ④ 選択肢：「やめるよう伝える」→ dangerRate+0.2・以降の喫煙イベント停止
+//           「そのまま放置」　→ dangerRate+0.4・20秒後に再発
+// ⑤ キーワード送信またはやめるよう伝えるまで 20秒カウントはループ
 // =========================
 (function(){
   const KEY_RE = /(火|タバコ|煙草|たばこ)/;
@@ -12421,19 +12423,29 @@ try{
   }
 
   function onSmokeDangerOk(){
+    // 「そのまま放置」→ 爆発ENDではなく危険度上昇率+0.4、ゲーム継続
     hideSmokingDanger();
-    // ④ 爆発ENDへ
-    const reason = '通報者はタバコを吸い始めた。着火源となり爆発した。';
     try{
-      if(typeof window.badEnd==='function') return window.badEnd(reason);
-      if(typeof window.gameOver==='function') return window.gameOver(reason);
+      if(typeof dangerRate !== 'undefined'){
+        dangerRate = dangerRate + 0.4;
+        if(typeof updateDangerUI === 'function') updateDangerUI();
+      }
+      if(typeof showSystemMsg === 'function') showSystemMsg('通報者がタバコを吸った。危険度の上昇率が0.4増加した。');
     }catch(e){}
-    // フォールバック（最低限の表示）
+    // タイマーは armSmokingTimer() で既にループ中のため再起動不要
+  }
+
+  function onSmokeDangerWarn(){
+    // 「やめるよう伝える」→ 危険度上昇率+0.2、以降の喫煙イベントを停止
+    hideSmokingDanger();
+    EV.prevented = true;
+    _clearTimer();
     try{
-      const ex=document.getElementById('explosion-overlay');
-      if(ex) ex.classList.add('active');
-      const br=document.getElementById('boom-reason');
-      if(br) br.textContent = reason;
+      if(typeof dangerRate !== 'undefined'){
+        dangerRate = dangerRate + 0.2;
+        if(typeof updateDangerUI === 'function') updateDangerUI();
+      }
+      if(typeof showSystemMsg === 'function') showSystemMsg('通報者に火気厳禁を伝えた。危険度の上昇率が0.2増加した。');
     }catch(e){}
   }
 
@@ -12442,6 +12454,11 @@ try{
     if(btn && !btn.__smokeBound){
       btn.addEventListener('click', onSmokeDangerOk);
       btn.__smokeBound=true;
+    }
+    const warnBtn=document.getElementById('smoke-danger-warn');
+    if(warnBtn && !warnBtn.__smokeWarnBound){
+      warnBtn.addEventListener('click', onSmokeDangerWarn);
+      warnBtn.__smokeWarnBound=true;
     }
   }
 
@@ -16344,8 +16361,11 @@ window._tantouGenerateReply = function(rawText){
 /* 配達・喫煙 danger event: 画面のどこでもタップで爆発へ移行 */
 (function(){
   window._smokeAnyTap = function(e){
-    /* ×ボタンや内部ボタンは既存ハンドラに任せ、それ以外でOK起動 */
-    if(e && e.target && (e.target.id==='smoke-danger-close')) return;
+    /* ×ボタン・選択肢ボタンは既存ハンドラに任せ、それ以外の領域タップはOKと同等 */
+    if(!e || !e.target) return;
+    var tid = e.target.id;
+    if(tid==='smoke-danger-close' || tid==='smoke-danger-ok' || tid==='smoke-danger-warn') return;
+    /* ボタン以外の領域タップ → 「そのまま放置」と同じ扱い */
     var btn=document.getElementById('smoke-danger-ok');
     if(btn) btn.click();
   };
