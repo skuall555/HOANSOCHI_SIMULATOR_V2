@@ -5587,7 +5587,7 @@ function handleGasIdAtHotspots(e){
           if(requiredDoorOpen2(hotspot1) && pointInRect2(x,y,hotspot1.rect)){
             // メッセージボックス表示
             var lel=getLELForMsgBox();
-            if(lel < 6) showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
+            if(lel < 3) showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
             else showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), getScenarioGasKind()==='13A');
             return true;
           }
@@ -5604,7 +5604,7 @@ function handleGasIdAtHotspots(e){
           if(requiredDoorOpen2(hotspot2) && pointInRect2(x,y,hotspot2.rect)){
             // メッセージボックス表示
             var lel=getLELForMsgBox();
-            if(lel < 6) showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
+            if(lel < 3) showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
             else showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), getScenarioGasKind()==='13A');
             return true;
           }
@@ -5618,7 +5618,7 @@ function handleGasIdAtHotspots(e){
       if(r3 && r3.classList.contains('active')){
         if(pointInRect2(x,y,hotspot3.rect)){
           var lel=getLELForMsgBox();
-          if(lel < 6) showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
+          if(lel < 3) showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
           else showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), getScenarioGasKind()==='13A');
           return true;
         }
@@ -5726,7 +5726,7 @@ const handleOverlayClick = (e) => {
                         // 高濃度モード時：メッセージボックス表示
                         try{
                             var lel=getLELForMsgBox();
-                            if(lel < 6){
+                            if(lel < 3){
                                 showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
                             } else {
                                 showGasResultBox('濃度：LEL'+lel+'%　ガス種別：'+getScenarioGasKind(), getScenarioGasKind()==='13A');
@@ -9160,9 +9160,9 @@ function getLel2(){
   return p;
 }
 function getGasTypeByLel(p){
-  // B案V3: LEL6%になった時点で、シナリオ設定のガス種別を『識別済み』として表示
+  // LEL3%以上になった時点で、シナリオ設定のガス種別を『識別済み』として表示
   try{ p = Number(p)||0; }catch(e){ p=0; }
-  if(p >= 6){
+  if(p >= 3){
     try{ return String(getScenarioGasKind()); }catch(e2){ return '識別不可'; }
   }
   return '識別不可';
@@ -9373,7 +9373,8 @@ try{ document.getElementById('detector-tool').style.display='block'; }catch(e){}
           var gas=getGasTypeByLel(p);
           var msg='LEL'+p+'％検知！　識別結果：'+gas;
           if(gas==='識別不可') msg+='\nまだ都市ガスか判明できていない。時間をおいて再度確認しよう。';
-          showGasResultBox(msg, (gas.indexOf('13A')!==-1));
+          // クリック時のみメッセージを表示（ホバー時は表示しない）
+          if(canBeep){ showGasResultBox(msg, (gas.indexOf('13A')!==-1)); }
 
                     try{ if(hit===2) startCityGasAlarm('hs2'); }catch(e){}
 
@@ -11278,8 +11279,8 @@ function _commInferStanceFromHs1(){
       for(var rc=0; rc<resolvedCount; rc++){
         try{
           if(typeof addSafety === 'function') addSafety(5, "【コミュニケーション】相手の認識を変えた！安全率+5%");
-          if(typeof dangerValue !== 'undefined') window.dangerValue = Math.max(0, dangerValue - 5);
-          if(typeof dangerRate !== 'undefined') window.dangerRate = Math.max(0.1, dangerRate - 0.2);
+          if(typeof dangerValue !== 'undefined') dangerValue = Math.max(0, dangerValue - 5);
+          if(typeof dangerRate !== 'undefined') dangerRate = Math.max(0.1, dangerRate - 0.2);
           if(typeof updateDangerUI === 'function') updateDangerUI();
         }catch(es){}
       }
@@ -12795,7 +12796,7 @@ try{
         try{ var ov=$('scene-delivery-danger'); if(ov) ov.classList.remove('active'); }catch(e){}
         // 爆発ではなく危険度上昇率+0.2
         try{
-          if(typeof dangerRate!=='undefined') window.dangerRate = (window.dangerRate||dangerRate) + 0.2;
+          if(typeof dangerRate!=='undefined') dangerRate = dangerRate + 0.2;
           if(typeof updateDangerUI==='function') updateDangerUI();
           if(typeof showSystemMsg==='function') showSystemMsg('危険度の上昇率が0.2増加しました。');
         }catch(e2){}
@@ -12886,7 +12887,7 @@ try{
                 try{ var ov2=$('scene-delivery-danger'); if(ov2) ov2.classList.remove('active'); }catch(e){}
                 // 爆発ではなく危険度上昇率+0.2
                 try{
-                  if(typeof dangerRate!=='undefined') window.dangerRate = (window.dangerRate||dangerRate) + 0.2;
+                  if(typeof dangerRate!=='undefined') dangerRate = dangerRate + 0.2;
                   if(typeof updateDangerUI==='function') updateDangerUI();
                   if(typeof showSystemMsg==='function') showSystemMsg('危険度の上昇率が0.2増加しました。');
                 }catch(e2){}
@@ -12903,7 +12904,7 @@ try{
           playChime();
           try{
             if(typeof window.showSystemMsg==='function') window.showSystemMsg('インターホンを押されてしまった。危険度の上昇率が上がった。');
-            if(typeof dangerRate!=='undefined') window.dangerRate = (window.dangerRate||dangerRate) + 0.2;
+            if(typeof dangerRate!=='undefined') dangerRate = dangerRate + 0.2;
             if(typeof updateDangerUI==='function') updateDangerUI();
             if(window._gameStats) window._gameStats.safetyAwarenessPenalty = (window._gameStats.safetyAwarenessPenalty||0) + 5;
           }catch(e){}
@@ -14334,7 +14335,7 @@ try{
     const ov = $('scene-delivery-danger');
     if(ov) ov.classList.remove('active');
     try{
-      if(typeof dangerRate!=='undefined') window.dangerRate = (window.dangerRate||dangerRate) + 0.2;
+      if(typeof dangerRate!=='undefined') dangerRate = dangerRate + 0.2;
       if(typeof updateDangerUI==='function') updateDangerUI();
       if(typeof showSystemMsg==='function') showSystemMsg('危険度の上昇率が0.2増加しました。');
     }catch(e){}
@@ -14610,16 +14611,18 @@ try{
 
     // エレベーター使用時の危険度上昇チェック（爆発ENDは廃止）
     var elevDangerIncrease = 0;
-    // 条件1：1Fエントランス/1F共用部/2F共用部/地下街のいずれかで反応箇所が出現している場合
-    if(hasReactionInRoom('room-entrance') || hasReactionInRoom('room-corridor1') || hasReactionInRoom('room-corridor2') || hasReactionInRoom('room-basement')){
-      elevDangerIncrease += 0.2;
-    }
+    // 条件1：現在の画面（アクティブな部屋）に反応箇所が存在する場合
+    try{
+      var _activeRoomEl1 = document.querySelector('.room.active');
+      var _activeRoomId1 = _activeRoomEl1 ? _activeRoomEl1.id : null;
+      if(_activeRoomId1 && hasReactionInRoom(_activeRoomId1)) elevDangerIncrease += 0.2;
+    }catch(e){}
     // 条件2：都市ガス警報器が鳴動後
     try{ if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive) elevDangerIncrease += 0.4; }catch(e){}
 
     if(elevDangerIncrease > 0){
       try{
-        if(typeof dangerRate !== 'undefined') window.dangerRate = (window.dangerRate || dangerRate) + elevDangerIncrease;
+        if(typeof dangerRate !== 'undefined') dangerRate = dangerRate + elevDangerIncrease;
         if(typeof updateDangerUI === 'function') updateDangerUI();
         if(typeof showSystemMsg === 'function') showSystemMsg('エレベーターを使用しました。危険度の上昇率が+' + elevDangerIncrease.toFixed(1) + '増加しました。');
       }catch(e){}
@@ -14676,16 +14679,18 @@ try{
 
       // エレベーター使用時の危険度上昇チェック（爆発ENDは廃止）
       var elevDangerInc = 0;
-      // 条件1：1Fエントランス/1F共用部/2F共用部/地下街のいずれかで反応箇所が出現している場合
-      if(hasReactionInRoom('room-entrance') || hasReactionInRoom('room-corridor1') || hasReactionInRoom('room-corridor2') || hasReactionInRoom('room-basement')){
-        elevDangerInc += 0.2;
-      }
+      // 条件1：現在の画面（アクティブな部屋）に反応箇所が存在する場合
+      try{
+        var _activeRoomEl2 = document.querySelector('.room.active');
+        var _activeRoomId2 = _activeRoomEl2 ? _activeRoomEl2.id : null;
+        if(_activeRoomId2 && hasReactionInRoom(_activeRoomId2)) elevDangerInc += 0.2;
+      }catch(e){}
       // 条件2：都市ガス警報器が鳴動後
       try{ if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive) elevDangerInc += 0.4; }catch(e){}
 
       if(elevDangerInc > 0){
         try{
-          if(typeof dangerRate !== 'undefined') window.dangerRate = (window.dangerRate || dangerRate) + elevDangerInc;
+          if(typeof dangerRate !== 'undefined') dangerRate = dangerRate + elevDangerInc;
           if(typeof updateDangerUI === 'function') updateDangerUI();
           if(typeof showSystemMsg === 'function') showSystemMsg('エレベーターを使用しました。危険度の上昇率が+' + elevDangerInc.toFixed(1) + '増加しました。');
         }catch(e){}
@@ -14845,8 +14850,8 @@ try{
           if(!window.__valveClosedSafetyApplied){
             window.__valveClosedSafetyApplied = true;
             if(typeof addSafety === 'function') addSafety(5, "【保安措置】バルブピットのバルブを閉止！安全率+5%");
-            if(typeof dangerValue !== 'undefined') window.dangerValue = Math.max(0, dangerValue - 10);
-            if(typeof dangerRate !== 'undefined') window.dangerRate = Math.max(0.1, dangerRate - 0.5);
+            if(typeof dangerValue !== 'undefined') dangerValue = Math.max(0, dangerValue - 10);
+            if(typeof dangerRate !== 'undefined') dangerRate = Math.max(0.1, dangerRate - 0.5);
             if(typeof updateDangerUI === 'function') updateDangerUI();
           }
         }catch(es){}
@@ -16002,6 +16007,16 @@ function __applySafetyAwarenessRules(labels, values){
   /* ── パブリックAPI ── */
   window.openTelPanel = function() {
     try {
+      // スマホ使用時：反応箇所が存在する画面ならば危険度上昇率を増加
+      try{
+        var _phoneRoomEl = document.querySelector('.room.active');
+        var _phoneRoomId = _phoneRoomEl ? _phoneRoomEl.id : null;
+        if(_phoneRoomId && typeof hasReactionInRoom === 'function' && hasReactionInRoom(_phoneRoomId)){
+          if(typeof dangerRate !== 'undefined') dangerRate = dangerRate + 0.2;
+          if(typeof updateDangerUI === 'function') updateDangerUI();
+          if(typeof showSystemMsg === 'function') showSystemMsg('反応箇所のある画面でスマホを使用した。危険度の上昇率が0.2増加した。');
+        }
+      }catch(e){}
       initAudio();
       updateClock();
       var hs=document.getElementById('tel-home-screen');
@@ -20594,6 +20609,227 @@ window.stageEditorExportHTML = function() {
   } else {
     setTimeout(init, 1200);
   }
+})();
+</script>
+
+<!-- ===================================================================
+     高濃度モード：濃度低下ロジック
+     ガス漏れ原因に応じた条件が満たされると濃度上昇が止まり、
+     20秒ごとに1%ずつ低下する。濃度が0になると危険度・上昇率も0にする。
+     =================================================================== -->
+<script>
+(function(){
+  'use strict';
+
+  // 濃度低下状態の管理変数
+  var _hs1DecreaseStart = 0;   // hs1 低下開始時刻（0=低下していない）
+  var _hs2DecreaseStart = 0;   // hs2 低下開始時刻（0=低下していない）
+  var _hs1BaseAtDecrease = 0;  // hs1 低下開始時点のLEL値
+  var _hs2BaseAtDecrease = 0;  // hs2 低下開始時点のLEL値
+  var _decreaseStarted = false; // 既に低下開始済みか
+  var _dangerZeroApplied = false; // 危険度0の適用済みフラグ
+
+  // ガス漏れ原因とメーターIDのマッピング
+  var CAUSE_TO_METER = {
+    '101号室灯内内管': 1,
+    '102号室灯内内管': 2,
+    '201号室灯内内管': 3,
+    '202号室灯内内管': 4,
+    '焼き鳥屋灯内内管': 5,
+    'ラーメン屋灯内内管': 6
+  };
+
+  // 濃度低下を開始する
+  function startConcentrationDecrease(){
+    if(_decreaseStarted) return;
+    _decreaseStarted = true;
+    _dangerZeroApplied = false;
+
+    // getLel1/getLel2 の現在値を記録して低下開始
+    try{
+      var lel1 = (typeof getLel1 === 'function') ? getLel1() : 0;
+      if(typeof hs1FoundAt !== 'undefined' && hs1FoundAt){
+        _hs1BaseAtDecrease = lel1;
+        _hs1DecreaseStart = Date.now();
+      }
+    }catch(e){}
+    try{
+      var lel2 = (typeof getLel2 === 'function') ? getLel2() : 0;
+      if(typeof hs2FoundAt !== 'undefined' && hs2FoundAt){
+        _hs2BaseAtDecrease = lel2;
+        _hs2DecreaseStart = Date.now();
+      }
+    }catch(e){}
+
+    try{ if(typeof showSystemMsg === 'function') showSystemMsg('ガス漏れ源が止まった。濃度が低下し始めた。'); }catch(e){}
+  }
+
+  // getLel1 を上書き（低下ロジック追加）
+  var _origGetLel1 = (typeof getLel1 === 'function') ? getLel1 : null;
+  window.getLel1 = function getLel1(){
+    try{
+      if(_hs1DecreaseStart && (typeof hs1FoundAt !== 'undefined') && hs1FoundAt){
+        var dec = Math.floor((Date.now() - _hs1DecreaseStart) / 20000);
+        var p = _hs1BaseAtDecrease - dec;
+        return (p < 0) ? 0 : p;
+      }
+      if(_origGetLel1) return _origGetLel1();
+      if(typeof hs1FoundAt !== 'undefined' && hs1FoundAt){
+        var p2 = Math.floor((Date.now() - hs1FoundAt) / 20000);
+        if(p2 < 0) p2 = 0; if(p2 > 30) p2 = 30;
+        return p2;
+      }
+    }catch(e){}
+    return 0;
+  };
+
+  // getLel2 を上書き（低下ロジック追加）
+  var _origGetLel2 = (typeof getLel2 === 'function') ? getLel2 : null;
+  window.getLel2 = function getLel2(){
+    try{
+      if(_hs2DecreaseStart && (typeof hs2FoundAt !== 'undefined') && hs2FoundAt){
+        var dec = Math.floor((Date.now() - _hs2DecreaseStart) / 20000);
+        var p = _hs2BaseAtDecrease - dec;
+        return (p < 0) ? 0 : p;
+      }
+      if(_origGetLel2) return _origGetLel2();
+      if(typeof hs2FoundAt !== 'undefined' && hs2FoundAt){
+        var p2 = Math.floor((Date.now() - hs2FoundAt) / 20000);
+        if(p2 < 0) p2 = 0; if(p2 > 30) p2 = 30;
+        return p2;
+      }
+    }catch(e){}
+    return 0;
+  };
+
+  // 濃度が0に達したら危険度・上昇率を0にする
+  function checkConcentrationZero(){
+    if(!_decreaseStarted || _dangerZeroApplied) return;
+    try{
+      var lel1 = getLel1();
+      var lel2 = getLel2();
+      var maxLel = Math.max(lel1, lel2);
+      // hs1もhs2も発見されていなければ判定不要
+      var hs1Active = (typeof hs1FoundAt !== 'undefined') && hs1FoundAt;
+      var hs2Active = (typeof hs2FoundAt !== 'undefined') && hs2FoundAt;
+      if(!hs1Active && !hs2Active) return;
+
+      var allZero = true;
+      if(hs1Active && lel1 > 0) allZero = false;
+      if(hs2Active && lel2 > 0) allZero = false;
+
+      if(allZero){
+        _dangerZeroApplied = true;
+        if(typeof dangerValue !== 'undefined') dangerValue = 0;
+        if(typeof dangerRate !== 'undefined') dangerRate = 0;
+        if(typeof updateDangerUI === 'function') updateDangerUI();
+        if(typeof showSystemMsg === 'function') showSystemMsg('ガスが完全に止まった。危険度および上昇率が0になった。');
+      }
+    }catch(e){}
+  }
+
+  // 定期チェック（2秒ごと）
+  var _concCheckInterval = setInterval(checkConcentrationZero, 2000);
+
+  // ゲームリセット時のクリア
+  function resetDecreaseState(){
+    _hs1DecreaseStart = 0;
+    _hs2DecreaseStart = 0;
+    _hs1BaseAtDecrease = 0;
+    _hs2BaseAtDecrease = 0;
+    _decreaseStarted = false;
+    _dangerZeroApplied = false;
+  }
+
+  // initGame のフック
+  (function hookInitGame(){
+    if(typeof window.initGame !== 'function' || window.initGame.__concDecHooked) return;
+    var _orig = window.initGame;
+    window.initGame = function(){
+      resetDecreaseState();
+      return _orig.apply(this, arguments);
+    };
+    window.initGame.__concDecHooked = true;
+  })();
+
+  // ========== closeMeterGas のフック（灯内内管の場合） ==========
+  (function hookCloseMeterGas(){
+    if(typeof window.closeMeterGas !== 'function' || window.closeMeterGas.__concDecHooked) return;
+    var _orig = window.closeMeterGas;
+    window.closeMeterGas = function(){
+      var result = _orig.apply(this, arguments);
+      try{
+        var cause = (typeof activeScenario !== 'undefined' && activeScenario && activeScenario.gasCause)
+          ? String(activeScenario.gasCause) : '';
+        var closedId = (typeof selectedMeterId !== 'undefined') ? selectedMeterId : -1;
+        // ガス漏れ原因が「〇〇灯内内管」で、対応メーターが閉止された場合
+        if(CAUSE_TO_METER[cause] === closedId){
+          startConcentrationDecrease();
+        }
+      }catch(e){}
+      return result;
+    };
+    window.closeMeterGas.__concDecHooked = true;
+  })();
+
+  // ========== バルブ閉止のフック（灯外内管の場合） ==========
+  // valve-yes ボタンにフックを追加（DOM読込後に実行）
+  function hookValveYes(){
+    var yes = document.getElementById('valve-yes');
+    if(!yes || yes.__concDecHooked) return;
+    yes.__concDecHooked = true;
+    yes.addEventListener('click', function(){
+      try{
+        var cause = (typeof activeScenario !== 'undefined' && activeScenario && activeScenario.gasCause)
+          ? String(activeScenario.gasCause) : '';
+        if(cause === '集合住宅灯外内管'){
+          startConcentrationDecrease();
+        }
+      }catch(e){}
+    }, false); // バブリング（既存のイベントの後で実行）
+  }
+
+  // ========== LPGカード取得のフック（都市ガス以外の場合） ==========
+  // __awardCard がセットされてから、または定期的にカード所持を確認する
+  function hookLpgCard(){
+    if(window.__awardCard && !window.__awardCard.__concDecLpgHooked){
+      var _origAward = window.__awardCard;
+      window.__awardCard = function(id){
+        var result = _origAward.apply(this, arguments);
+        try{
+          if(id === 'カード_LPG'){
+            var cause = (typeof activeScenario !== 'undefined' && activeScenario && activeScenario.gasCause)
+              ? String(activeScenario.gasCause) : '';
+            var gasKind = (typeof getScenarioGasKind === 'function') ? getScenarioGasKind() : '';
+            if(cause === '都市ガス以外' && gasKind === 'LPG'){
+              startConcentrationDecrease();
+            }
+          }
+        }catch(e){}
+        return result;
+      };
+      window.__awardCard.__concDecLpgHooked = true;
+    }
+  }
+
+  // DOMContentLoaded 後に各種フックを実行
+  function init(){
+    hookValveYes();
+    // __awardCard は後から設定される場合があるので少し待つ
+    setTimeout(function(){
+      hookLpgCard();
+    }, 2000);
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 1500); });
+  } else {
+    setTimeout(init, 1500);
+  }
+
+  // 公開API
+  window._startConcentrationDecrease = startConcentrationDecrease;
+  window._resetConcentrationDecreaseState = resetDecreaseState;
 })();
 </script>
 
