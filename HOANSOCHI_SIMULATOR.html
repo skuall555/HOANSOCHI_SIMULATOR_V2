@@ -21289,7 +21289,7 @@ window._dangerHit100 = false;
 
 <script>
 /* ===================================================================
-   Round 6 rev2: Bug fixes + Character select + Walk animation
+   Round 6 rev3: Bug fixes + Character select + Walk animation
    =================================================================== */
 (function(){
 'use strict';
@@ -21310,11 +21310,12 @@ var CHAR_DATA = {
     walk:  'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%82%E3%81%88%E3%82%8B%E3%81%A1%E3%82%83%E3%82%93%E5%B7%AE%E5%88%86.png'
   }
 };
-var _selectedChar = (function(){ try{ return localStorage.getItem('_r6_char') || null; }catch(e){ return null; } })();
+// キャラ選択は毎回。保存しない。
+var _selectedChar = null;
 var _playerMoving = false;
 var _moveTimer = null;
 var _lastNpcClick = 0;
-var _prevPlayerX = null;
+var _prevPlayerLeft = null; // #player style.left で移動検知
 
 // ============================================================
 // 1. Voice audio element
@@ -21396,15 +21397,14 @@ function showNpcBubble(npcEl, text, duration){
 function _guard(){ var n=Date.now(); if(n-_lastNpcClick<1200) return false; _lastNpcClick=n; return true; }
 
 function hookStreetNpc(){
-  // state is global let, accessible via scope chain
+  // DOM直接参照（state.npcsが外部スクリプトから届かない場合に対応）
   try{
-    if(!state || !state.npcs) return;
-    state.npcs.forEach(function(n){
-      if(!n.el || n.el.__r6h) return;
-      n.el.__r6h = true;
+    document.querySelectorAll('#room-street .npc').forEach(function(el){
+      if(el.__r6h) return;
+      el.__r6h = true;
       var h = function(){ if(!_guard()) return; playVoiceWarning(); showPlayerBubble('いまガス漏れを調査しています。', 3000); };
-      n.el.addEventListener('click', h, true);
-      n.el.addEventListener('touchend', h, true);
+      el.addEventListener('click', h, true);
+      el.addEventListener('touchend', h, true);
     });
   }catch(e){}
 }
@@ -21429,11 +21429,11 @@ function hookEntranceNpc(){
     if(!el || el.__r6h) return;
     el.__r6h = true;
     el.addEventListener('click', function(){
-      // Only fire when entrance room is active (not elevator button area outside NPC context)
       var activeRoom = document.querySelector('.room.active');
       if(!activeRoom || activeRoom.id !== 'room-entrance') return;
-      if(!_guard()) return;
+      // 常に元の効果音をミュート（_guard()より先）
       _muteFor('se-delivery-click', 1500);
+      if(!_guard()) return;
       playVoiceWarning();
       showPlayerBubble('エレベーターを使用しないようお願いします。', 3000);
     }, true);
@@ -21458,15 +21458,34 @@ function getCones(roomNum){
 }
 
 // ============================================================
-// 6. Freeze helpers
+// 6. Freeze helpers — 足止め2秒
 // ============================================================
-function freezeStreetNpc(n){
-  if(n._coneFrozen) return;
-  n._coneFrozen = true; n._freezeX = n.x;
-  showNpcBubble(n.el, '・・・・・？', 5200);
-  setTimeout(function(){ n._coneFrozen = false; delete n._freezeX; }, 5000);
+var FREEZE_MS = 2000;
+
+// 前面道路: DOM要素を直接操作（state.npcsへのアクセス不要）
+function freezeStreetNpcEl(el){
+  if(!el || el._coneFrozen) return;
+  var fx = parseFloat(el.style.left) || 0;
+  el._coneFrozen = true;
+  el._freezeLeft = fx;
+  // state.npcs が参照できる場合は n.x も同期して位置ジャンプを防ぐ
+  try{
+    if(state && state.npcs) state.npcs.forEach(function(sn){
+      if(sn.el === el){ sn._coneFrozen = true; sn._freezeX = fx; }
+    });
+  }catch(e2){}
+  showNpcBubble(el, '・・・・・？', FREEZE_MS + 200);
+  setTimeout(function(){
+    el._coneFrozen = false; delete el._freezeLeft;
+    try{
+      if(state && state.npcs) state.npcs.forEach(function(sn){
+        if(sn.el === el){ sn._coneFrozen = false; delete sn._freezeX; }
+      });
+    }catch(e2){}
+  }, FREEZE_MS);
 }
 
+// 共用部配達員: speed=0 で animateTo を一時停止
 function freezeCorridorNpc(){
   var dst = window.__deliveryEventState;
   if(!dst || !dst.active || dst._coneFrozen) return;
@@ -21474,61 +21493,96 @@ function freezeCorridorNpc(){
   if(!el || el.style.display==='none') return;
   dst._coneFrozen = true;
   var saved = dst.speed; dst.speed = 0;
-  showNpcBubble(el, '・・・・・？', 5200);
-  setTimeout(function(){ dst._coneFrozen = false; dst.speed = saved || 0.040; }, 5000);
+  showNpcBubble(el, '・・・・・？', FREEZE_MS + 200);
+  setTimeout(function(){ dst._coneFrozen = false; dst.speed = saved || 0.040; }, FREEZE_MS);
 }
 
+// エントランス配達員: CSS transitionをpauseして現在地で止める
 function freezeEntranceNpc(npcEl){
   if(!npcEl || npcEl._coneFrozen) return;
-  npcEl._coneFrozen = true; npcEl._frozenLeft = npcEl.style.left;
-  showNpcBubble(npcEl, '・・・・・？', 5200);
-  setTimeout(function(){ npcEl._coneFrozen = false; delete npcEl._frozenLeft; }, 5000);
+  // style.left が destination(%) の場合のみ freeze（return中は-12%）
+  var destStr = npcEl.style.left;
+  var destPct = parseFloat(destStr);
+  if(isNaN(destPct) || destPct < 1) return; // 帰還中は対象外
+  // CSS transitionの現在位置をpx値で取得
+  var curPx = parseFloat(getComputedStyle(npcEl).left) || 0;
+  var cont = document.getElementById('app-container');
+  var crW = cont ? cont.getBoundingClientRect().width : 0;
+  var curPct = crW ? (curPx / crW) * 100 : destPct;
+  // トランジション停止・現在位置で固定
+  npcEl.style.transition = 'none';
+  npcEl.style.left = curPct + '%';
+  void npcEl.offsetWidth; // reflow
+  npcEl._coneFrozen = true;
+  npcEl._frozenDest = destStr;   // 再開時の目的地（"45%"など）
+  npcEl._frozenCurPct = curPct;  // 現在位置
+  showNpcBubble(npcEl, '・・・・・？', FREEZE_MS + 200);
+  setTimeout(function(){
+    npcEl._coneFrozen = false;
+    // トランジション再開: 残りの距離に応じた時間で再開
+    var cont2 = document.getElementById('app-container');
+    var crW2 = cont2 ? cont2.getBoundingClientRect().width : 0;
+    var remPct = crW2 ? Math.abs(destPct - parseFloat(getComputedStyle(npcEl).left) / crW2 * 100)
+                      : Math.abs(destPct - npcEl._frozenCurPct);
+    var durRem = Math.max(0.5, remPct / 10); // 10%/秒の速度で再開
+    npcEl.style.transition = 'left ' + durRem + 's linear';
+    npcEl.style.left = npcEl._frozenDest;
+    delete npcEl._frozenDest; delete npcEl._frozenCurPct;
+  }, FREEZE_MS);
 }
 
 function checkConeCollisions(){
   try{
-    // Street NPC — access state directly (global let)
     var activeRoomEl = document.querySelector('.room.active');
     var activeRoomId = activeRoomEl ? activeRoomEl.id : '';
-    if(activeRoomId === 'room-street' && state && state.npcs){
+    // 前面道路 NPC（DOMから取得）
+    if(activeRoomId === 'room-street'){
       var sc = getCones(1);
-      if(sc.length) state.npcs.forEach(function(n){
+      if(sc.length) document.querySelectorAll('#room-street .npc').forEach(function(n){
         if(n._coneFrozen) return;
-        for(var i=0;i<sc.length;i++) if(Math.abs(n.x-sc[i].x)<8){ freezeStreetNpc(n); break; }
+        var nx = parseFloat(n.style.left) || 0;
+        for(var i=0;i<sc.length;i++) if(Math.abs(nx-sc[i].x)<8){ freezeStreetNpcEl(n); break; }
       });
     }
-    // Corridor NPC
+    // 共用部配達員
     var cc = getCones(3).concat(getCones(4));
     if(cc.length){
       var dst = window.__deliveryEventState;
       if(dst && dst.active && !dst._coneFrozen)
         for(var j=0;j<cc.length;j++) if(Math.abs(dst.curX-cc[j].x)<10){ freezeCorridorNpc(); break; }
     }
-    // Entrance NPC
+    // エントランス配達員
     var ec = getCones(2);
     if(ec.length){
       var nEl = document.getElementById('delivery-npc');
       if(nEl && nEl.style.display!=='none' && !nEl._coneFrozen){
-        var nl = parseFloat(nEl.style.left)||0;
-        for(var k=0;k<ec.length;k++) if(Math.abs(nl-ec[k].x)<10){ freezeEntranceNpc(nEl); break; }
+        // コーンのx%と現在の表示位置(%に変換して比較)
+        var cont = document.getElementById('app-container');
+        var crW = cont ? cont.getBoundingClientRect().width : 0;
+        var nPx = parseFloat(getComputedStyle(nEl).left) || 0;
+        var nPct = crW ? (nPx / crW) * 100 : 0;
+        for(var k=0;k<ec.length;k++) if(Math.abs(nPct-ec[k].x)<10){ freezeEntranceNpc(nEl); break; }
       }
     }
   }catch(e){}
 }
 
 // ============================================================
-// 7. rAF correction loop for frozen NPCs
+// 7. rAF correction loop — 前面道路NPC位置固定
 // ============================================================
 function freezeCorrectLoop(){
   try{
-    if(state && state.npcs) state.npcs.forEach(function(n){
-      if(n._coneFrozen && typeof n._freezeX==='number'){
-        n.x = n._freezeX;
-        if(n.el) n.el.style.left = n._freezeX+'%';
-      }
+    // 前面道路 NPC (game loopが毎フレームleft%を上書きするので補正)
+    document.querySelectorAll('#room-street .npc').forEach(function(n){
+      if(n._coneFrozen && typeof n._freezeLeft === 'number')
+        n.style.left = n._freezeLeft + '%';
     });
-    var eNpc = document.getElementById('delivery-npc');
-    if(eNpc && eNpc._coneFrozen && eNpc._frozenLeft!=null) eNpc.style.left = eNpc._frozenLeft;
+    // state.npcsにもアクセスできる場合は x も補正（位置ジャンプ防止）
+    try{
+      if(state && state.npcs) state.npcs.forEach(function(sn){
+        if(sn._coneFrozen && typeof sn._freezeX === 'number') sn.x = sn._freezeX;
+      });
+    }catch(e2){}
   }catch(e){}
   requestAnimationFrame(freezeCorrectLoop);
 }
@@ -21586,10 +21640,10 @@ function createCharSelectUI(){
 
 window._r6SelectChar = function(key){
   _selectedChar = key;
-  try{ localStorage.setItem('_r6_char', key); }catch(e){}
+  // 保存しない（毎回選択）
   var d = document.getElementById('r6-char-select');
   if(d) d.style.display = 'none';
-  applyCharImage(_playerMoving);
+  applyCharImage(false);
   if(window._r6CharCb){ var cb = window._r6CharCb; window._r6CharCb = null; cb(); }
 };
 
@@ -21605,8 +21659,8 @@ function hookStartGameForChar(){
   if(!fn || fn.__r6CharHooked) return;
   window.startGame = function(){
     var a = arguments; var c = this;
-    if(!_selectedChar){ showCharSelect(function(){ fn.apply(c, a); }); }
-    else { fn.apply(c, a); }
+    _selectedChar = null; // 毎回リセット → 毎回キャラ選択
+    showCharSelect(function(){ fn.apply(c, a); });
   };
   window.startGame.__r6CharHooked = true;
 }
@@ -21639,28 +21693,28 @@ function applyCharImage(moving){
   }catch(e){}
 }
 
-// Detect movement by tracking state.x changes (100ms polling)
+// 移動検知: #player style.left の変化を監視（DOM参照のみ・state不要）
 setInterval(function(){
   try{
-    if(!state) return;
-    var cx = state.x;
-    if(_prevPlayerX !== null && cx !== _prevPlayerX){
-      // Player moved
+    if(!_selectedChar) return;
+    var player = document.getElementById('player');
+    if(!player) return;
+    var curLeft = player.style.left;
+    if(_prevPlayerLeft !== null && curLeft !== _prevPlayerLeft){
       if(!_playerMoving){ _playerMoving = true; applyCharImage(true); }
       if(_moveTimer) clearTimeout(_moveTimer);
       _moveTimer = setTimeout(function(){ _playerMoving = false; applyCharImage(false); }, 200);
     }
-    _prevPlayerX = cx;
+    _prevPlayerLeft = curLeft;
   }catch(e){}
-}, 100);
+}, 80);
 
 // ============================================================
 // 11. Periodic hooks + init
 // ============================================================
 freezeCorrectLoop();
-hookStartGameForChar(); // Hook immediately (this script runs last)
+hookStartGameForChar();
 createCharSelectUI();
-if(_selectedChar) setTimeout(function(){ applyCharImage(false); }, 600);
 
 setInterval(function(){
   hookStreetNpc();
