@@ -21318,13 +21318,28 @@ var _lastNpcClick = 0;
 var _prevPlayerLeft = null; // #player style.left で移動検知
 
 // ============================================================
-// 1. Voice audio element
+// 1. Voice audio element + 不要な効果音を永続ミュート
 // ============================================================
 (function(){
   if(document.getElementById('se-voice-warning')) return;
   var a = document.createElement('audio');
   a.id = 'se-voice-warning'; a.src = VOICE_URL; a.preload = 'auto';
   document.body.appendChild(a);
+})();
+
+// アナ「エレベーター」.wav (se-delivery-click) は使わないので永続ミュート
+(function silenceElevatorAnnounce(){
+  function doSilence(){
+    var el = document.getElementById('se-delivery-click');
+    if(!el) return;
+    el.volume = 0;
+    el.muted = true;
+    // play() を呼ばれても無音になるよう override
+    el.play = function(){ return Promise.resolve(); };
+  }
+  doSilence();
+  setTimeout(doSilence, 500);
+  setTimeout(doSilence, 1500);
 })();
 
 function playVoiceWarning(){
@@ -21431,8 +21446,6 @@ function hookEntranceNpc(){
     el.addEventListener('click', function(){
       var activeRoom = document.querySelector('.room.active');
       if(!activeRoom || activeRoom.id !== 'room-entrance') return;
-      // 常に元の効果音をミュート（_guard()より先）
-      _muteFor('se-delivery-click', 1500);
       if(!_guard()) return;
       playVoiceWarning();
       showPlayerBubble('エレベーターを使用しないようお願いします。', 3000);
@@ -21645,6 +21658,9 @@ window._r6SelectChar = function(key){
   if(d) d.style.display = 'none';
   applyCharImage(false);
   if(window._r6CharCb){ var cb = window._r6CharCb; window._r6CharCb = null; cb(); }
+  // initGame + applyAllCustoms が実行された後も確実に再適用
+  setTimeout(function(){ applyCharImage(false); }, 100);
+  setTimeout(function(){ applyCharImage(false); }, 500);
 };
 
 function showCharSelect(cb){
@@ -21676,8 +21692,6 @@ window._r6ChangeChar = function(){
 function applyCharImage(moving){
   try{
     if(!_selectedChar) return;
-    // Skip if scenario has a custom player image
-    if(typeof customData !== 'undefined' && customData && customData['player']) return;
     var c = CHAR_DATA[_selectedChar];
     if(!c) return;
     var pv = document.getElementById('player-visual');
@@ -21689,9 +21703,20 @@ function applyCharImage(moving){
       pv.innerHTML = ''; pv.appendChild(img);
     }
     var newSrc = moving ? c.walk : c.stand;
-    if(img.getAttribute('src') !== newSrc) img.src = newSrc;
+    if(img.src !== newSrc) img.src = newSrc;
   }catch(e){}
 }
+
+// applyAllCustoms が player-visual を GIF に上書きするのを防ぐ
+// (window 上で宣言された関数はオーバーライド可能)
+(function hookApplyAllCustoms(){
+  var orig = window.applyAllCustoms;
+  if(typeof orig !== 'function') return;
+  window.applyAllCustoms = function(){
+    orig.apply(this, arguments);
+    if(_selectedChar) applyCharImage(_playerMoving);
+  };
+})();
 
 // 移動検知: #player style.left の変化を監視（DOM参照のみ・state不要）
 setInterval(function(){
