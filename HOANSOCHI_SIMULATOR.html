@@ -21625,23 +21625,28 @@ function positionHintBtn(){
 function _buildCharCard(key, container){
   var c = CHAR_DATA[key];
   var card = document.createElement('div');
-  card.style.cssText = 'cursor:pointer;text-align:center;background:rgba(255,255,255,0.12);'
-    +'border:0.4vmin solid rgba(255,255,255,0.45);border-radius:2vmin;padding:2vmin 3vmin;'
-    +'box-shadow:0 4px 18px rgba(0,0,0,0.55);transition:background 0.15s;user-select:none;-webkit-user-select:none;';
+  card.style.cssText = 'text-align:center;background:rgba(255,255,255,0.10);'
+    +'border:0.4vmin solid rgba(255,255,255,0.35);border-radius:2vmin;padding:2vmin 3vmin;'
+    +'box-shadow:0 4px 18px rgba(0,0,0,0.55);display:flex;flex-direction:column;align-items:center;gap:1.5vmin;';
   var img = document.createElement('img');
   img.src = c.stand;
-  img.style.cssText = 'width:15vmin;height:24vmin;object-fit:contain;display:block;margin:0 auto;pointer-events:none;';
+  img.style.cssText = 'width:15vmin;height:24vmin;object-fit:contain;display:block;pointer-events:none;';
   var lbl = document.createElement('div');
   lbl.textContent = c.label;
-  lbl.style.cssText = 'color:#fff;font-size:2vmin;margin-top:1.2vmin;font-weight:bold;pointer-events:none;';
+  lbl.style.cssText = 'color:#fff;font-size:2vmin;font-weight:bold;pointer-events:none;';
+  // 選択ボタン（ボタンで確実に選択）
+  var btn = document.createElement('button');
+  btn.textContent = 'このキャラを選ぶ';
+  btn.style.cssText = 'background:#1a56a8;color:#fff;border:none;border-radius:1.2vmin;'
+    +'padding:1.2vmin 2.5vmin;font-size:2vmin;font-weight:bold;cursor:pointer;width:100%;'
+    +'box-shadow:0 2px 8px rgba(0,0,0,0.4);';
+  btn.addEventListener('pointerdown', function(e){ e.stopPropagation(); window._r6SelectChar(key); });
+  btn.addEventListener('click',       function(e){ e.stopPropagation(); window._r6SelectChar(key); });
+  btn.addEventListener('pointerenter', function(){ btn.style.background='#0d3b8e'; });
+  btn.addEventListener('pointerleave', function(){ btn.style.background='#1a56a8'; });
   card.appendChild(img);
   card.appendChild(lbl);
-  // pointerdownで即反応（clickより確実）
-  function doSelect(e){ e.stopPropagation(); window._r6SelectChar(key); }
-  card.addEventListener('pointerdown', doSelect);
-  card.addEventListener('click', doSelect);
-  card.addEventListener('pointerenter', function(){ card.style.background='rgba(255,255,255,0.28)'; });
-  card.addEventListener('pointerleave', function(){ card.style.background='rgba(255,255,255,0.12)'; });
+  card.appendChild(btn);
   container.appendChild(card);
 }
 
