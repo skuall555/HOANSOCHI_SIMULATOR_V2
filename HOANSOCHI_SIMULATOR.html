@@ -21622,17 +21622,27 @@ function positionHintBtn(){
 // ============================================================
 // 9. Character selection
 // ============================================================
-function _buildCharCard(key){
+function _buildCharCard(key, container){
   var c = CHAR_DATA[key];
-  return '<div onclick="window._r6SelectChar(\''+key+'\')" '
-    +'style="cursor:pointer;text-align:center;background:rgba(255,255,255,0.12);'
+  var card = document.createElement('div');
+  card.style.cssText = 'cursor:pointer;text-align:center;background:rgba(255,255,255,0.12);'
     +'border:0.4vmin solid rgba(255,255,255,0.45);border-radius:2vmin;padding:2vmin 3vmin;'
-    +'box-shadow:0 4px 18px rgba(0,0,0,0.55);transition:background 0.2s;" '
-    +'onmouseover="this.style.background=\'rgba(255,255,255,0.28)\'" '
-    +'onmouseout="this.style.background=\'rgba(255,255,255,0.12)\'">'
-    +'<img src="'+c.stand+'" style="width:15vmin;height:24vmin;object-fit:contain;display:block;margin:0 auto;">'
-    +'<div style="color:#fff;font-size:2vmin;margin-top:1.2vmin;font-weight:bold;">'+c.label+'</div>'
-    +'</div>';
+    +'box-shadow:0 4px 18px rgba(0,0,0,0.55);transition:background 0.15s;user-select:none;-webkit-user-select:none;';
+  var img = document.createElement('img');
+  img.src = c.stand;
+  img.style.cssText = 'width:15vmin;height:24vmin;object-fit:contain;display:block;margin:0 auto;pointer-events:none;';
+  var lbl = document.createElement('div');
+  lbl.textContent = c.label;
+  lbl.style.cssText = 'color:#fff;font-size:2vmin;margin-top:1.2vmin;font-weight:bold;pointer-events:none;';
+  card.appendChild(img);
+  card.appendChild(lbl);
+  // pointerdownで即反応（clickより確実）
+  function doSelect(e){ e.stopPropagation(); window._r6SelectChar(key); }
+  card.addEventListener('pointerdown', doSelect);
+  card.addEventListener('click', doSelect);
+  card.addEventListener('pointerenter', function(){ card.style.background='rgba(255,255,255,0.28)'; });
+  card.addEventListener('pointerleave', function(){ card.style.background='rgba(255,255,255,0.12)'; });
+  container.appendChild(card);
 }
 
 function createCharSelectUI(){
@@ -21640,14 +21650,21 @@ function createCharSelectUI(){
   var d = document.createElement('div');
   d.id = 'r6-char-select';
   d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300000;'
-    +'display:none;flex-direction:column;align-items:center;justify-content:center;gap:3vmin;';
-  d.innerHTML = '<div style="color:#fff;font-size:3vmin;font-weight:bold;'
-    +'text-shadow:0 2px 8px rgba(0,0,0,0.7);margin-bottom:1vmin;">プレイヤーを選択</div>'
-    +'<div style="display:flex;gap:5vmin;">'
-    + _buildCharCard('A')
-    + _buildCharCard('B')
-    +'</div>'
-    +'<div style="color:rgba(255,255,255,0.5);font-size:1.4vmin;margin-top:1vmin;">※選択はいつでも変更できます</div>';
+    +'display:none;flex-direction:column;align-items:center;justify-content:center;gap:3vmin;'
+    +'touch-action:none;';
+  var ttl = document.createElement('div');
+  ttl.textContent = 'プレイヤーを選択';
+  ttl.style.cssText = 'color:#fff;font-size:3vmin;font-weight:bold;text-shadow:0 2px 8px rgba(0,0,0,0.7);margin-bottom:1vmin;pointer-events:none;';
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:5vmin;';
+  var hint = document.createElement('div');
+  hint.textContent = '※タップして選択してください';
+  hint.style.cssText = 'color:rgba(255,255,255,0.5);font-size:1.4vmin;margin-top:1vmin;pointer-events:none;';
+  d.appendChild(ttl);
+  d.appendChild(row);
+  d.appendChild(hint);
+  _buildCharCard('A', row);
+  _buildCharCard('B', row);
   document.body.appendChild(d);
 }
 
@@ -21790,17 +21807,26 @@ var _handCache   = [];     // 所持カードキャッシュ（差分検知用�
       'height:100%;box-sizing:border-box;overflow:hidden;}',
     '._tm-fixed-msg{background:#e3f2fd;border:1px solid #90caf9;border-radius:1vmin;',
       'padding:1vmin 1.5vmin;font-size:1.7vmin;color:#0d47a1;font-weight:bold;flex-shrink:0;}',
-    /* 所持カード手札 */
-    '._tm-hand-label,._tm-dz-label{font-size:1.45vmin;color:#666;font-weight:bold;flex-shrink:0;margin-top:0.3vmin;}',
-    '._tm-hand-row{display:flex;gap:0.8vmin;overflow-x:auto;padding:0.5vmin;',
-      'min-height:7vmin;align-items:center;border:1px dashed #ccc;border-radius:1vmin;',
-      'background:#fafafa;flex-shrink:0;}',
-    '._tm-hand-card{height:6.5vmin;width:auto;border-radius:0.7vmin;cursor:grab;',
+    /* 所持カードドロワー */
+    '._tm-dz-label{font-size:1.45vmin;color:#666;font-weight:bold;flex-shrink:0;margin-top:0.3vmin;}',
+    '._tm-hand-card{height:9vmin;width:auto;border-radius:0.7vmin;cursor:grab;',
       'user-select:none;touch-action:none;border:1.5px solid #ccc;transition:opacity 0.1s;}',
     '._tm-hand-card:hover{opacity:0.85;border-color:#1a56a8;}',
-    '._tm-hand-card-lbl{height:6.5vmin;padding:0.4vmin 1vmin;background:#e3f2fd;',
-      'border-radius:0.7vmin;font-size:1.2vmin;display:flex;align-items:center;',
+    '._tm-hand-card-lbl{height:9vmin;padding:0.4vmin 1.5vmin;background:#e3f2fd;',
+      'border-radius:0.7vmin;font-size:1.4vmin;display:flex;align-items:center;',
       'cursor:grab;user-select:none;touch-action:none;white-space:nowrap;border:1.5px solid #90caf9;}',
+    /* 所持カードドロワーパネル */
+    '#_tm-drawer{position:fixed;bottom:0;left:0;right:0;height:48vh;background:#fff;',
+      'border-top:2px solid #1a56a8;box-shadow:0 -4px 20px rgba(0,0,0,0.25);z-index:320000;',
+      'display:none;flex-direction:column;padding:1.5vmin;}',
+    '#_tm-drawer.open{display:flex;}',
+    '#_tm-drawer-row{display:flex;gap:1.2vmin;overflow-x:auto;flex:1;align-items:center;padding:1vmin 0;}',
+    '._tm-drawer-hd{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}',
+    '._tm-drawer-title{font-size:2vmin;font-weight:bold;color:#1a56a8;}',
+    '._tm-drawer-close{background:none;border:none;font-size:3vmin;cursor:pointer;color:#555;padding:0 1vmin;}',
+    '._tm-hand-btn{background:#1a56a8;color:#fff;border:none;border-radius:0.8vmin;',
+      'font-size:1.5vmin;font-weight:bold;cursor:pointer;padding:0.8vmin 1.4vmin;white-space:nowrap;}',
+    '._tm-hand-btn:hover{background:#0d3b8e;}',
     /* ドロップゾーン */
     '._tm-dz{border:0.35vmin dashed #90caf9;border-radius:1.2vmin;padding:0.7vmin;',
       'background:#f5fbff;flex-shrink:0;min-height:8vmin;}',
@@ -21861,10 +21887,11 @@ function _buildCardUI(){
   var ui = document.createElement('div');
   ui.id = '_tm-card-ui';
   ui.innerHTML =
-    '<div class="_tm-fixed-msg">現場の状況証拠を入手したら、このチャット欄にカードをドラッグしてください。</div>'
-   +'<div class="_tm-hand-label">所持カード一覧（ここからドラッグ）</div>'
-   +'<div class="_tm-hand-row" id="_tm-hand-row"></div>'
-   +'<div class="_tm-dz-label">報告済みのカード一覧</div>'
+    '<div class="_tm-fixed-msg">「所持カード」ボタンを押してカードをドラッグしてください。</div>'
+   +'<div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-top:0.3vmin;">'
+     +'<span class="_tm-dz-label" style="margin-top:0;">報告済みのカード一覧</span>'
+     +'<button class="_tm-hand-btn" id="_tm-hand-open-btn" onclick="window._tmOpenDrawer()">所持カード ▲</button>'
+   +'</div>'
    +'<div class="_tm-dz" id="_tm-dz">'
      +'<div id="_tm-dz-hint" class="_tm-dz-hint">カードをここにドラッグ</div>'
      +'<div class="_tm-rep-row" id="_tm-rep-row"></div>'
@@ -21886,48 +21913,68 @@ function _buildCardUI(){
   if(btn){ btn.disabled=true; btn.style.opacity='0.5'; }
 
   _handCache = [];
-  _renderHand();
   _renderReported();
   _renderChatLog();
   _updateButtons();
+  _ensureDrawer();
 
   // 初回メッセージ
   if(_chatLog.length===0){
     setTimeout(function(){
-      _addMsg('現場の状況証拠を入手したら、このチャット欄にカードをドラッグしてください。');
+      _addMsg('「所持カード」ボタンを押してカードをドラッグしてください。');
     }, 400);
   }
 }
 
-/* ---- 所持カード手札レンダリング ---- */
-function _renderHand(){
-  var row = document.getElementById('_tm-hand-row');
+/* ---- 所持カードドロワー ---- */
+function _ensureDrawer(){
+  if(document.getElementById('_tm-drawer')) return;
+  var panel = document.createElement('div');
+  panel.id = '_tm-drawer';
+  panel.innerHTML =
+    '<div class="_tm-drawer-hd">'
+      +'<span class="_tm-drawer-title">所持カード一覧 — カードをドラッグしてください</span>'
+      +'<button class="_tm-drawer-close" onclick="window._tmCloseDrawer()">×</button>'
+    +'</div>'
+    +'<div id="_tm-drawer-row"></div>';
+  document.body.appendChild(panel);
+}
+
+window._tmOpenDrawer = function(){
+  _ensureDrawer();
+  // ドロワーにカードをレンダリング
+  var row = document.getElementById('_tm-drawer-row');
   if(!row) return;
-  var ids = _owned();
-  if(JSON.stringify(ids)===JSON.stringify(_handCache) && row.children.length>0) return;
-  _handCache = ids.slice();
   row.innerHTML = '';
+  var ids = _owned();
   if(ids.length===0){
     var m=document.createElement('div');
-    m.style.cssText='font-size:1.4vmin;color:#aaa;padding:0.5vmin;';
+    m.style.cssText='font-size:1.8vmin;color:#aaa;padding:1vmin;';
     m.textContent='（まだカードがありません）';
-    row.appendChild(m); return;
+    row.appendChild(m);
+  } else {
+    ids.forEach(function(id){
+      var imgUrl=_cardImg(id); var el;
+      if(imgUrl){
+        el=document.createElement('img');
+        el.className='_tm-hand-card'; el.src=imgUrl; el.alt=id; el.title=id;
+      } else {
+        el=document.createElement('div');
+        el.className='_tm-hand-card-lbl'; el.textContent=id; el.title=id;
+      }
+      el.dataset.cardId=id;
+      _attachDrag(el);
+      row.appendChild(el);
+    });
   }
-  ids.forEach(function(id){
-    var imgUrl = _cardImg(id);
-    var el;
-    if(imgUrl){
-      el=document.createElement('img');
-      el.className='_tm-hand-card'; el.src=imgUrl; el.alt=id; el.title=id;
-    } else {
-      el=document.createElement('div');
-      el.className='_tm-hand-card-lbl'; el.textContent=id; el.title=id;
-    }
-    el.dataset.cardId = id;
-    _attachDrag(el);
-    row.appendChild(el);
-  });
-}
+  var panel=document.getElementById('_tm-drawer');
+  if(panel) panel.classList.add('open');
+};
+
+window._tmCloseDrawer = function(){
+  var panel=document.getElementById('_tm-drawer');
+  if(panel) panel.classList.remove('open');
+};
 
 /* ---- 報告済みカード表示 ---- */
 function _renderReported(){
@@ -22051,6 +22098,8 @@ if(!window.__tmDragInstalled){
 function _handleCardDrop(cardId){
   if(!cardId||_has(_reported,cardId)) return;
   _reported.push(cardId);
+  // ドロワーを即閉じる（1枚ドラッグごとに非表示）
+  window._tmCloseDrawer();
   _renderReported();
   _updateButtons();
   setTimeout(function(){ _addMsg(_buildReply(cardId)); },400);
@@ -22264,10 +22313,7 @@ function _showModeOverlay(onCard,onText){
   document.getElementById('_tm-btn-text').onclick=function(){ ov.remove(); onText(); };
 }
 
-/* ================================================================
-   所持カードのポーリング更新（500ms）
-   ================================================================ */
-setInterval(function(){ if(_mode==='card') _renderHand(); },500);
+/* ポーリング不要（ドロワーを開くたびに最新カードを取得するため） */
 
 /* ================================================================
    initGame フック: ゲーム開始時に全状態リセット
@@ -22279,6 +22325,7 @@ setInterval(function(){ if(_mode==='card') _renderHand(); },500);
     /* 状態リセット */
     _mode=null; _modeShown=false; _reported=[]; _chatLog=[]; _handCache=[];
     _oenActive=false; _oenSpawned=false;
+    try{ window._tmCloseDrawer(); }catch(e){}
     if(_oenTimer){ clearInterval(_oenTimer); _oenTimer=null; }
     if(_oenEl&&_oenEl.parentNode) _oenEl.parentNode.removeChild(_oenEl);
     _oenEl=null;
