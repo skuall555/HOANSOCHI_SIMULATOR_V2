@@ -21704,6 +21704,8 @@ function applyCharImage(moving){
     }
     var newSrc = moving ? c.walk : c.stand;
     if(img.src !== newSrc) img.src = newSrc;
+    // 差分画像は元GIFと向きが逆 → scaleX(-1)で補正。さらに1.1倍に拡大
+    img.style.transform = moving ? 'scale(-1.1, 1.1)' : '';
   }catch(e){}
 }
 
