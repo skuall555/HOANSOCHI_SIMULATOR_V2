@@ -21289,27 +21289,42 @@ window._dangerHit100 = false;
 
 <script>
 /* ===================================================================
-   Round 6: NPC voice/bubble + color cone freeze  (2026-03)
+   Round 6 rev2: Bug fixes + Character select + Walk animation
    =================================================================== */
 (function(){
 'use strict';
 
+// ============================================================
+// Config
+// ============================================================
 var VOICE_URL = 'https://raw.githubusercontent.com/skuall555/game-assets/main/Voice.webm';
+var CHAR_DATA = {
+  A: {
+    label: 'デザインA',
+    stand: 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%82%E3%81%88%E3%82%8B.png',
+    walk:  'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%82%E3%81%88%E3%82%8B%E3%81%8F%E3%82%93%E5%B7%AE%E5%88%86.png'
+  },
+  B: {
+    label: 'デザインB',
+    stand: 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%82%E3%81%88%E3%82%8B%E3%81%A1%E3%82%83%E3%82%93.png',
+    walk:  'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%82%E3%81%88%E3%82%8B%E3%81%A1%E3%82%83%E3%82%93%E5%B7%AE%E5%88%86.png'
+  }
+};
+var _selectedChar = (function(){ try{ return localStorage.getItem('_r6_char') || null; }catch(e){ return null; } })();
+var _playerMoving = false;
+var _moveTimer = null;
+var _lastNpcClick = 0;
+var _prevPlayerX = null;
 
-// ------------------------------------------------------------------
+// ============================================================
 // 1. Voice audio element
-// ------------------------------------------------------------------
-function ensureVoiceAudio(){
-  var a = document.getElementById('se-voice-warning');
-  if(a) return a;
-  a = document.createElement('audio');
-  a.id = 'se-voice-warning';
-  a.src = VOICE_URL;
-  a.preload = 'auto';
+// ============================================================
+(function(){
+  if(document.getElementById('se-voice-warning')) return;
+  var a = document.createElement('audio');
+  a.id = 'se-voice-warning'; a.src = VOICE_URL; a.preload = 'auto';
   document.body.appendChild(a);
-  return a;
-}
-ensureVoiceAudio();
+})();
 
 function playVoiceWarning(){
   var a = document.getElementById('se-voice-warning');
@@ -21317,238 +21332,344 @@ function playVoiceWarning(){
   try{ a.currentTime = 0; var p = a.play(); if(p && p.catch) p.catch(function(){}); }catch(e){}
 }
 
-// ------------------------------------------------------------------
-// 2. Replace se-delivery-click / se-delivery-warn src with Voice.webm
-// ------------------------------------------------------------------
-function patchDeliveryAudio(){
-  ['se-delivery-click','se-delivery-warn'].forEach(function(id){
-    var a = document.getElementById(id);
-    if(a && !a.__voiceSrcPatched){ a.src = VOICE_URL; a.load(); a.__voiceSrcPatched = true; }
-  });
+// Temporarily mute an audio element so original handler plays silently
+function _muteFor(id, ms){
+  var a = document.getElementById(id);
+  if(!a) return;
+  var ov = a.volume; a.volume = 0;
+  setTimeout(function(){ try{ a.volume = ov; }catch(e){} }, ms || 1500);
 }
 
-// ------------------------------------------------------------------
-// 3. Player speech bubble
-// ------------------------------------------------------------------
+// ============================================================
+// 2. Player speech bubble — position:fixed so player flip doesn't affect it
+// ============================================================
 function showPlayerBubble(text, duration){
   try{
     var player = document.getElementById('player');
     if(!player) return;
-    var old = document.getElementById('_r6_player_bubble');
+    var old = document.getElementById('_r6_pbubble');
     if(old) old.remove();
-    var bubble = document.createElement('div');
-    bubble.id = '_r6_player_bubble';
-    bubble.textContent = text;
-    bubble.style.cssText = [
-      'position:absolute',
-      'bottom:calc(100% + 4px)',
-      'left:50%',
-      'transform:translateX(-50%)',
-      'background:#fff',
-      'border:2px solid #333',
-      'border-radius:8px',
-      'padding:4px 8px',
-      'font-size:clamp(10px,1.4vmin,16px)',
-      'white-space:nowrap',
-      'z-index:99999',
-      'pointer-events:none',
-      'color:#333',
-      'font-weight:bold',
-      'box-shadow:0 2px 6px rgba(0,0,0,0.35)'
-    ].join(';');
+    var rect = player.getBoundingClientRect();
+    var cx = (rect.left + rect.right) / 2;
+    var ty = rect.top - 6;
+    var b = document.createElement('div');
+    b.id = '_r6_pbubble';
+    b.textContent = text;
+    b.style.cssText = 'position:fixed;left:'+cx+'px;top:'+ty+'px;transform:translate(-50%,-100%);'
+      +'background:#fff;border:2px solid #333;border-radius:8px;padding:4px 8px;'
+      +'font-size:clamp(10px,1.4vmin,16px);white-space:nowrap;z-index:299999;pointer-events:none;'
+      +'color:#333;font-weight:bold;box-shadow:0 2px 6px rgba(0,0,0,0.35)';
     var tail = document.createElement('div');
-    tail.style.cssText = 'position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #333';
-    bubble.appendChild(tail);
-    if(getComputedStyle(player).position === 'static') player.style.position = 'relative';
-    player.appendChild(bubble);
-    setTimeout(function(){ try{ bubble.remove(); }catch(e){} }, duration || 3000);
+    tail.style.cssText = 'position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);'
+      +'width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #333';
+    b.appendChild(tail);
+    document.body.appendChild(b);
+    setTimeout(function(){ try{ b.remove(); }catch(e){} }, duration || 3000);
   }catch(e){}
 }
 
-// ------------------------------------------------------------------
-// 4. NPC speech bubble (attached above given element)
-// ------------------------------------------------------------------
+// ============================================================
+// 3. NPC speech bubble — position:fixed (immune to NPC element transforms)
+// ============================================================
 function showNpcBubble(npcEl, text, duration){
   try{
     if(!npcEl) return;
-    var cls = '_r6_npc_bubble';
-    var old = npcEl.querySelector('.'+cls);
-    if(old) old.remove();
-    var bubble = document.createElement('div');
-    bubble.className = cls;
-    bubble.textContent = text;
-    bubble.style.cssText = [
-      'position:absolute',
-      'bottom:calc(100% + 4px)',
-      'left:50%',
-      'transform:translateX(-50%)',
-      'background:#fff',
-      'border:2px solid #555',
-      'border-radius:8px',
-      'padding:4px 10px',
-      'font-size:clamp(10px,1.4vmin,16px)',
-      'white-space:nowrap',
-      'z-index:99999',
-      'pointer-events:none',
-      'color:#333',
-      'font-weight:bold',
-      'box-shadow:0 2px 6px rgba(0,0,0,0.35)'
-    ].join(';');
-    if(getComputedStyle(npcEl).position === 'static') npcEl.style.position = 'relative';
-    npcEl.appendChild(bubble);
-    setTimeout(function(){ try{ bubble.remove(); }catch(e){} }, duration || 5000);
+    if(npcEl.__r6bubble && npcEl.__r6bubble.parentNode) npcEl.__r6bubble.remove();
+    var rect = npcEl.getBoundingClientRect();
+    var cx = (rect.left + rect.right) / 2;
+    var ty = rect.top - 6;
+    var b = document.createElement('div');
+    b.textContent = text;
+    b.style.cssText = 'position:fixed;left:'+cx+'px;top:'+ty+'px;transform:translate(-50%,-100%);'
+      +'background:#fff;border:2px solid #555;border-radius:8px;padding:4px 10px;'
+      +'font-size:clamp(10px,1.4vmin,16px);white-space:nowrap;z-index:299999;pointer-events:none;'
+      +'color:#333;font-weight:bold;box-shadow:0 2px 6px rgba(0,0,0,0.35)';
+    document.body.appendChild(b);
+    npcEl.__r6bubble = b;
+    setTimeout(function(){ try{ b.remove(); }catch(e){} }, duration || 5000);
   }catch(e){}
 }
 
-// ------------------------------------------------------------------
-// 5. Hook NPC clicks — capture phase so we run before existing handlers
-// ------------------------------------------------------------------
-var _lastNpcClick = 0;
-function _npcClickGuard(){ var now = Date.now(); if(now - _lastNpcClick < 1200) return false; _lastNpcClick = now; return true; }
+// ============================================================
+// 4. NPC click hooks (capture phase, mutes original sound, plays Voice.webm)
+// ============================================================
+function _guard(){ var n=Date.now(); if(n-_lastNpcClick<1200) return false; _lastNpcClick=n; return true; }
 
 function hookStreetNpc(){
-  if(!window.state || !window.state.npcs) return;
-  window.state.npcs.forEach(function(n){
-    if(!n.el || n.el.__r6VoiceHooked) return;
-    n.el.__r6VoiceHooked = true;
-    var h = function(){ if(!_npcClickGuard()) return; playVoiceWarning(); showPlayerBubble('いまガス漏れを調査しています。', 3000); };
-    n.el.addEventListener('click', h, true);
-    n.el.addEventListener('touchend', h, true);
-  });
+  // state is global let, accessible via scope chain
+  try{
+    if(!state || !state.npcs) return;
+    state.npcs.forEach(function(n){
+      if(!n.el || n.el.__r6h) return;
+      n.el.__r6h = true;
+      var h = function(){ if(!_guard()) return; playVoiceWarning(); showPlayerBubble('いまガス漏れを調査しています。', 3000); };
+      n.el.addEventListener('click', h, true);
+      n.el.addEventListener('touchend', h, true);
+    });
+  }catch(e){}
 }
 
 function hookCorridorNpc(){
-  var el = document.getElementById('deliveryman');
-  if(!el || el.__r6VoiceHooked) return;
-  el.__r6VoiceHooked = true;
-  el.addEventListener('click', function(){ if(!_npcClickGuard()) return; playVoiceWarning(); showPlayerBubble('インターホンは使用しないようお願いします。', 3000); }, true);
+  try{
+    var el = document.getElementById('deliveryman');
+    if(!el || el.__r6h) return;
+    el.__r6h = true;
+    el.addEventListener('click', function(){
+      if(!_guard()) return;
+      _muteFor('se-delivery-warn', 1500);
+      playVoiceWarning();
+      showPlayerBubble('インターホンは使用しないようお願いします。', 3000);
+    }, true);
+  }catch(e){}
 }
 
 function hookEntranceNpc(){
-  var el = document.getElementById('delivery-npc');
-  if(!el || el.__r6VoiceHooked) return;
-  el.__r6VoiceHooked = true;
-  el.addEventListener('click', function(){ if(!_npcClickGuard()) return; playVoiceWarning(); showPlayerBubble('エレベーターを使用しないようお願いします。', 3000); }, true);
+  try{
+    var el = document.getElementById('delivery-npc');
+    if(!el || el.__r6h) return;
+    el.__r6h = true;
+    el.addEventListener('click', function(){
+      // Only fire when entrance room is active (not elevator button area outside NPC context)
+      var activeRoom = document.querySelector('.room.active');
+      if(!activeRoom || activeRoom.id !== 'room-entrance') return;
+      if(!_guard()) return;
+      _muteFor('se-delivery-click', 1500);
+      playVoiceWarning();
+      showPlayerBubble('エレベーターを使用しないようお願いします。', 3000);
+    }, true);
+  }catch(e){}
 }
 
-// ------------------------------------------------------------------
-// 6. Cone collision helpers
-// ------------------------------------------------------------------
+// ============================================================
+// 5. Cone collision helpers
+// ============================================================
 function getCones(roomNum){
   try{
     var result = [];
-    var states = window.aptState || {};
-    Object.keys(states).forEach(function(ow){
-      var items = (states[ow] && states[ow].placedItems) ? states[ow].placedItems : [];
+    var aps = window.aptState || {};
+    Object.keys(aps).forEach(function(ow){
+      var items = (aps[ow] && aps[ow].placedItems) ? aps[ow].placedItems : [];
       items.forEach(function(it){
-        if(it && String(it.type) === 'cone' && Number(it.room) === roomNum) result.push(it);
+        if(it && String(it.type)==='cone' && Number(it.room)===roomNum) result.push(it);
       });
     });
     return result;
   }catch(e){ return []; }
 }
 
-// ------------------------------------------------------------------
-// 7. Freeze helpers
-// ------------------------------------------------------------------
+// ============================================================
+// 6. Freeze helpers
+// ============================================================
 function freezeStreetNpc(n){
   if(n._coneFrozen) return;
-  n._coneFrozen = true;
-  n._freezeX = n.x;
+  n._coneFrozen = true; n._freezeX = n.x;
   showNpcBubble(n.el, '・・・・・？', 5200);
   setTimeout(function(){ n._coneFrozen = false; delete n._freezeX; }, 5000);
 }
 
 function freezeCorridorNpc(){
-  var st = window.__deliveryEventState;
-  if(!st || !st.active || st._coneFrozen) return;
+  var dst = window.__deliveryEventState;
+  if(!dst || !dst.active || dst._coneFrozen) return;
   var el = document.getElementById('deliveryman');
-  if(!el || el.style.display === 'none') return;
-  st._coneFrozen = true;
-  var saved = st.speed;
-  st.speed = 0;
+  if(!el || el.style.display==='none') return;
+  dst._coneFrozen = true;
+  var saved = dst.speed; dst.speed = 0;
   showNpcBubble(el, '・・・・・？', 5200);
-  setTimeout(function(){ st._coneFrozen = false; st.speed = saved || 0.040; }, 5000);
+  setTimeout(function(){ dst._coneFrozen = false; dst.speed = saved || 0.040; }, 5000);
 }
 
 function freezeEntranceNpc(npcEl){
   if(!npcEl || npcEl._coneFrozen) return;
-  npcEl._coneFrozen = true;
-  npcEl._frozenLeft = npcEl.style.left;
+  npcEl._coneFrozen = true; npcEl._frozenLeft = npcEl.style.left;
   showNpcBubble(npcEl, '・・・・・？', 5200);
   setTimeout(function(){ npcEl._coneFrozen = false; delete npcEl._frozenLeft; }, 5000);
 }
 
-// ------------------------------------------------------------------
-// 8. Cone collision detection (runs every 150ms)
-// ------------------------------------------------------------------
 function checkConeCollisions(){
   try{
-    // Street NPC (aptState room=1)
-    if(window.state && window.state.room === 1 && window.state.npcs){
+    // Street NPC — access state directly (global let)
+    var activeRoomEl = document.querySelector('.room.active');
+    var activeRoomId = activeRoomEl ? activeRoomEl.id : '';
+    if(activeRoomId === 'room-street' && state && state.npcs){
       var sc = getCones(1);
-      if(sc.length > 0){
-        window.state.npcs.forEach(function(n){
-          if(n._coneFrozen) return;
-          for(var i=0;i<sc.length;i++){ if(Math.abs(n.x - sc[i].x) < 8){ freezeStreetNpc(n); break; } }
-        });
-      }
+      if(sc.length) state.npcs.forEach(function(n){
+        if(n._coneFrozen) return;
+        for(var i=0;i<sc.length;i++) if(Math.abs(n.x-sc[i].x)<8){ freezeStreetNpc(n); break; }
+      });
     }
-    // Corridor NPC (aptState room=3 or 4)
+    // Corridor NPC
     var cc = getCones(3).concat(getCones(4));
-    if(cc.length > 0){
+    if(cc.length){
       var dst = window.__deliveryEventState;
-      if(dst && dst.active && !dst._coneFrozen){
-        for(var j=0;j<cc.length;j++){ if(Math.abs(dst.curX - cc[j].x) < 10){ freezeCorridorNpc(); break; } }
-      }
+      if(dst && dst.active && !dst._coneFrozen)
+        for(var j=0;j<cc.length;j++) if(Math.abs(dst.curX-cc[j].x)<10){ freezeCorridorNpc(); break; }
     }
-    // Entrance NPC (aptState room=2)
+    // Entrance NPC
     var ec = getCones(2);
-    if(ec.length > 0){
-      var npcEl = document.getElementById('delivery-npc');
-      if(npcEl && npcEl.style.display !== 'none' && !npcEl._coneFrozen){
-        var nl = parseFloat(npcEl.style.left) || 0;
-        for(var k=0;k<ec.length;k++){ if(Math.abs(nl - ec[k].x) < 10){ freezeEntranceNpc(npcEl); break; } }
+    if(ec.length){
+      var nEl = document.getElementById('delivery-npc');
+      if(nEl && nEl.style.display!=='none' && !nEl._coneFrozen){
+        var nl = parseFloat(nEl.style.left)||0;
+        for(var k=0;k<ec.length;k++) if(Math.abs(nl-ec[k].x)<10){ freezeEntranceNpc(nEl); break; }
       }
     }
   }catch(e){}
 }
 
-// ------------------------------------------------------------------
-// 9. rAF correction loop — holds frozen NPC positions each frame
-//    (runs after game loop has already moved them for that frame)
-// ------------------------------------------------------------------
+// ============================================================
+// 7. rAF correction loop for frozen NPCs
+// ============================================================
 function freezeCorrectLoop(){
   try{
-    // Street NPCs
-    if(window.state && window.state.npcs){
-      window.state.npcs.forEach(function(n){
-        if(n._coneFrozen && typeof n._freezeX === 'number'){
-          n.x = n._freezeX;
-          if(n.el) n.el.style.left = n._freezeX + '%';
-        }
-      });
-    }
-    // Entrance NPC
-    var entNpc = document.getElementById('delivery-npc');
-    if(entNpc && entNpc._coneFrozen && entNpc._frozenLeft != null){
-      entNpc.style.left = entNpc._frozenLeft;
-    }
+    if(state && state.npcs) state.npcs.forEach(function(n){
+      if(n._coneFrozen && typeof n._freezeX==='number'){
+        n.x = n._freezeX;
+        if(n.el) n.el.style.left = n._freezeX+'%';
+      }
+    });
+    var eNpc = document.getElementById('delivery-npc');
+    if(eNpc && eNpc._coneFrozen && eNpc._frozenLeft!=null) eNpc.style.left = eNpc._frozenLeft;
   }catch(e){}
   requestAnimationFrame(freezeCorrectLoop);
 }
 
-// ------------------------------------------------------------------
-// 10. Init
-// ------------------------------------------------------------------
-patchDeliveryAudio();
-freezeCorrectLoop();
+// ============================================================
+// 8. Hint button position — to the LEFT of odor meter, no overlap
+// ============================================================
+function positionHintBtn(){
+  try{
+    var hb = document.getElementById('hint-open-btn');
+    var op = document.getElementById('odor-meter-panel');
+    var app = document.getElementById('app-container');
+    if(!hb || !op || !app) return;
+    if(hb.style.display === 'none') return;
+    var appRect = app.getBoundingClientRect();
+    var opRect = op.getBoundingClientRect();
+    var vmin = Math.min(window.innerWidth, window.innerHeight) / 100;
+    // right offset = how far from app right edge to odor meter left edge + small gap
+    var rightOff = (appRect.right - opRect.left) + 0.8 * vmin;
+    hb.style.right = rightOff + 'px';
+  }catch(e){}
+}
+
+// ============================================================
+// 9. Character selection
+// ============================================================
+function _buildCharCard(key){
+  var c = CHAR_DATA[key];
+  return '<div onclick="window._r6SelectChar(\''+key+'\')" '
+    +'style="cursor:pointer;text-align:center;background:rgba(255,255,255,0.12);'
+    +'border:0.4vmin solid rgba(255,255,255,0.45);border-radius:2vmin;padding:2vmin 3vmin;'
+    +'box-shadow:0 4px 18px rgba(0,0,0,0.55);transition:background 0.2s;" '
+    +'onmouseover="this.style.background=\'rgba(255,255,255,0.28)\'" '
+    +'onmouseout="this.style.background=\'rgba(255,255,255,0.12)\'">'
+    +'<img src="'+c.stand+'" style="width:15vmin;height:24vmin;object-fit:contain;display:block;margin:0 auto;">'
+    +'<div style="color:#fff;font-size:2vmin;margin-top:1.2vmin;font-weight:bold;">'+c.label+'</div>'
+    +'</div>';
+}
+
+function createCharSelectUI(){
+  if(document.getElementById('r6-char-select')) return;
+  var d = document.createElement('div');
+  d.id = 'r6-char-select';
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300000;'
+    +'display:none;flex-direction:column;align-items:center;justify-content:center;gap:3vmin;';
+  d.innerHTML = '<div style="color:#fff;font-size:3vmin;font-weight:bold;'
+    +'text-shadow:0 2px 8px rgba(0,0,0,0.7);margin-bottom:1vmin;">プレイヤーを選択</div>'
+    +'<div style="display:flex;gap:5vmin;">'
+    + _buildCharCard('A')
+    + _buildCharCard('B')
+    +'</div>'
+    +'<div style="color:rgba(255,255,255,0.5);font-size:1.4vmin;margin-top:1vmin;">※選択はいつでも変更できます</div>';
+  document.body.appendChild(d);
+}
+
+window._r6SelectChar = function(key){
+  _selectedChar = key;
+  try{ localStorage.setItem('_r6_char', key); }catch(e){}
+  var d = document.getElementById('r6-char-select');
+  if(d) d.style.display = 'none';
+  applyCharImage(_playerMoving);
+  if(window._r6CharCb){ var cb = window._r6CharCb; window._r6CharCb = null; cb(); }
+};
+
+function showCharSelect(cb){
+  createCharSelectUI();
+  window._r6CharCb = cb;
+  var d = document.getElementById('r6-char-select');
+  if(d) d.style.display = 'flex';
+}
+
+function hookStartGameForChar(){
+  var fn = window.startGame;
+  if(!fn || fn.__r6CharHooked) return;
+  window.startGame = function(){
+    var a = arguments; var c = this;
+    if(!_selectedChar){ showCharSelect(function(){ fn.apply(c, a); }); }
+    else { fn.apply(c, a); }
+  };
+  window.startGame.__r6CharHooked = true;
+}
+
+// Also expose a way to change character from the pause/menu area
+window._r6ChangeChar = function(){
+  showCharSelect(function(){ /* no-op, just update image */ });
+};
+
+// ============================================================
+// 10. Player image (stand/walk) based on movement
+// ============================================================
+function applyCharImage(moving){
+  try{
+    if(!_selectedChar) return;
+    // Skip if scenario has a custom player image
+    if(typeof customData !== 'undefined' && customData && customData['player']) return;
+    var c = CHAR_DATA[_selectedChar];
+    if(!c) return;
+    var pv = document.getElementById('player-visual');
+    if(!pv) return;
+    var img = pv.querySelector('img');
+    if(!img){
+      img = document.createElement('img');
+      img.style.cssText = 'width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0.5vmin 0.5vmin rgba(0,0,0,0.5))';
+      pv.innerHTML = ''; pv.appendChild(img);
+    }
+    var newSrc = moving ? c.walk : c.stand;
+    if(img.getAttribute('src') !== newSrc) img.src = newSrc;
+  }catch(e){}
+}
+
+// Detect movement by tracking state.x changes (100ms polling)
 setInterval(function(){
-  patchDeliveryAudio();
+  try{
+    if(!state) return;
+    var cx = state.x;
+    if(_prevPlayerX !== null && cx !== _prevPlayerX){
+      // Player moved
+      if(!_playerMoving){ _playerMoving = true; applyCharImage(true); }
+      if(_moveTimer) clearTimeout(_moveTimer);
+      _moveTimer = setTimeout(function(){ _playerMoving = false; applyCharImage(false); }, 200);
+    }
+    _prevPlayerX = cx;
+  }catch(e){}
+}, 100);
+
+// ============================================================
+// 11. Periodic hooks + init
+// ============================================================
+freezeCorrectLoop();
+hookStartGameForChar(); // Hook immediately (this script runs last)
+createCharSelectUI();
+if(_selectedChar) setTimeout(function(){ applyCharImage(false); }, 600);
+
+setInterval(function(){
   hookStreetNpc();
   hookCorridorNpc();
   hookEntranceNpc();
   checkConeCollisions();
+  positionHintBtn();
+  hookStartGameForChar();
+  if(_selectedChar) applyCharImage(_playerMoving);
 }, 300);
 
 })();
