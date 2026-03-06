@@ -4412,7 +4412,7 @@ try{
   if(commWin && commWin.classList.contains('active')) return;
 }catch(e){}
 dangerValue += dangerRate;
-if(dangerValue >= 100) { dangerValue=100; try{ stopCityGasAlarm(); }catch(e){} gameOver("爆発！ゲームオーバー"); }
+if(dangerValue >= 100) { dangerValue=100; gameOver("爆発！ゲームオーバー"); }
 updateDangerUI();
 }
 
@@ -5752,53 +5752,51 @@ const handleOverlayClick = (e) => {
 
 
 
-    let doorToClear = null;
+    // 扉・点検口チェックはドラッグ中のみ（checkDoorGasAtPos経由）
+}
 
-    for (let el of elements) {
-        if (el.classList.contains('ps-door')) {
-            if(el.dataset.isDangerous === "true" && el.dataset.gasCleared !== "true") { doorToClear = el; break; }
-        }
-        if (el.classList.contains('ps-container') || el.classList.contains('hall-door-wrapper') ||
-            el.classList.contains('shelf-unit') || el.classList.contains('glass-door-wrapper') ||
-            el.classList.contains('kit-bed-door-wrapper') || el.classList.contains('hatch-container') ||
-            el.classList.contains('ent-hatch-box') || el.classList.contains('ent-pit') || el.classList.contains('ent-panel')) {
-             const d = el.querySelector('.ps-door');
-             if(d && d.dataset.isDangerous === "true" && d.dataset.gasCleared !== "true") { doorToClear = d; break; }
-        }
-    }
-
-    if(doorToClear) {
-        doorToClear.dataset.gasCleared = "true";
-        doorToClear.dataset.isDangerous = "false";
-        playAudio('se_ching', SE.ching);
-        dangerValue = Math.floor(dangerValue * 0.95);
-        dangerRate = Math.max(0.1, dangerRate - 0.05);
-        showSystemMsg("ガス滞留なし。危険度低下！");
-        updateDangerUI();
-        // 検知器モードで滞留ガスなし確認：1箇所につき+5%安全率（重複防止）
-        try{
-            if(isDetectorMode){
-                if(!window._noGasBonusDoors) window._noGasBonusDoors = new Set();
-                var doorKey = doorToClear.id || (doorToClear.className + '_' + (doorToClear.dataset ? doorToClear.dataset.maxSlide : '') + '_' + state.room);
-                if(!window._noGasBonusDoors.has(doorKey)){
-                    window._noGasBonusDoors.add(doorKey);
-                    try{ if(window._gameStats) window._gameStats.noGasConfirmed++; }catch(e3){}
-                    addSafety(5, "【保安措置】滞留ガスなし確認！安全率+5%！");
-                }
+// ドラッグ中の扉・点検口ガス滞留チェック（検知器モード専用）
+function checkDoorGasAtPos(e) {
+    if(isPlacementMode || isVentMode) return;
+    if(!isDetectorMode && !isGasIdMode) return;
+    try{
+        var cx2 = e.clientX, cy2 = e.clientY;
+        if(e.touches && e.touches[0]){ cx2 = e.touches[0].clientX; cy2 = e.touches[0].clientY; }
+        const elems2 = document.elementsFromPoint(cx2, cy2);
+        let doorToClear = null;
+        for (let el of elems2) {
+            if (el.classList.contains('ps-door')) {
+                if(el.dataset.isDangerous === "true" && el.dataset.gasCleared !== "true") { doorToClear = el; break; }
             }
-        }catch(e2){}
-    }
-
-    const container = document.getElementById('app-container');
-    const rect = container.getBoundingClientRect();
-    const relX = cx - rect.left;
-    const relY = cy - rect.top;
-    detTool.style.display = 'block';
-    detTool.style.left = relX + 'px'; detTool.style.top = relY + 'px';
-    detTool.style.opacity = 1;
-    clearTimeout(detTool.hideTimer);
-    detTool.hideTimer = setTimeout(()=>{ detTool.style.display='none'; }, 2000);
-    playDetectSE();
+            if (el.classList.contains('ps-container') || el.classList.contains('hall-door-wrapper') ||
+                el.classList.contains('shelf-unit') || el.classList.contains('glass-door-wrapper') ||
+                el.classList.contains('kit-bed-door-wrapper') || el.classList.contains('hatch-container') ||
+                el.classList.contains('ent-hatch-box') || el.classList.contains('ent-pit') || el.classList.contains('ent-panel')) {
+                 const d = el.querySelector('.ps-door');
+                 if(d && d.dataset.isDangerous === "true" && d.dataset.gasCleared !== "true") { doorToClear = d; break; }
+            }
+        }
+        if(doorToClear) {
+            doorToClear.dataset.gasCleared = "true";
+            doorToClear.dataset.isDangerous = "false";
+            playAudio('se_ching', SE.ching);
+            dangerValue = Math.floor(dangerValue * 0.95);
+            dangerRate = Math.max(0.1, dangerRate - 0.05);
+            showSystemMsg("ガス滞留なし。危険度低下！");
+            updateDangerUI();
+            try{
+                if(isDetectorMode){
+                    if(!window._noGasBonusDoors) window._noGasBonusDoors = new Set();
+                    var doorKey = doorToClear.id || (doorToClear.className + '_' + (doorToClear.dataset ? doorToClear.dataset.maxSlide : '') + '_' + state.room);
+                    if(!window._noGasBonusDoors.has(doorKey)){
+                        window._noGasBonusDoors.add(doorKey);
+                        try{ if(window._gameStats) window._gameStats.noGasConfirmed++; }catch(e3){}
+                        addSafety(5, "【保安措置】滞留ガスなし確認！安全率+5%！");
+                    }
+                }
+            }catch(e2){}
+        }
+    }catch(err){}
 }
 
 const playDetectSE = () => {
@@ -5812,20 +5810,28 @@ const playDetectSE = () => {
     }
 };
 
-detOv.addEventListener('mousedown', (e)=>{ try{ updateDetToolPos(e); }catch(err){} handleOverlayClick(e); });
+// mousedown: クリックだけでは緑の円は表示しない。扉チェックもしない。
+detOv.addEventListener('mousedown', (e)=>{ handleOverlayClick(e); });
+// mousemove: ドラッグ中(_scanActive=true)のみ緑の円を表示し扉チェックを実行
 detOv.addEventListener('mousemove', (e)=>{
     if(!isPlacementMode && (isDetectorMode || isGasIdMode)){
-        updateDetToolPos(e);
+        if(_scanActive){
+            updateDetToolPos(e);
+            checkDoorGasAtPos(e);
+        }
     }
 });
-window.addEventListener('mouseup', ()=>{ clearInterval(detInterval); detInterval=null; isPlayingSE=false; clearTimeout(detTool.hideTimer); detTool.hideTimer = setTimeout(()=>{ detTool.style.display='none'; }, 2000); });
-detOv.addEventListener('touchstart', (e)=>{ try{ updateDetToolPos(e); }catch(err){} handleOverlayClick(e); e.preventDefault(); });
+window.addEventListener('mouseup', ()=>{ clearInterval(detInterval); detInterval=null; isPlayingSE=false; clearTimeout(detTool.hideTimer); detTool.hideTimer = setTimeout(()=>{ detTool.style.display='none'; }, 200); });
+// touchstart: タップだけでは緑の円は表示しない
+detOv.addEventListener('touchstart', (e)=>{ handleOverlayClick(e); e.preventDefault(); });
+// touchmove: タッチドラッグ中は緑の円を表示し扉チェックを実行
 detOv.addEventListener('touchmove', (e)=>{
     if(!isPlacementMode && (isDetectorMode || isGasIdMode)){
         updateDetToolPos(e);
+        checkDoorGasAtPos(e);
     }
 });
-window.addEventListener('touchend', ()=>{ clearInterval(detInterval); detInterval=null; isPlayingSE=false; clearTimeout(detTool.hideTimer); detTool.hideTimer = setTimeout(()=>{ detTool.style.display='none'; }, 2000); });
+window.addEventListener('touchend', ()=>{ clearInterval(detInterval); detInterval=null; isPlayingSE=false; clearTimeout(detTool.hideTimer); detTool.hideTimer = setTimeout(()=>{ detTool.style.display='none'; }, 200); });
 
 function loop() {
 if(isPaused) return;
@@ -7354,7 +7360,7 @@ function createDefaultScenarioData(){
       reporterRoomNo:'101',
       residentBRoomNo:'102'
     ,indoorLeakRoomNo:'なし',basement:'なし',gasCause:'101号室灯内内管',
-    description:'',difficulty:'B級',fireEvent:'なし',cassetteBombe:'なし'});
+    description:'',hint:'',difficulty:'B級',fireEvent:'なし',cassetteBombe:'なし'});
   }
   return a;
 }
@@ -7390,6 +7396,7 @@ function normalizeScenarioData(arr){
       basement:(s.basement!=null)?String(s.basement):'なし',
       gasCause:(s.gasCause!=null)?String(s.gasCause):(s.gasLeakCause!=null?String(s.gasLeakCause):'101号室灯内内管'),
       description:(s.description!=null)?String(s.description):'',
+      hint:(s.hint!=null)?String(s.hint):'',
       difficulty:(s.difficulty!=null)?String(s.difficulty):'B級',
       safetyNorma:(s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100,
       stageComposition:(s.stageComposition!=null)?String(s.stageComposition):'',
@@ -9386,7 +9393,7 @@ try{ document.getElementById('detector-tool').style.display='block'; }catch(e){}
           // クリック時のみメッセージを表示（ホバー時は表示しない）
           if(canBeep){ showGasResultBox(msg, (gas.indexOf('13A')!==-1)); }
 
-                    try{ if(hit===2) startCityGasAlarm('hs2'); }catch(e){}
+                    try{ if(hit===2){ var _alm=(typeof activeScenario!=='undefined'&&activeScenario)?String(activeScenario.alarm||'なし'):'なし'; if(_alm!=='なし') startCityGasAlarm('hs2'); } }catch(e){}
 
           if(canBeep){
             var now=Date.now();
@@ -18435,6 +18442,26 @@ window._tantouGenerateReply = function(rawText){
       var appRect = document.getElementById('app-container').getBoundingClientRect();
       var topPos = (dpRect.bottom - appRect.top);
       op.style.top = topPos + 'px';
+      // ヒントボタンも同じ高さに配置・表示制御
+      var hb = document.getElementById('hint-open-btn');
+      if(hb){
+        hb.style.top = topPos + 'px';
+        try{
+          var _sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+          var _hasHint = _sc && _sc.hint && String(_sc.hint).trim();
+          hb.style.display = _hasHint ? 'block' : 'none';
+        }catch(e){}
+      }
+      // ヒントパネルをゲーム画面の右端に位置合わせ（viewportがapp-containerより広い場合対応）
+      try{
+        var hp = document.getElementById('hint-side-panel');
+        if(hp){
+          var vpW = window.innerWidth || document.documentElement.clientWidth;
+          var appRightEdge = document.getElementById('app-container').getBoundingClientRect().right;
+          var rightOff = Math.max(0, vpW - appRightEdge);
+          hp.style.right = rightOff + 'px';
+        }
+      }catch(e2){}
     }catch(e){}
   }
 
@@ -20881,9 +20908,9 @@ window.stageEditorExportHTML = function() {
 </div>
 
 <!-- ヒントパネル（右サイド、スライド式） -->
-<div id="hint-side-panel" style="position:fixed;top:0;right:0;height:100%;width:28vmin;z-index:25000;transition:transform 0.3s ease;transform:translateX(100%);display:flex;align-items:stretch;">
-  <!-- 矢印トグルボタン（パネル左端） -->
-  <button id="hint-panel-toggle" onclick="toggleHintPanel()" style="position:absolute;left:-4.5vmin;top:50%;transform:translateY(-50%);width:4.5vmin;height:8vmin;background:#ffca28;border:none;border-radius:0.6vmin 0 0 0.6vmin;cursor:pointer;font-size:2vmin;color:#333;font-weight:bold;display:flex;align-items:center;justify-content:center;">▶</button>
+<div id="hint-side-panel" style="position:fixed;top:0;right:0;height:100%;width:50%;z-index:25000;transition:transform 0.3s ease;transform:translateX(100%);display:flex;align-items:stretch;">
+  <!-- 矢印トグルボタン（パネル左端） ヒント使用後のみ表示 -->
+  <button id="hint-panel-toggle" onclick="toggleHintPanel()" style="position:absolute;left:-4.5vmin;top:50%;transform:translateY(-50%);width:4.5vmin;height:8vmin;background:#ffca28;border:none;border-radius:0.6vmin 0 0 0.6vmin;cursor:pointer;font-size:2vmin;color:#333;font-weight:bold;display:none;align-items:center;justify-content:center;">◀</button>
   <!-- パネル本体 -->
   <div style="flex:1;background:#1a2a3a;border-left:0.3vmin solid #ffca28;overflow-y:auto;display:flex;flex-direction:column;">
     <div style="background:#0d1f3a;padding:1.5vmin;font-size:1.8vmin;font-weight:bold;color:#ffca28;border-bottom:0.2vmin solid #ffca28;display:flex;align-items:center;gap:0.8vmin;">💡 ヒント</div>
@@ -21013,14 +21040,14 @@ window.openHintPanel = function(){
   var p = document.getElementById('hint-side-panel');
   if(p) p.classList.add('open');
   var btn = document.getElementById('hint-panel-toggle');
-  if(btn) btn.textContent = '▶';
+  if(btn){ btn.style.display = 'flex'; btn.textContent = '◀'; }
 };
 window.closeHintPanel = function(){
   _hintPanelOpen = false;
   var p = document.getElementById('hint-side-panel');
   if(p) p.classList.remove('open');
   var btn = document.getElementById('hint-panel-toggle');
-  if(btn) btn.textContent = '◀';
+  if(btn){ btn.style.display = 'flex'; btn.textContent = '▶'; }
 };
 window.toggleHintPanel = function(){
   if(_hintPanelOpen) window.closeHintPanel();
@@ -21042,6 +21069,8 @@ function resetHintState(){
   _hintPanelOpen = false;
   try{ document.getElementById('hint-side-panel').classList.remove('open'); }catch(e){}
   try{ document.getElementById('hint-panel-content').textContent = '（ヒントなし）'; }catch(e){}
+  // トグルボタンはヒント使用まで非表示
+  try{ var tBtn = document.getElementById('hint-panel-toggle'); if(tBtn) tBtn.style.display = 'none'; }catch(e){}
 }
 
 // startGame / initGame をフックしてヒントボタンを表示制御
