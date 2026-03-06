@@ -21821,14 +21821,17 @@ var _handCache   = [];     // 所持カードキャッシュ（差分検知用�
       'border-radius:0.7vmin;font-size:1.4vmin;display:flex;align-items:center;',
       'cursor:grab;user-select:none;touch-action:none;white-space:nowrap;border:1.5px solid #90caf9;}',
     /* 所持カードドロワーパネル */
-    '#_tm-drawer{position:fixed;bottom:0;left:0;right:0;height:48vh;background:#fff;',
-      'border-top:2px solid #1a56a8;box-shadow:0 -4px 20px rgba(0,0,0,0.25);z-index:320000;',
-      'display:none;flex-direction:column;padding:1.5vmin;}',
+    '#_tm-drawer{position:fixed;bottom:0;left:0;right:0;',
+      'background:rgba(8,16,50,0.97);',
+      'border-top:2px solid rgba(255,255,255,0.25);box-shadow:0 -6px 28px rgba(0,0,0,0.7);z-index:320000;',
+      'display:none;flex-direction:column;padding:1.5vmin 2vmin;}',
     '#_tm-drawer.open{display:flex;}',
-    '#_tm-drawer-row{display:flex;gap:1.2vmin;overflow-x:auto;flex:1;align-items:center;padding:1vmin 0;}',
-    '._tm-drawer-hd{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}',
-    '._tm-drawer-title{font-size:2vmin;font-weight:bold;color:#1a56a8;}',
-    '._tm-drawer-close{background:none;border:none;font-size:3vmin;cursor:pointer;color:#555;padding:0 1vmin;}',
+    '#_tm-drawer-row{display:flex;gap:2vmin;overflow-x:auto;flex:1;align-items:center;',
+      'padding:1.5vmin 0.5vmin;min-height:calc(var(--bt-card-w,14vmin)*4/3 + 2vmin);}',
+    '._tm-drawer-hd{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-bottom:0.5vmin;}',
+    '._tm-drawer-title{font-size:2vmin;font-weight:bold;color:#fff;}',
+    '._tm-drawer-close{background:rgba(255,255,255,0.15);border:none;border-radius:50%;font-size:2.5vmin;',
+      'cursor:pointer;color:#fff;padding:0.2vmin 0.8vmin;line-height:1;}',
     '._tm-hand-btn{background:#1a56a8;color:#fff;border:none;border-radius:0.8vmin;',
       'font-size:1.5vmin;font-weight:bold;cursor:pointer;padding:0.8vmin 1.4vmin;white-space:nowrap;}',
     '._tm-hand-btn:hover{background:#0d3b8e;}',
@@ -21959,17 +21962,23 @@ window._tmOpenDrawer = function(){
     row.appendChild(m);
   } else {
     ids.forEach(function(id){
-      var imgUrl=_cardImg(id); var el;
+      var card=document.createElement('div');
+      card.className='bt-card';
+      card.dataset.cardId=id;
+      var imgUrl=_cardImg(id);
       if(imgUrl){
-        el=document.createElement('img');
-        el.className='_tm-hand-card'; el.src=imgUrl; el.alt=id; el.title=id;
+        var img=document.createElement('img');
+        img.src=imgUrl; img.alt=id;
+        img.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;';
+        card.appendChild(img);
       } else {
-        el=document.createElement('div');
-        el.className='_tm-hand-card-lbl'; el.textContent=id; el.title=id;
+        var lbl=document.createElement('div');
+        lbl.textContent=id;
+        lbl.style.cssText='font-size:1.2vmin;text-align:center;padding:0.5vmin;color:#fff;pointer-events:none;word-break:break-all;';
+        card.appendChild(lbl);
       }
-      el.dataset.cardId=id;
-      _attachDrag(el);
-      row.appendChild(el);
+      _attachDrag(card);
+      row.appendChild(card);
     });
   }
   var panel=document.getElementById('_tm-drawer');
@@ -22049,8 +22058,16 @@ function _attachDrag(el){
     var r=el.getBoundingClientRect();
     _drag.active=true; _drag.el=el; _drag.cardId=el.dataset.cardId;
     _drag.ox=ev.clientX-r.left; _drag.oy=ev.clientY-r.top;
-    el.style.cssText+='position:fixed;left:'+r.left+'px;top:'+r.top+'px;'
-      +'width:'+r.width+'px;height:'+r.height+'px;z-index:320000;opacity:0.75;pointer-events:none;transition:none;';
+    el.style.position='fixed';
+    el.style.left=r.left+'px';
+    el.style.top=r.top+'px';
+    el.style.width=r.width+'px';
+    el.style.height=r.height+'px';
+    el.style.zIndex='320000';
+    el.style.opacity='0.8';
+    el.style.pointerEvents='none';
+    el.style.transition='none';
+    el.style.cursor='grabbing';
     var dz=document.getElementById('_tm-dz');
     if(dz) dz.classList.add('drag-over');
   },{passive:false});
@@ -22297,6 +22314,14 @@ function _startPatrol(){
         _handCache=[];
         _buildCardUI();
       }
+    } else {
+      /* 通信担当者以外はテキスト入力を必ず有効化（カードモード無効化の影響を除去） */
+      setTimeout(function(){
+        var inp=document.getElementById('comm-input');
+        if(inp){ inp.disabled=false; inp.placeholder='聞きたいことを入力...'; inp.style.opacity=''; }
+        var btn=document.querySelector('#comm-window .comm-send');
+        if(btn){ btn.disabled=false; btn.style.opacity=''; }
+      },50);
     }
   };
   window.openCommWindow.__tmHooked=true;
