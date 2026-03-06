@@ -18447,9 +18447,8 @@ window._tantouGenerateReply = function(rawText){
       if(hb){
         hb.style.top = topPos + 'px';
         try{
-          var _sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
-          var _hasHint = _sc && _sc.hint && String(_sc.hint).trim();
-          hb.style.display = _hasHint ? 'block' : 'none';
+          var _isGameActive = !!(document.getElementById('scene-game') && document.getElementById('scene-game').classList.contains('active'));
+          hb.style.display = _isGameActive ? 'block' : 'none';
         }catch(e){}
       }
       // ヒントパネルをゲーム画面の右端に位置合わせ（viewportがapp-containerより広い場合対応）
@@ -21286,6 +21285,273 @@ window._dangerHit100 = false;
 })();
 
 })(); // END IIFE
+</script>
+
+<script>
+/* ===================================================================
+   Round 6: NPC voice/bubble + color cone freeze  (2026-03)
+   =================================================================== */
+(function(){
+'use strict';
+
+var VOICE_URL = 'https://raw.githubusercontent.com/skuall555/game-assets/main/Voice.webm';
+
+// ------------------------------------------------------------------
+// 1. Voice audio element
+// ------------------------------------------------------------------
+function ensureVoiceAudio(){
+  var a = document.getElementById('se-voice-warning');
+  if(a) return a;
+  a = document.createElement('audio');
+  a.id = 'se-voice-warning';
+  a.src = VOICE_URL;
+  a.preload = 'auto';
+  document.body.appendChild(a);
+  return a;
+}
+ensureVoiceAudio();
+
+function playVoiceWarning(){
+  var a = document.getElementById('se-voice-warning');
+  if(!a) return;
+  try{ a.currentTime = 0; var p = a.play(); if(p && p.catch) p.catch(function(){}); }catch(e){}
+}
+
+// ------------------------------------------------------------------
+// 2. Replace se-delivery-click / se-delivery-warn src with Voice.webm
+// ------------------------------------------------------------------
+function patchDeliveryAudio(){
+  ['se-delivery-click','se-delivery-warn'].forEach(function(id){
+    var a = document.getElementById(id);
+    if(a && !a.__voiceSrcPatched){ a.src = VOICE_URL; a.load(); a.__voiceSrcPatched = true; }
+  });
+}
+
+// ------------------------------------------------------------------
+// 3. Player speech bubble
+// ------------------------------------------------------------------
+function showPlayerBubble(text, duration){
+  try{
+    var player = document.getElementById('player');
+    if(!player) return;
+    var old = document.getElementById('_r6_player_bubble');
+    if(old) old.remove();
+    var bubble = document.createElement('div');
+    bubble.id = '_r6_player_bubble';
+    bubble.textContent = text;
+    bubble.style.cssText = [
+      'position:absolute',
+      'bottom:calc(100% + 4px)',
+      'left:50%',
+      'transform:translateX(-50%)',
+      'background:#fff',
+      'border:2px solid #333',
+      'border-radius:8px',
+      'padding:4px 8px',
+      'font-size:clamp(10px,1.4vmin,16px)',
+      'white-space:nowrap',
+      'z-index:99999',
+      'pointer-events:none',
+      'color:#333',
+      'font-weight:bold',
+      'box-shadow:0 2px 6px rgba(0,0,0,0.35)'
+    ].join(';');
+    var tail = document.createElement('div');
+    tail.style.cssText = 'position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #333';
+    bubble.appendChild(tail);
+    if(getComputedStyle(player).position === 'static') player.style.position = 'relative';
+    player.appendChild(bubble);
+    setTimeout(function(){ try{ bubble.remove(); }catch(e){} }, duration || 3000);
+  }catch(e){}
+}
+
+// ------------------------------------------------------------------
+// 4. NPC speech bubble (attached above given element)
+// ------------------------------------------------------------------
+function showNpcBubble(npcEl, text, duration){
+  try{
+    if(!npcEl) return;
+    var cls = '_r6_npc_bubble';
+    var old = npcEl.querySelector('.'+cls);
+    if(old) old.remove();
+    var bubble = document.createElement('div');
+    bubble.className = cls;
+    bubble.textContent = text;
+    bubble.style.cssText = [
+      'position:absolute',
+      'bottom:calc(100% + 4px)',
+      'left:50%',
+      'transform:translateX(-50%)',
+      'background:#fff',
+      'border:2px solid #555',
+      'border-radius:8px',
+      'padding:4px 10px',
+      'font-size:clamp(10px,1.4vmin,16px)',
+      'white-space:nowrap',
+      'z-index:99999',
+      'pointer-events:none',
+      'color:#333',
+      'font-weight:bold',
+      'box-shadow:0 2px 6px rgba(0,0,0,0.35)'
+    ].join(';');
+    if(getComputedStyle(npcEl).position === 'static') npcEl.style.position = 'relative';
+    npcEl.appendChild(bubble);
+    setTimeout(function(){ try{ bubble.remove(); }catch(e){} }, duration || 5000);
+  }catch(e){}
+}
+
+// ------------------------------------------------------------------
+// 5. Hook NPC clicks — capture phase so we run before existing handlers
+// ------------------------------------------------------------------
+var _lastNpcClick = 0;
+function _npcClickGuard(){ var now = Date.now(); if(now - _lastNpcClick < 1200) return false; _lastNpcClick = now; return true; }
+
+function hookStreetNpc(){
+  if(!window.state || !window.state.npcs) return;
+  window.state.npcs.forEach(function(n){
+    if(!n.el || n.el.__r6VoiceHooked) return;
+    n.el.__r6VoiceHooked = true;
+    var h = function(){ if(!_npcClickGuard()) return; playVoiceWarning(); showPlayerBubble('いまガス漏れを調査しています。', 3000); };
+    n.el.addEventListener('click', h, true);
+    n.el.addEventListener('touchend', h, true);
+  });
+}
+
+function hookCorridorNpc(){
+  var el = document.getElementById('deliveryman');
+  if(!el || el.__r6VoiceHooked) return;
+  el.__r6VoiceHooked = true;
+  el.addEventListener('click', function(){ if(!_npcClickGuard()) return; playVoiceWarning(); showPlayerBubble('インターホンは使用しないようお願いします。', 3000); }, true);
+}
+
+function hookEntranceNpc(){
+  var el = document.getElementById('delivery-npc');
+  if(!el || el.__r6VoiceHooked) return;
+  el.__r6VoiceHooked = true;
+  el.addEventListener('click', function(){ if(!_npcClickGuard()) return; playVoiceWarning(); showPlayerBubble('エレベーターを使用しないようお願いします。', 3000); }, true);
+}
+
+// ------------------------------------------------------------------
+// 6. Cone collision helpers
+// ------------------------------------------------------------------
+function getCones(roomNum){
+  try{
+    var result = [];
+    var states = window.aptState || {};
+    Object.keys(states).forEach(function(ow){
+      var items = (states[ow] && states[ow].placedItems) ? states[ow].placedItems : [];
+      items.forEach(function(it){
+        if(it && String(it.type) === 'cone' && Number(it.room) === roomNum) result.push(it);
+      });
+    });
+    return result;
+  }catch(e){ return []; }
+}
+
+// ------------------------------------------------------------------
+// 7. Freeze helpers
+// ------------------------------------------------------------------
+function freezeStreetNpc(n){
+  if(n._coneFrozen) return;
+  n._coneFrozen = true;
+  n._freezeX = n.x;
+  showNpcBubble(n.el, '・・・・・？', 5200);
+  setTimeout(function(){ n._coneFrozen = false; delete n._freezeX; }, 5000);
+}
+
+function freezeCorridorNpc(){
+  var st = window.__deliveryEventState;
+  if(!st || !st.active || st._coneFrozen) return;
+  var el = document.getElementById('deliveryman');
+  if(!el || el.style.display === 'none') return;
+  st._coneFrozen = true;
+  var saved = st.speed;
+  st.speed = 0;
+  showNpcBubble(el, '・・・・・？', 5200);
+  setTimeout(function(){ st._coneFrozen = false; st.speed = saved || 0.040; }, 5000);
+}
+
+function freezeEntranceNpc(npcEl){
+  if(!npcEl || npcEl._coneFrozen) return;
+  npcEl._coneFrozen = true;
+  npcEl._frozenLeft = npcEl.style.left;
+  showNpcBubble(npcEl, '・・・・・？', 5200);
+  setTimeout(function(){ npcEl._coneFrozen = false; delete npcEl._frozenLeft; }, 5000);
+}
+
+// ------------------------------------------------------------------
+// 8. Cone collision detection (runs every 150ms)
+// ------------------------------------------------------------------
+function checkConeCollisions(){
+  try{
+    // Street NPC (aptState room=1)
+    if(window.state && window.state.room === 1 && window.state.npcs){
+      var sc = getCones(1);
+      if(sc.length > 0){
+        window.state.npcs.forEach(function(n){
+          if(n._coneFrozen) return;
+          for(var i=0;i<sc.length;i++){ if(Math.abs(n.x - sc[i].x) < 8){ freezeStreetNpc(n); break; } }
+        });
+      }
+    }
+    // Corridor NPC (aptState room=3 or 4)
+    var cc = getCones(3).concat(getCones(4));
+    if(cc.length > 0){
+      var dst = window.__deliveryEventState;
+      if(dst && dst.active && !dst._coneFrozen){
+        for(var j=0;j<cc.length;j++){ if(Math.abs(dst.curX - cc[j].x) < 10){ freezeCorridorNpc(); break; } }
+      }
+    }
+    // Entrance NPC (aptState room=2)
+    var ec = getCones(2);
+    if(ec.length > 0){
+      var npcEl = document.getElementById('delivery-npc');
+      if(npcEl && npcEl.style.display !== 'none' && !npcEl._coneFrozen){
+        var nl = parseFloat(npcEl.style.left) || 0;
+        for(var k=0;k<ec.length;k++){ if(Math.abs(nl - ec[k].x) < 10){ freezeEntranceNpc(npcEl); break; } }
+      }
+    }
+  }catch(e){}
+}
+
+// ------------------------------------------------------------------
+// 9. rAF correction loop — holds frozen NPC positions each frame
+//    (runs after game loop has already moved them for that frame)
+// ------------------------------------------------------------------
+function freezeCorrectLoop(){
+  try{
+    // Street NPCs
+    if(window.state && window.state.npcs){
+      window.state.npcs.forEach(function(n){
+        if(n._coneFrozen && typeof n._freezeX === 'number'){
+          n.x = n._freezeX;
+          if(n.el) n.el.style.left = n._freezeX + '%';
+        }
+      });
+    }
+    // Entrance NPC
+    var entNpc = document.getElementById('delivery-npc');
+    if(entNpc && entNpc._coneFrozen && entNpc._frozenLeft != null){
+      entNpc.style.left = entNpc._frozenLeft;
+    }
+  }catch(e){}
+  requestAnimationFrame(freezeCorrectLoop);
+}
+
+// ------------------------------------------------------------------
+// 10. Init
+// ------------------------------------------------------------------
+patchDeliveryAudio();
+freezeCorrectLoop();
+setInterval(function(){
+  patchDeliveryAudio();
+  hookStreetNpc();
+  hookCorridorNpc();
+  hookEntranceNpc();
+  checkConeCollisions();
+}, 300);
+
+})();
 </script>
 
 </div></div></body></html>
