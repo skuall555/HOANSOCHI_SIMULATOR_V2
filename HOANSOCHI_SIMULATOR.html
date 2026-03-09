@@ -709,7 +709,7 @@ z-index: 100;
 .apt-door::before { content: ''; position: absolute; bottom: 20%; left: 20%; width: 60%; height: 2vmin; background: #e0e0e0; border: 0.2vmin solid #666; }
 .apt-door::after { content: ''; position: absolute; top: 55%; width: 2vmin; height: 2vmin; background: #e0e0e0; border-radius: 50%; border: 0.2vmin solid #999; }
 .apt-l { left: 15%; } .apt-l::after { right: 10%; } .apt-r { right: 15%; } .apt-r::after { left: 10%; }
-.ps-container { position: absolute; bottom: 15%; width: 18%; height: 55%; background: #ccc; border: 0.5vmin solid #555; overflow: hidden; pointer-events: auto; }
+.ps-container { position: absolute; bottom: 15%; width: 18%; height: 55%; background: #ccc; border: 0.5vmin solid #555; overflow: hidden; pointer-events: auto; z-index: 4; }
 .ps-l { left: 33%; width: 12%; }
 .ps-r { right: 33%; width: 12%; }
 .stairs-zone { position: absolute; bottom: 0; width: 12%; height: 100%; background: linear-gradient(to right, rgba(0,0,0,0.2), transparent); display: flex; align-items: flex-end; justify-content: center; }
@@ -22901,6 +22901,30 @@ var TUTORIAL_STEPS = {
         return false;
       }
     },
+    {
+      msg: 'メモで確認したメーター社番と同じメーター社番であるか確認しましょう。',
+      icon: '🔑',
+      highlightFn: function(){
+        document.querySelectorAll('#room-corridor1 .ps-container').forEach(function(el){
+          el.classList.add('tut-highlight'); _tutHighlighted.push(el);
+        });
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: 'ガスメーターをクリックすることで、室内へのガスの供給を遮断することができます。',
+      icon: '🔒',
+      highlightFn: function(){
+        /* 通報宅(102号室)=右=meter-art-2 をハイライト */
+        var el = document.getElementById('meter-art-2');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        /* 通報宅(meter 2)が閉止されたらクリア */
+        return typeof meterStatus !== 'undefined' && Array.isArray(meterStatus) && meterStatus[2] === true;
+      }
+    },
     { isClear: true }
   ]
 };
@@ -22986,12 +23010,20 @@ function startTutorial(no){
     /* メーター社番を固定値（102号室対応）で設定 */
     try{
       meterSerialCorrect = '123456789';
-      meterSerials = ['','123456789','','',''];
+      /* 通報宅(102号室=右=meter2)→123456789、非通報宅(101号室=左=meter1)→987654321 */
+      meterSerials = ['','987654321','123456789','',''];
       updateCallMeterSerial();
       try{ applyPsSerialLabels(); }catch(e2){}
     }catch(e){}
     renderVan(); renderInventory(); updateHand();
     changeRoom(3, 50);
+    /* パイプシャフトの扉を初期状態（閉：translateX 0px）にリセット */
+    try{
+      document.querySelectorAll('.ps-door').forEach(function(d){
+        d.style.transform = 'translateX(0px)';
+        d.dataset.gasCleared = 'false';
+      });
+    }catch(e){}
   }
 
   /* チュートリアルオーバーレイ表示 */
