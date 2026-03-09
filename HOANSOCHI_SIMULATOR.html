@@ -12137,6 +12137,8 @@ try{
     renderMemoCards();
   }
   function closeMemo(){ closeOverlay('scene-memo', prevOverlaysMemo); }
+  window.openMemo = openMemo;
+  window.closeMemo = closeMemo;
 
     // Hook buttons
     function bindButtons(){
@@ -12146,7 +12148,7 @@ try{
     if(em && !em.__bound){ em.addEventListener('click', function(){ closeOverlay('scene-cardget', prevOverlaysCard); }); em.__bound=true; }
 
     var mc=$('memo-close');
-    if(mc && !mc.__bound){ mc.addEventListener('click', closeMemo); mc.__bound=true; }
+    if(mc && !mc.__bound){ mc.addEventListener('click', function(){ window.closeMemo(); }); mc.__bound=true; }
 
     if(!bindButtons.__esc){
       document.addEventListener('keydown', function(ev){
@@ -12154,7 +12156,7 @@ try{
           var cg=$('scene-cardget');
           if(cg && cg.classList.contains('active')){ closeOverlay('scene-cardget', prevOverlaysCard); return; }
           var mm=$('scene-memo');
-          if(mm && mm.classList.contains('active')){ closeMemo(); return; }
+          if(mm && mm.classList.contains('active')){ window.closeMemo(); return; }
         }
       }, true);
       bindButtons.__esc=true;
@@ -12311,7 +12313,7 @@ try{
     window.selectItem=function(key){
       try{
         if(key==='memo'){
-          openMemo();
+          (window.openMemo || openMemo)();
           // 見た目を選択状態に
           try{ if(window.state){ window.state.equipped='memo'; if(typeof window.updateHand==='function') window.updateHand(); if(typeof window.renderInventory==='function') window.renderInventory(); } }catch(e2){}
           return;
@@ -22904,6 +22906,7 @@ function startTutorial(no){
       meterSerialCorrect = '123456789';
       meterSerials = ['','123456789','','',''];
       updateCallMeterSerial();
+      try{ applyPsSerialLabels(); }catch(e2){}
     }catch(e){}
     renderVan(); renderInventory(); updateHand();
     changeRoom(3, 50);
