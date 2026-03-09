@@ -2803,8 +2803,25 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   box-shadow: 0 0.6vmin 3vmin rgba(249,168,37,0.6), 0 0 0 0.3vmin rgba(255,255,255,0.8);
   display: none; pointer-events: auto; z-index: 501;
   animation: tut-pop 0.25s ease-out;
+  transition: transform 0.3s ease;
 }
 #tutorial-msg-box.visible { display: block; }
+#tutorial-msg-box.tut-slide-out {
+  transform: translateX(-50%) translateY(calc(100% + 22vmin)) !important;
+}
+/* チュートリアルメッセージ折りたたみトグルボタン */
+#tutorial-msg-toggle-btn {
+  position: absolute; bottom: 7.5%; left: 50%;
+  transform: translateX(-50%);
+  z-index: 503; pointer-events: auto; display: none;
+  background: linear-gradient(135deg, #ff9800, #e65100);
+  color: #fff; border: none; border-radius: 2vmin;
+  padding: 0.5vmin 2.5vmin; cursor: pointer;
+  font-size: 1.6vmin; font-weight: bold;
+  box-shadow: 0 0.3vmin 1vmin rgba(230,81,0,0.5);
+  transition: filter 0.15s; white-space: nowrap;
+}
+#tutorial-msg-toggle-btn:hover { filter: brightness(1.15); }
 #tutorial-msg-icon {
   font-size: 2.8vmin; position: absolute; top: -1.8vmin; left: 2vmin;
   background: #fff; border: 0.3vmin solid #f9a825; border-radius: 50%;
@@ -2834,7 +2851,6 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   outline: 0.4vmin solid #ff9800 !important;
   outline-offset: 0.3vmin;
   z-index: 600 !important;
-  position: relative;
   animation: tut-glow 0.9s infinite alternate ease-in-out !important;
 }
 @keyframes tut-glow {
@@ -5943,6 +5959,49 @@ function checkDoorGasAtPos(e) {
     }catch(err){}
 }
 
+/* 初期状態で少し開いている扉・点検口のガス確認（ドラッグ不要） */
+function checkInitialOpenDoorGas(e){
+    try{
+        var cx = e.clientX, cy = e.clientY;
+        if(e.touches && e.touches[0]){ cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
+        var elems = document.elementsFromPoint(cx, cy);
+        for(var i=0; i<elems.length; i++){
+            var el = elems[i];
+            var door = null;
+            if(el.classList.contains('ps-door')){
+                door = el;
+            } else if(el.classList.contains('ps-container') || el.classList.contains('ent-hatch-box') ||
+                      el.classList.contains('ent-pit') || el.classList.contains('ent-panel') ||
+                      el.classList.contains('hatch-container')){
+                door = el.querySelector('.ps-door');
+            }
+            if(!door) continue;
+            if(door.dataset.isDangerous !== "true" || door.dataset.gasCleared === "true") continue;
+            /* 扉が初期から少し開いている場合のみ対象 */
+            var m = door.style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+            if(!m || Math.abs(parseFloat(m[1])) < 3) continue;
+            /* ガス確認実行 */
+            door.dataset.gasCleared = "true";
+            door.dataset.isDangerous = "false";
+            try{ playAudio('se_ching', SE.ching); }catch(e2){}
+            try{ dangerValue = Math.floor(dangerValue * 0.95); dangerRate = Math.max(0.1, dangerRate - 0.05); }catch(e3){}
+            try{ showSystemMsg("ガス滞留なし。危険度低下！"); updateDangerUI(); }catch(e4){}
+            try{
+                if(isDetectorMode){
+                    if(!window._noGasBonusDoors) window._noGasBonusDoors = new Set();
+                    var dk = door.id || (door.className + '_' + state.room);
+                    if(!window._noGasBonusDoors.has(dk)){
+                        window._noGasBonusDoors.add(dk);
+                        if(window._gameStats) window._gameStats.noGasConfirmed++;
+                        addSafety(5, "【保安措置】滞留ガスなし確認！安全率+5%！");
+                    }
+                }
+            }catch(e5){}
+            break;
+        }
+    }catch(err){}
+}
+
 const playDetectSE = () => {
     if(!isPlayingSE) {
         isPlayingSE = true;
@@ -5957,11 +6016,15 @@ const playDetectSE = () => {
 // mousedown: クリックだけでは緑の円は表示しない。扉チェックもしない。
 detOv.addEventListener('mousedown', (e)=>{ handleOverlayClick(e); });
 // mousemove: ドラッグ中(_scanActive=true)のみ緑の円を表示し扉チェックを実行
+// ただし初期状態で少し開いている扉・点検口はドラッグなしでも検知可能
 detOv.addEventListener('mousemove', (e)=>{
     if(!isPlacementMode && (isDetectorMode || isGasIdMode)){
         if(_scanActive){
             updateDetToolPos(e);
             checkDoorGasAtPos(e);
+        } else {
+            /* 初期開放扉チェック：少し開いている(translateX>0)危険扉はホバーのみで検知 */
+            checkInitialOpenDoorGas(e);
         }
     }
 });
@@ -15797,6 +15860,45 @@ function renderStats(stats){
   }
 
   var h = '';
+
+  // チュートリアル欄を常に先頭に表示
+  var tutDefs = [
+    { no: -1, name: 'チュートリアル1：アイテムの持ち出し方法と移動方法' },
+    { no: -2, name: 'チュートリアル2：アイテムの使用方法と扉の開放' }
+  ];
+  for(var ti=0; ti<tutDefs.length; ti++){
+    var td = tutDefs[ti];
+    var tst = statsMap[td.no] || null;
+    var tIsUnplayed = !tst;
+    var tRowBg = tIsUnplayed ? 'rgba(255,152,0,0.04)' : 'rgba(255,152,0,0.08)';
+    var tRowBorder = '0.2vmin solid rgba(255,152,0,' + (tIsUnplayed?'0.2':'0.4') + ')';
+    var tBadge = '<span class="tut-hist-badge" style="margin-right:0.3vmin;flex-shrink:0;">T</span>';
+    var tNoLabel = 'チュートリアル' + Math.abs(td.no);
+    var tRight = '';
+    if(tIsUnplayed){
+      tRight = '<span style="color:#ef5350;font-size:1.8vmin;font-weight:bold;">未クリア</span>';
+    } else {
+      var tBestGradeHtml = tst.bestGrade ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:3vmin;height:3vmin;border-radius:50%;background:' + gradeColor(tst.bestGrade) + ';color:#fff;font-weight:900;font-size:1.8vmin;margin-left:0.5vmin;">' + _esc(tst.bestGrade) + '</span>' : '';
+      tRight = '<span style="font-size:1.7vmin;color:#b0bec5;">クリア <b style="color:#fff;">' + tst.attempts + '回</b></span>' + (tBestGradeHtml ? '<span style="margin-left:1vmin;font-size:1.5vmin;color:#90caf9;">最高</span>' + tBestGradeHtml : '');
+    }
+    h += '<div onclick="openScenarioHistory(' + td.no + ')" style="padding:1.2vmin 1.5vmin;margin-bottom:1vmin;background:' + tRowBg + ';border:' + tRowBorder + ';border-radius:1vmin;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(255,152,0,0.15)\'" onmouseout="this.style.background=\'' + tRowBg + '\'">'
+      + '<div style="display:flex;align-items:center;gap:1vmin;margin-bottom:0.6vmin;flex-wrap:wrap;">'
+      + tBadge
+      + '<div style="font-size:1.8vmin;font-weight:900;color:#ffcc80;white-space:nowrap;">' + tNoLabel + '</div>'
+      + '<div style="flex:1;font-size:2vmin;font-weight:700;color:#ffe0b2;">' + _esc(td.name) + '</div>'
+      + (!tIsUnplayed ? '<div style="font-size:1.5vmin;color:#ffcc80;white-space:nowrap;">詳細 ▶</div>' : '')
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:1.5vmin;flex-wrap:wrap;justify-content:space-between;">'
+      + '<div style="display:flex;gap:1.5vmin;align-items:center;flex-wrap:wrap;">' + tRight + '</div>'
+      + '<button onclick="event.stopPropagation();startTutorial(' + Math.abs(td.no) + ')" style="padding:0.5vmin 1.5vmin;font-size:1.5vmin;background:linear-gradient(135deg,#ff9800,#e65100);color:#fff;border:none;border-radius:0.5vmin;cursor:pointer;white-space:nowrap;font-weight:bold;">▶ チュートリアルを始める</button>'
+      + '</div>'
+      + '</div>';
+  }
+  // 区切り
+  if(allScenarios.length > 0){
+    h += '<div style="border-top:0.2vmin solid rgba(100,181,246,0.25);margin:1vmin 0 1.5vmin;"></div>';
+  }
+
   for(var n=0; n<allScenarios.length; n++){
     var sc2 = allScenarios[n];
     var st = statsMap[sc2.no] || null;
@@ -22550,6 +22652,10 @@ var _tutActive = false;
 var _tutCompleted = false;
 var _tutInterval = null;
 var _tutHighlighted = [];
+var _tutMsgHidden = false;
+/* No.2チュートリアル用：メモ開閉追跡フラグ */
+var _tutMemoOpened = false;
+var _tutMemoClosed = false;
 
 /* ---- チュートリアルステップ定義 ---- */
 var TUTORIAL_STEPS = {
@@ -22606,22 +22712,40 @@ var TUTORIAL_STEPS = {
       nextBtn: true, checkFn: null
     },
     {
-      msg: '火気厳禁表示シートは画面の自由な場所に設置または回収ができます。\n所持数：10個',
+      msg: '火気厳禁表示シートは画面の自由な場所に設置または回収ができます。\n所持数：10個\n\n【次のメッセージへ：シートを1枚以上使用してください】',
       icon: '📋',
       highlightFn: function(){
         var el = document.querySelector('.visual-sign');
         if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
       },
-      nextBtn: true, checkFn: null
+      nextBtn: false,
+      checkFn: function(){
+        /* 設置済みシートが1枚以上あるか、または所持数が減少したらOK */
+        var placed = document.querySelectorAll('.placed-item[data-type="sign"]');
+        if(placed.length > 0) return true;
+        /* 所持数が初期の10個から減っていればOK（設置後回収含む） */
+        var usedAny = (typeof state !== 'undefined' && state.itemCounts && state.itemCounts.sign < 10);
+        return !!usedAny;
+      }
     },
     {
-      msg: '次に通報宅のガスメーターを特定しましょう。\nメモからメーター社番を確認できます。',
+      msg: '次に通報宅のガスメーターを特定しましょう。\nメモからメーター社番を確認できます。\n\n【次のメッセージへ：メモを開いて閉じてください】',
       icon: '📝',
       highlightFn: function(){
-        var el = document.querySelector('.visual-memo');
-        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+        /* メモが開いていればメーター社番をハイライト、そうでなければメモアイコン */
+        var memoOpen = document.getElementById('scene-memo');
+        if(memoOpen && memoOpen.classList.contains('active')){
+          var serialEl = document.getElementById('memo-meter-serial');
+          if(serialEl && serialEl.parentElement){ serialEl.parentElement.classList.add('tut-highlight'); _tutHighlighted.push(serialEl.parentElement); }
+        } else {
+          var el = document.querySelector('.visual-memo');
+          if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+        }
       },
-      nextBtn: true, checkFn: null
+      nextBtn: false,
+      checkFn: function(){
+        return _tutMemoOpened && _tutMemoClosed;
+      }
     },
     {
       msg: 'ガスメーターの社番を確認しましょう。\nガスメーターはパイプシャフトの扉の中に設置されていることもあります。',
@@ -22647,7 +22771,8 @@ var TUTORIAL_STEPS = {
         var doors = document.querySelectorAll('.room.active .ps-door');
         for(var i=0;i<doors.length;i++){
           var m = doors[i].style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
-          if(m && Math.abs(parseFloat(m[1])) > 8) return true;
+          /* 初期状態で少し開いている場合（0px超）もそのまま通過 */
+          if(m && Math.abs(parseFloat(m[1])) > 0) return true;
         }
         return false;
       }
@@ -22747,6 +22872,15 @@ function startTutorial(no){
   /* 危険タイマー停止（チュートリアル中は爆発なし） */
   if(dangerTimer){ clearInterval(dangerTimer); dangerTimer = null; }
 
+  /* 前回チュートリアルの設置物を完全リセット */
+  try{
+    if(window.aptState){
+      if(window.aptState.A){ window.aptState.A.placedItems = []; window.aptState.A.inited = false; }
+      if(window.aptState.B){ window.aptState.B.placedItems = []; window.aptState.B.inited = false; }
+    }
+    document.querySelectorAll('.placed-item').forEach(function(el){ el.remove(); });
+  }catch(e){}
+
   /* チュートリアル別の初期状態 */
   if(no === 1){
     state.room = 0; state.x = 30;
@@ -22757,12 +22891,20 @@ function startTutorial(no){
     try{ document.getElementById('room-parking').classList.add('active'); }catch(e){}
     try{ document.getElementById('parking-msg').style.display='block'; }catch(e){}
   } else if(no === 2){
+    _tutMemoOpened = false;
+    _tutMemoClosed = false;
     state.vanStock = [];
     state.inventory = ['phone', 'memo', 'sign', 'det'];
     state.equipped = null;
     state.itemCounts.sign = 10;
     /* 通報者部屋を設定（C級No.1: 102号室） */
     try{ residentRoom = 2; roomOpened = true; }catch(e){}
+    /* メーター社番を固定値（102号室対応）で設定 */
+    try{
+      meterSerialCorrect = '123456789';
+      meterSerials = ['','123456789','','',''];
+      updateCallMeterSerial();
+    }catch(e){}
     renderVan(); renderInventory(); updateHand();
     changeRoom(3, 50);
   }
@@ -22800,6 +22942,12 @@ function showTutorialStep(){
     nextBtn.classList.remove('visible');
   }
 
+  /* 折りたたみを解除して必ずメッセージを表示 */
+  _tutMsgHidden = false;
+  msgBox.classList.remove('tut-slide-out');
+  var toggleBtn = document.getElementById('tutorial-msg-toggle-btn');
+  if(toggleBtn){ toggleBtn.style.display = 'block'; toggleBtn.textContent = '▼ 隠す'; }
+
   /* アニメーションリセット */
   msgBox.style.animation = 'none';
   msgBox.offsetHeight;
@@ -22808,13 +22956,58 @@ function showTutorialStep(){
 
   /* ハイライト更新 */
   clearHighlights();
-  if(step.highlightFn) setTimeout(step.highlightFn, 300);
+  if(step.highlightFn) setTimeout(function(){ step.highlightFn(); setTimeout(placeTutPointers, 50); }, 300);
 }
 
 function clearHighlights(){
   _tutHighlighted.forEach(function(el){ el.classList.remove('tut-highlight'); });
   _tutHighlighted = [];
+  var ptc = document.getElementById('tutorial-pointer-container');
+  if(ptc) ptc.innerHTML = '';
 }
+
+/* ハイライト要素の上に 👆 ポインターアイコンを配置 */
+function placeTutPointers(){
+  var container = document.getElementById('tutorial-pointer-container');
+  if(!container) return;
+  container.innerHTML = '';
+  var appEl = document.getElementById('app-container');
+  if(!appEl) return;
+  var appRect = appEl.getBoundingClientRect();
+  _tutHighlighted.forEach(function(el){
+    if(!document.contains(el)) return;
+    try{
+      var rect = el.getBoundingClientRect();
+      if(rect.width === 0 && rect.height === 0) return;
+      var ptr = document.createElement('div');
+      ptr.className = 'tut-pointer';
+      var cx = rect.left + rect.width / 2 - appRect.left;
+      var ty = rect.top - appRect.top - 1;
+      ptr.style.left = cx + 'px';
+      ptr.style.top = ty + 'px';
+      ptr.style.transform = 'translateX(-50%)';
+      ptr.innerHTML = '<div class="tut-pointer-arrow">👆</div>';
+      container.appendChild(ptr);
+    }catch(e){}
+  });
+}
+
+/* チュートリアルメッセージ折りたたみトグル */
+function toggleTutorialMsgBox(){
+  var box = document.getElementById('tutorial-msg-box');
+  var btn = document.getElementById('tutorial-msg-toggle-btn');
+  if(!box) return;
+  if(_tutMsgHidden){
+    _tutMsgHidden = false;
+    box.classList.remove('tut-slide-out');
+    if(btn) btn.textContent = '▼ 隠す';
+  } else {
+    _tutMsgHidden = true;
+    box.classList.add('tut-slide-out');
+    if(btn) btn.textContent = '▲ 表示する';
+  }
+}
+window.toggleTutorialMsgBox = toggleTutorialMsgBox;
 
 function tutorialNextStep(){
   _tutStep++;
@@ -22831,20 +23024,47 @@ function stopTutorialPolling(){
   if(_tutInterval){ clearInterval(_tutInterval); _tutInterval = null; }
 }
 
+function _playTutCorrectSE(){
+  try{
+    initAudio();
+    if(isMuted) return;
+    if(!actx) return;
+    var t0 = actx.currentTime;
+    var freqs = [523, 659, 784, 1047];
+    freqs.forEach(function(f, i){
+      var o = actx.createOscillator();
+      var g = actx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f, t0 + i * 0.1);
+      g.gain.setValueAtTime(0.0001, t0 + i * 0.1);
+      g.gain.exponentialRampToValueAtTime(0.12, t0 + i * 0.1 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.1 + 0.18);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t0 + i * 0.1); o.stop(t0 + i * 0.1 + 0.2);
+    });
+  }catch(e){}
+}
+
 function checkTutorialProgress(){
   if(!_tutActive || _tutCompleted) return;
   var steps = TUTORIAL_STEPS[_tutNo];
   if(!steps || _tutStep >= steps.length) return;
   var step = steps[_tutStep];
   if(!step.nextBtn && step.checkFn && step.checkFn()){
+    _playTutCorrectSE();
     _tutStep++;
     showTutorialStep();
     return;
   }
-  /* ハイライトを最新DOM状態に合わせて更新 */
-  if(step.highlightFn && _tutHighlighted.length === 0){
-    clearHighlights();
-    step.highlightFn();
+  /* ハイライトを最新DOM状態に合わせて更新（DOMが再生成された場合も対応） */
+  if(step.highlightFn){
+    var needRefresh = _tutHighlighted.length === 0 ||
+      _tutHighlighted.some(function(el){ return !document.contains(el); });
+    if(needRefresh){
+      clearHighlights();
+      step.highlightFn();
+      setTimeout(placeTutPointers, 50);
+    }
   }
 }
 
@@ -22900,14 +23120,17 @@ function saveTutorialHistory(no){
 
 function _exitTutorialCleanup(){
   _tutActive = false;
+  _tutMsgHidden = false;
   stopTutorialPolling();
   clearHighlights();
   var overlay = document.getElementById('tutorial-overlay');
   if(overlay) overlay.classList.remove('active');
   var msgBox = document.getElementById('tutorial-msg-box');
-  if(msgBox) msgBox.classList.remove('visible');
+  if(msgBox){ msgBox.classList.remove('visible'); msgBox.classList.remove('tut-slide-out'); }
   var banner = document.getElementById('tutorial-clear-banner');
   if(banner) banner.classList.remove('visible');
+  var toggleBtn = document.getElementById('tutorial-msg-toggle-btn');
+  if(toggleBtn) toggleBtn.style.display = 'none';
 }
 
 function tutorialGoMenu(){
@@ -22946,11 +23169,46 @@ window.tutorialGoHistory = tutorialGoHistory;
   window.confirmExit.__tutClean = true;
 })();
 
+/* No.2チュートリアル用：メモ開閉フックを openMemo / closeMemo に設定 */
+(function(){
+  function _hookMemo(){
+    /* openMemo フック */
+    try{
+      if(typeof window.openMemo==='function' && !window.openMemo.__tutMemoHooked){
+        var _origOpen = window.openMemo;
+        window.openMemo = function(){
+          var r = _origOpen.apply(this, arguments);
+          if(_tutActive && _tutNo===2){ _tutMemoOpened = true; _tutMemoClosed = false; }
+          return r;
+        };
+        window.openMemo.__tutMemoHooked = true;
+      }
+    }catch(e){}
+    /* scene-memo の ×ボタン(closeMemo)フック */
+    try{
+      if(typeof window.closeMemo==='function' && !window.closeMemo.__tutMemoHooked){
+        var _origClose = window.closeMemo;
+        window.closeMemo = function(){
+          var r = _origClose.apply(this, arguments);
+          if(_tutActive && _tutNo===2 && _tutMemoOpened){ _tutMemoClosed = true; }
+          return r;
+        };
+        window.closeMemo.__tutMemoHooked = true;
+      }
+    }catch(e){}
+  }
+  /* openMemo/closeMemo はローカルスコープ関数のため、DOMロード後に再試行 */
+  _hookMemo();
+  setTimeout(_hookMemo, 1000);
+  setTimeout(_hookMemo, 3000);
+})();
+
 })(); /* end tutorial IIFE */
 </script>
 
 <!-- チュートリアルオーバーレイ -->
 <div id="tutorial-overlay">
+  <button id="tutorial-msg-toggle-btn" onclick="toggleTutorialMsgBox()">▼ 隠す</button>
   <div id="tutorial-msg-box">
     <div id="tutorial-msg-icon">📖</div>
     <div id="tutorial-msg-text"></div>
