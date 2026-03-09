@@ -2786,6 +2786,134 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 }
 .tel-call-btn:active { filter: brightness(0.8); }
 
+/* ===== チュートリアルシステム CSS ===== */
+#tutorial-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 500; pointer-events: none; display: none;
+}
+#tutorial-overlay.active { display: block; }
+
+#tutorial-msg-box {
+  position: absolute; bottom: 12%; left: 50%;
+  transform: translateX(-50%); width: 84%; min-height: 10vmin;
+  background: linear-gradient(135deg, #fffde7 0%, #fff9c4 50%, #fff3e0 100%);
+  border: 0.4vmin solid #f9a825;
+  border-radius: 2vmin;
+  padding: 2.5vmin 2.5vmin 1.8vmin 4vmin;
+  box-shadow: 0 0.6vmin 3vmin rgba(249,168,37,0.6), 0 0 0 0.3vmin rgba(255,255,255,0.8);
+  display: none; pointer-events: auto; z-index: 501;
+  animation: tut-pop 0.25s ease-out;
+}
+#tutorial-msg-box.visible { display: block; }
+#tutorial-msg-icon {
+  font-size: 2.8vmin; position: absolute; top: -1.8vmin; left: 2vmin;
+  background: #fff; border: 0.3vmin solid #f9a825; border-radius: 50%;
+  width: 3.8vmin; height: 3.8vmin;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0.2vmin 0.8vmin rgba(249,168,37,0.6);
+}
+#tutorial-msg-text {
+  font-size: 1.9vmin; font-weight: bold; color: #2d2d2d;
+  line-height: 1.75; padding-top: 0.2vmin; white-space: pre-line;
+}
+#tutorial-msg-actions { display: flex; justify-content: flex-end; margin-top: 1.2vmin; }
+#tutorial-next-btn {
+  padding: 0.7vmin 2.8vmin;
+  background: linear-gradient(135deg, #ff9800, #e65100);
+  color: #fff; border: none; border-radius: 3vmin;
+  font-size: 1.8vmin; font-weight: bold; cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 0.3vmin 1vmin rgba(230,81,0,0.5);
+  transition: all 0.15s; display: none;
+}
+#tutorial-next-btn.visible { display: block; }
+#tutorial-next-btn:hover { background: linear-gradient(135deg,#ffa726,#f57c00); transform: scale(1.04); }
+
+/* Tutorial pointer highlight */
+.tut-highlight {
+  outline: 0.4vmin solid #ff9800 !important;
+  outline-offset: 0.3vmin;
+  z-index: 600 !important;
+  position: relative;
+  animation: tut-glow 0.9s infinite alternate ease-in-out !important;
+}
+@keyframes tut-glow {
+  0%   { box-shadow: 0 0 0.5vmin rgba(255,152,0,0.5), 0 0 1.5vmin rgba(255,152,0,0.3); }
+  100% { box-shadow: 0 0 1.5vmin rgba(255,152,0,0.9), 0 0 3vmin rgba(255,152,0,0.5); }
+}
+
+/* Floating pointer arrow */
+.tut-pointer {
+  position: absolute; z-index: 502; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center;
+  animation: tut-bounce 0.75s infinite alternate ease-in-out;
+}
+.tut-pointer-arrow { font-size: 4.5vmin; line-height: 1; filter: drop-shadow(0 0 0.8vmin rgba(255,152,0,0.9)); }
+.tut-pointer-label {
+  background: #e65100; color: #fff; font-size: 1.5vmin; font-weight: bold;
+  padding: 0.3vmin 1.2vmin; border-radius: 1vmin; white-space: nowrap;
+  margin-top: 0.2vmin; box-shadow: 0 0.2vmin 0.8vmin rgba(230,81,0,0.6);
+}
+@keyframes tut-bounce {
+  0%   { transform: translateY(0)       scale(1); }
+  100% { transform: translateY(-1.5vmin) scale(1.1); }
+}
+@keyframes tut-pop {
+  0%   { opacity:0; transform: translateX(-50%) scale(0.85); }
+  100% { opacity:1; transform: translateX(-50%) scale(1); }
+}
+
+/* Tutorial clear banner */
+#tutorial-clear-banner {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #1b5e20, #2e7d32);
+  border: 0.4vmin solid #a5d6a7; border-radius: 2.5vmin;
+  padding: 4vmin 6vmin; text-align: center;
+  z-index: 510; pointer-events: auto;
+  box-shadow: 0 1.5vmin 5vmin rgba(0,0,0,0.7);
+  display: none; animation: tut-clear-pop 0.4s ease-out;
+}
+#tutorial-clear-banner.visible { display: block; }
+@keyframes tut-clear-pop {
+  0%   { opacity:0; transform: translate(-50%,-50%) scale(0.7); }
+  70%  { transform: translate(-50%,-50%) scale(1.05); }
+  100% { opacity:1; transform: translate(-50%,-50%) scale(1); }
+}
+#tutorial-clear-banner h2 {
+  color: #fff; font-size: 4vmin; margin: 0 0 1.5vmin 0;
+  text-shadow: 0 0 1.5vmin rgba(165,214,167,0.9);
+  font-family: 'Press Start 2P', 'MS Gothic', sans-serif;
+}
+#tutorial-clear-banner .tut-clear-stars { font-size: 5vmin; margin-bottom: 1.5vmin; }
+#tutorial-clear-banner p { color: #c8e6c9; font-size: 1.9vmin; margin: 0 0 2.5vmin 0; line-height: 1.6; }
+.tut-clear-btn {
+  display: inline-block; margin: 0.5vmin 0.8vmin;
+  padding: 1vmin 3vmin;
+  font-size: 1.9vmin; font-weight: bold; cursor: pointer;
+  border-radius: 1.5vmin; border: 0.3vmin solid;
+}
+.tut-clear-btn-history {
+  background: linear-gradient(135deg,#42a5f5,#1565c0); color:#fff;
+  border-color: #90caf9;
+  box-shadow: 0 0.3vmin 1vmin rgba(66,165,245,0.5);
+}
+.tut-clear-btn-menu {
+  background: linear-gradient(135deg,#fffde7,#fff9c4); color:#333;
+  border-color: #f9a825;
+  box-shadow: 0 0.3vmin 1vmin rgba(249,168,37,0.4);
+}
+.tut-clear-btn:hover { filter: brightness(1.1); transform: scale(1.03); }
+
+/* Tutorial badge in history */
+.tut-hist-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 3vmin; height: 3vmin; border-radius: 50%;
+  background: linear-gradient(135deg,#ff9800,#e65100);
+  color:#fff; font-weight:900; font-size:1.6vmin;
+  box-shadow: 0 0 0.8vmin rgba(255,152,0,0.7); flex-shrink:0;
+}
+
 </style>
 
 <script>
@@ -2848,8 +2976,6 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="tap-area" onclick="startApp()"><div class="tap-msg">TAP TO START</div></div>
 <div class="title-ui">
 <input type="file" id="import-file" class="file-input-hidden" accept=".html" onchange="handleImport(this)">
-<button class="hud-btn" style="background:#0056b3; font-weight:bold; font-size:60%; padding:2%;" onclick="document.getElementById('import-file').click()">📂 データ読込</button>
-<button class="hud-btn" style="background:#003366; font-weight:bold; font-size:60%; padding:2%;" onclick="event.stopPropagation(); showCustom();">⚙ カスタマイズ</button>
 <button class="hud-btn" style="background:#2e7d32; font-weight:bold; font-size:60%; padding:2%;" onclick="event.stopPropagation(); showScenarioList();">📝 シナリオ設定</button>
 <button class="hud-btn" style="background:#8e24aa; font-weight:bold; font-size:60%; padding:2%;" onclick="event.stopPropagation(); showStageEditor();">🗺 ステージ作成・編集</button>
 </div>
@@ -2859,6 +2985,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="menu-panel">
 <h2 style="color:#000; margin:0 0 5% 0; font-family: 'Press Start 2P', 'MS Gothic', 'Meiryo', sans-serif; text-shadow: 2px 2px 0px rgba(255,255,255,0.3);">メニュー</h2>
 <button class="menu-btn" onclick="startGame()">シミュレーション</button>
+<button class="menu-btn" style="background:linear-gradient(to bottom,#f57c00 0%,#e65100 100%);margin-top:1.5vmin;" onclick="showTutorialSelect()">🎓 チュートリアル</button>
 <button class="menu-btn sec" onclick="showScenarioList()">📝 シナリオ設定</button>
 <button class="menu-btn sec" onclick="openHistory()">📈 履歴/統計</button>
 <button class="menu-btn sec" onclick="openSaveDataManager()">💾 セーブデータ管理</button>
@@ -2888,6 +3015,23 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
     <button class="menu-btn sec" style="margin-bottom:1.5vmin;" onclick="openHistoryFromStartSetup()">📋 リストからシナリオを選択する</button>
     <button class="menu-btn" onclick="confirmStartSetup()">開始（会話へ）</button>
     <button class="menu-btn sec" onclick="closeStartSetup()">キャンセル</button>
+  </div>
+</div>
+
+<!-- チュートリアル選択画面 -->
+<div id="scene-tutorial-select" class="overlay-screen">
+  <div class="menu-panel" style="max-width:76vmin;width:92%;">
+    <h2 style="color:#000;margin:0 0 2.5vmin 0;font-family:'Press Start 2P','MS Gothic',sans-serif;font-size:2.4vmin;">🎓 チュートリアル</h2>
+    <p style="font-size:1.8vmin;color:#444;margin:0 0 2.5vmin 0;line-height:1.6;">操作方法をステップごとに学ぶことができます。<br>チュートリアルのプレイ記録は履歴に残ります（C級扱い）。</p>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#f57c00 0%,#e65100 100%);margin-bottom:2vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(1)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.1　アイテムの持ち出し方法と移動方法</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">駐車場から車両のアイテムを取り出し、集合住宅へ移動しよう</div>
+    </button>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#388e3c 0%,#1b5e20 100%);margin-bottom:2.5vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(2)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.2　アイテムの使用方法と扉の開放</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">火気厳禁シートの設置・検知器でパイプシャフト内のガスを確認しよう</div>
+    </button>
+    <button class="menu-btn sec" onclick="closeTutorialSelect()">← メニューへ戻る</button>
   </div>
 </div>
 
@@ -15317,7 +15461,10 @@ function openScenarioHistory(scenarioNo){
         if(list[i].scenarioNo === scenarioNo){ found = list[i]; break; }
       }
       var name = found ? (found.scenarioName || '(名称未設定)') : '(名称未設定)';
-      titleEl.textContent = '📋 No.' + scenarioNo + '：' + name + '　詳細履歴';
+      var noLabel = (scenarioNo < 0)
+        ? ('🎓 チュートリアル' + Math.abs(scenarioNo))
+        : ('📋 No.' + scenarioNo);
+      titleEl.textContent = noLabel + '：' + name + '　詳細履歴';
     }
     // レベルフィルターリセット
     var dlf = document.getElementById('detail-level-filter');
@@ -15465,15 +15612,30 @@ function renderStats(stats){
         + '<span style="display:inline-flex;align-items:center;justify-content:center;width:3vmin;height:3vmin;border-radius:50%;background:' + gc + ';color:#fff;font-weight:900;font-size:1.8vmin;box-shadow:0 0 0.8vmin ' + gc + ';">' + _esc(s.bestGrade) + '</span>'
         + '</div>';
     }
-    h += '<div onclick="openScenarioHistory(' + s.scenarioNo + ')" style="padding:1.2vmin 1.5vmin;margin-bottom:1vmin;background:rgba(255,255,255,0.05);border:0.2vmin solid rgba(100,181,246,0.2);border-radius:1vmin;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(66,165,245,0.12)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">'
+    var isTutorial = (s.scenarioNo < 0);
+    var noLabel = isTutorial
+      ? ('チュートリアル' + Math.abs(s.scenarioNo))
+      : ('No.' + s.scenarioNo);
+    var rowBg = isTutorial
+      ? 'rgba(255,152,0,0.08)'
+      : 'rgba(255,255,255,0.05)';
+    var rowBorder = isTutorial
+      ? '0.2vmin solid rgba(255,152,0,0.4)'
+      : '0.2vmin solid rgba(100,181,246,0.2)';
+    var noColor = isTutorial ? '#ffcc80' : '#64b5f6';
+    var tutBadge = isTutorial
+      ? '<span class="tut-hist-badge" style="margin-right:0.5vmin;">T</span>'
+      : '';
+    h += '<div onclick="openScenarioHistory(' + s.scenarioNo + ')" style="padding:1.2vmin 1.5vmin;margin-bottom:1vmin;background:' + rowBg + ';border:' + rowBorder + ';border-radius:1vmin;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(66,165,245,0.12)\'" onmouseout="this.style.background=\'' + rowBg + '\'">'
       + '<div style="display:flex;align-items:center;gap:1.5vmin;margin-bottom:0.6vmin;">'
-      + '<div style="font-size:1.8vmin;font-weight:900;color:#64b5f6;white-space:nowrap;">No.' + s.scenarioNo + '</div>'
+      + tutBadge
+      + '<div style="font-size:1.8vmin;font-weight:900;color:' + noColor + ';white-space:nowrap;">' + noLabel + '</div>'
       + '<div style="flex:1;font-size:2vmin;font-weight:700;color:#e3f2fd;">' + _esc(s.name || '(名称未設定)') + '</div>'
       + '<div style="font-size:1.5vmin;color:#64b5f6;">詳細 ▶</div>'
       + '</div>'
       + '<div style="display:flex;gap:2vmin;align-items:center;flex-wrap:wrap;">'
       + '<div style="font-size:1.7vmin;color:#b0bec5;">クリア回数：<b style="color:#fff;">' + s.attempts + '回</b></div>'
-      + '<div style="font-size:1.7vmin;color:#b0bec5;">正答率：<b style="color:#' + (correctRate >= 70 ? '4caf50' : correctRate >= 40 ? 'ffa726' : 'ef5350') + ';">' + correctRate + '%</b></div>'
+      + (isTutorial ? '' : '<div style="font-size:1.7vmin;color:#b0bec5;">正答率：<b style="color:#' + (correctRate >= 70 ? '4caf50' : correctRate >= 40 ? 'ffa726' : 'ef5350') + ';">' + correctRate + '%</b></div>')
       + (bestGradeHtml ? bestGradeHtml : '')
       + '</div>'
       + '</div>';
@@ -22374,5 +22536,438 @@ function _showModeOverlay(onCard,onText){
 
 })(); /* end IIFE */
 </script>
+
+<script>
+/* ================================================================
+   チュートリアルシステム
+   ================================================================ */
+(function(){
+'use strict';
+
+var _tutNo = 0;
+var _tutStep = 0;
+var _tutActive = false;
+var _tutCompleted = false;
+var _tutInterval = null;
+var _tutHighlighted = [];
+
+/* ---- チュートリアルステップ定義 ---- */
+var TUTORIAL_STEPS = {
+  /* ============================================================
+     No.1 アイテムの持ち出し方法と移動方法
+     ============================================================ */
+  1: [
+    {
+      msg: '車両（バン）に積まれているアイテムを取り出してみましょう。\n「可燃性ガス検知器」と「高濃度ガス識別検知器」を選択してください。',
+      icon: '🚐',
+      highlightFn: function(){
+        /* van-container 内の .item を強調 */
+        document.querySelectorAll('#van-container .item').forEach(function(el){
+          el.classList.add('tut-highlight'); _tutHighlighted.push(el);
+        });
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return state.inventory.indexOf('det') >= 0 && state.inventory.indexOf('high') >= 0;
+      }
+    },
+    {
+      msg: 'プレイヤーは操作パッドで操作ができます。\nまずは画面の左端に向かって進み、別のマップへ進んでみましょう。',
+      icon: '🎮',
+      highlightFn: function(){
+        /* 左移動ボタンを強調 */
+        var btns = document.querySelectorAll('.controls-l .d-btn');
+        if(btns && btns[0]){ btns[0].classList.add('tut-highlight'); _tutHighlighted.push(btns[0]); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return state.room === 1; }
+    },
+    {
+      msg: '扉や階段でアクションボタンを押すことで、別のマップへ移動ができます。\n集合住宅の扉まで進み、中に入ってみましょう。',
+      icon: '🚪',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){ return state.room === 2; }
+    },
+    { isClear: true }
+  ],
+
+  /* ============================================================
+     No.2 アイテムの使用方法と扉の開放
+     ============================================================ */
+  2: [
+    {
+      msg: '通報宅前に到着したら、第三者に火気を持ち込まれないように、火気厳禁表示シートを目につきやすい箇所に設置しましょう。\nもし調査範囲内に入ってきた場合は、第三者をクリックすることで、直接危険を周知することができます。',
+      icon: '🔥',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-sign');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: '火気厳禁表示シートは画面の自由な場所に設置または回収ができます。\n所持数：10個',
+      icon: '📋',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-sign');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: '次に通報宅のガスメーターを特定しましょう。\nメモからメーター社番を確認できます。',
+      icon: '📝',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-memo');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: 'ガスメーターの社番を確認しましょう。\nガスメーターはパイプシャフトの扉の中に設置されていることもあります。',
+      icon: '🔍',
+      highlightFn: function(){
+        document.querySelectorAll('#room-corridor1 .ps-container').forEach(function(el){
+          el.classList.add('tut-highlight'); _tutHighlighted.push(el);
+        });
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: 'パイプシャフトや戸棚のような密閉された空間の扉を開放する場合は、大きく開放する前に、内部にガスが溜まっていないか確認する必要があります。\n中にガスが溜まっていないか調査するために、まずは少しだけパイプシャフトの扉を開けてみましょう。\n扉はドラッグ操作で開閉できます。',
+      icon: '🚪',
+      highlightFn: function(){
+        ['ps1-1','ps1-2','ps2-1','ps2-2'].forEach(function(id){
+          var el = document.getElementById(id);
+          if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+        });
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var doors = document.querySelectorAll('.room.active .ps-door');
+        for(var i=0;i<doors.length;i++){
+          var m = doors[i].style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+          if(m && Math.abs(parseFloat(m[1])) > 8) return true;
+        }
+        return false;
+      }
+    },
+    {
+      msg: '可燃性ガスの有無を調査するには、可燃性ガス検知器を使用します。',
+      icon: '🔬',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-det');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: '可燃性ガス検知器を選択すると、検知器モードに移行します。\nドラッグ操作で、ガスの反応の有無を調査できます。',
+      icon: '📡',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-det');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: '先ほど開けたパイプシャフトの隙間を可燃性ガス検知器で調査してみましょう。',
+      icon: '🔬',
+      highlightFn: function(){
+        ['ps1-1','ps1-2','ps2-1','ps2-2'].forEach(function(id){
+          var el = document.getElementById(id);
+          if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+        });
+      },
+      nextBtn: false,
+      checkFn: function(){
+        /* 検知器使用数が増えたらクリア */
+        var stats = window._gameStats;
+        if(stats && stats.detectorChecks > 0) return true;
+        /* PS扉のgas-cleared確認 */
+        var doors = document.querySelectorAll('.room.active .ps-door');
+        for(var i=0;i<doors.length;i++){
+          if(doors[i].dataset.gasCleared === 'true') return true;
+        }
+        return false;
+      }
+    },
+    { isClear: true }
+  ]
+};
+
+/* ---- 公開関数 ---- */
+function showTutorialSelect(){
+  try{ hideMenu(); }catch(e){}
+  var el = document.getElementById('scene-tutorial-select');
+  if(el) el.classList.add('active');
+}
+window.showTutorialSelect = showTutorialSelect;
+
+function closeTutorialSelect(){
+  var el = document.getElementById('scene-tutorial-select');
+  if(el) el.classList.remove('active');
+  try{ showMenu(); }catch(e){}
+}
+window.closeTutorialSelect = closeTutorialSelect;
+
+function startTutorial(no){
+  _tutNo = no;
+  _tutStep = 0;
+  _tutActive = true;
+  _tutCompleted = false;
+
+  /* 全画面クリア・ゲーム開始 */
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.overlay-screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('scene-game').classList.add('active');
+
+  /* C級 No.1シナリオを使用 */
+  try{
+    selectedDifficulty = 'C級';
+    selectedScenarioIdx = 0;
+    activeScenario = scenarioData[0];
+    window.currentScenarioGasKind = '13A';
+    window.currentScenarioWeather = '晴れ';
+    try{ setWeather('晴れ'); }catch(e){}
+    try{ loadStageComposition(''); }catch(e){}
+  }catch(e){}
+
+  /* BGM */
+  try{ stopMenuBGM(); }catch(e){}
+  try{ disableInGameBGM=true; stopBGMAll(); }catch(e){}
+  try{ if(typeof resetCommHistory==='function') resetCommHistory(); }catch(e){}
+  try{ if(typeof resetConversationHistory==='function') resetConversationHistory(); }catch(e){}
+
+  /* ゲーム初期化 */
+  initGame();
+  try{ applyAllCustoms(); }catch(e){}
+  try{ updateGuideSignsForStage(0); }catch(e){}
+
+  /* 危険タイマー停止（チュートリアル中は爆発なし） */
+  if(dangerTimer){ clearInterval(dangerTimer); dangerTimer = null; }
+
+  /* チュートリアル別の初期状態 */
+  if(no === 1){
+    state.room = 0; state.x = 30;
+    state.vanStock = ['det', 'high'];
+    state.inventory = ['phone', 'memo'];
+    state.equipped = null;
+    renderVan(); renderInventory(); updateHand();
+    try{ document.getElementById('room-parking').classList.add('active'); }catch(e){}
+    try{ document.getElementById('parking-msg').style.display='block'; }catch(e){}
+  } else if(no === 2){
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'sign', 'det'];
+    state.equipped = null;
+    state.itemCounts.sign = 10;
+    /* 通報者部屋を設定（C級No.1: 102号室） */
+    try{ residentRoom = 2; roomOpened = true; }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(3, 50);
+  }
+
+  /* チュートリアルオーバーレイ表示 */
+  var overlay = document.getElementById('tutorial-overlay');
+  if(overlay) overlay.classList.add('active');
+
+  /* ステップ開始 */
+  showTutorialStep();
+  startTutorialPolling();
+}
+window.startTutorial = startTutorial;
+
+function showTutorialStep(){
+  var steps = TUTORIAL_STEPS[_tutNo];
+  if(!steps || _tutStep >= steps.length) return;
+  var step = steps[_tutStep];
+
+  if(step.isClear){ showTutorialClear(); return; }
+
+  /* メッセージボックス更新 */
+  var msgBox  = document.getElementById('tutorial-msg-box');
+  var msgText = document.getElementById('tutorial-msg-text');
+  var msgIcon = document.getElementById('tutorial-msg-icon');
+  var nextBtn = document.getElementById('tutorial-next-btn');
+  if(!msgBox) return;
+
+  msgText.textContent = step.msg;
+  msgIcon.textContent = step.icon || '📖';
+
+  if(step.nextBtn){
+    nextBtn.classList.add('visible');
+  } else {
+    nextBtn.classList.remove('visible');
+  }
+
+  /* アニメーションリセット */
+  msgBox.style.animation = 'none';
+  msgBox.offsetHeight;
+  msgBox.style.animation = '';
+  msgBox.classList.add('visible');
+
+  /* ハイライト更新 */
+  clearHighlights();
+  if(step.highlightFn) setTimeout(step.highlightFn, 300);
+}
+
+function clearHighlights(){
+  _tutHighlighted.forEach(function(el){ el.classList.remove('tut-highlight'); });
+  _tutHighlighted = [];
+}
+
+function tutorialNextStep(){
+  _tutStep++;
+  showTutorialStep();
+}
+window.tutorialNextStep = tutorialNextStep;
+
+function startTutorialPolling(){
+  stopTutorialPolling();
+  _tutInterval = setInterval(checkTutorialProgress, 350);
+}
+
+function stopTutorialPolling(){
+  if(_tutInterval){ clearInterval(_tutInterval); _tutInterval = null; }
+}
+
+function checkTutorialProgress(){
+  if(!_tutActive || _tutCompleted) return;
+  var steps = TUTORIAL_STEPS[_tutNo];
+  if(!steps || _tutStep >= steps.length) return;
+  var step = steps[_tutStep];
+  if(!step.nextBtn && step.checkFn && step.checkFn()){
+    _tutStep++;
+    showTutorialStep();
+    return;
+  }
+  /* ハイライトを最新DOM状態に合わせて更新 */
+  if(step.highlightFn && _tutHighlighted.length === 0){
+    clearHighlights();
+    step.highlightFn();
+  }
+}
+
+function showTutorialClear(){
+  _tutCompleted = true;
+  stopTutorialPolling();
+  clearHighlights();
+
+  /* メッセージボックスを非表示 */
+  var msgBox = document.getElementById('tutorial-msg-box');
+  if(msgBox) msgBox.classList.remove('visible');
+
+  /* 履歴に保存 */
+  saveTutorialHistory(_tutNo);
+
+  /* クリアバナー表示 */
+  var name = _tutNo === 1
+    ? 'No.1 アイテムの持ち出し方法と移動方法'
+    : 'No.2 アイテムの使用方法と扉の開放';
+  var clearMsg = document.getElementById('tutorial-clear-msg');
+  if(clearMsg) clearMsg.textContent = 'チュートリアル ' + name + ' をクリアしました！\nプレイ記録を履歴に保存しました（C級扱い）。';
+
+  var banner = document.getElementById('tutorial-clear-banner');
+  if(banner) banner.classList.add('visible');
+}
+
+function saveTutorialHistory(no){
+  try{
+    var names = {
+      1: 'チュートリアル1：アイテムの持ち出し方法と移動方法',
+      2: 'チュートリアル2：アイテムの使用方法と扉の開放'
+    };
+    var record = {
+      scenarioNo: no === 1 ? -1 : -2,
+      scenarioName: names[no] || ('チュートリアル' + no),
+      grade: 'C',
+      totalPoints: 40,
+      isCorrect: null,
+      playerAnswer: 'チュートリアルクリア',
+      correctCause: '-',
+      at: Date.now(),
+      scores:{ safety:40, comm:40, speed:40, density:40, customer:40 }
+    };
+    var key = 'gasGame_clearHistory';
+    var list = [];
+    try{ list = JSON.parse(localStorage.getItem(key)||'[]'); if(!Array.isArray(list)) list=[]; }catch(e){ list=[]; }
+    list.unshift(record);
+    var limit = typeof getHistoryLimit==='function' ? getHistoryLimit() : 500;
+    if(limit>0) list=list.slice(0,limit);
+    localStorage.setItem(key, JSON.stringify(list));
+  }catch(e){ console.error(e); }
+}
+
+function _exitTutorialCleanup(){
+  _tutActive = false;
+  stopTutorialPolling();
+  clearHighlights();
+  var overlay = document.getElementById('tutorial-overlay');
+  if(overlay) overlay.classList.remove('active');
+  var msgBox = document.getElementById('tutorial-msg-box');
+  if(msgBox) msgBox.classList.remove('visible');
+  var banner = document.getElementById('tutorial-clear-banner');
+  if(banner) banner.classList.remove('visible');
+}
+
+function tutorialGoMenu(){
+  _exitTutorialCleanup();
+  /* ゲームタイマー停止 */
+  if(dangerTimer){ clearInterval(dangerTimer); dangerTimer=null; }
+  try{ stopBGMAll(); }catch(e){}
+  try{ startMenuBGM(); }catch(e){}
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.overlay-screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('scene-title').classList.add('active');
+  try{ showMenu(); }catch(e){}
+}
+window.tutorialGoMenu = tutorialGoMenu;
+
+function tutorialGoHistory(){
+  _exitTutorialCleanup();
+  if(dangerTimer){ clearInterval(dangerTimer); dangerTimer=null; }
+  try{ stopBGMAll(); }catch(e){}
+  try{ startMenuBGM(); }catch(e){}
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.overlay-screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('scene-title').classList.add('active');
+  try{ openHistory(); }catch(e){ try{ showMenu(); }catch(e2){} }
+}
+window.tutorialGoHistory = tutorialGoHistory;
+
+/* confirmExit 時もチュートリアルクリーンアップ */
+(function(){
+  if(typeof window.confirmExit!=='function'||window.confirmExit.__tutClean) return;
+  var _orig = window.confirmExit;
+  window.confirmExit = function(){
+    try{ _exitTutorialCleanup(); }catch(e){}
+    return _orig.apply(this, arguments);
+  };
+  window.confirmExit.__tutClean = true;
+})();
+
+})(); /* end tutorial IIFE */
+</script>
+
+<!-- チュートリアルオーバーレイ -->
+<div id="tutorial-overlay">
+  <div id="tutorial-msg-box">
+    <div id="tutorial-msg-icon">📖</div>
+    <div id="tutorial-msg-text"></div>
+    <div id="tutorial-msg-actions">
+      <button id="tutorial-next-btn" onclick="tutorialNextStep()">次へ ▶</button>
+    </div>
+  </div>
+  <div id="tutorial-pointer-container"></div>
+  <div id="tutorial-clear-banner">
+    <div class="tut-clear-stars">⭐ ⭐ ⭐</div>
+    <h2>チュートリアル<br>クリア！</h2>
+    <p id="tutorial-clear-msg">お疲れ様でした！<br>プレイ記録を履歴に保存しました。</p>
+    <div>
+      <button class="tut-clear-btn tut-clear-btn-history" onclick="tutorialGoHistory()">📈 履歴を確認する</button>
+      <button class="tut-clear-btn tut-clear-btn-menu" onclick="tutorialGoMenu()">🏠 メニューへ戻る</button>
+    </div>
+  </div>
+</div>
 
 </div></div></body></html>
