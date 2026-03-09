@@ -2220,6 +2220,55 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 /* Delivery danger event label tweak */
 #scene-delivery-danger .smoke-danger-head{ background:#000; color:#fdd835; }
 
+/* 配達員吹き出し（火気厳禁表示シート設置時） */
+#deliveryman-bubble {
+  position: absolute;
+  bottom: 102%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 0.35vmin solid #e65100;
+  border-radius: 50%;
+  width: 9vmin;
+  height: 9vmin;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6vmin;
+  box-shadow: 0 0.3vmin 1.2vmin rgba(0,0,0,0.28);
+  pointer-events: none;
+  z-index: 1;
+  animation: dm-bubble-pop 0.3s ease-out;
+}
+#deliveryman-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1.3vmin solid transparent;
+  border-top-color: #fff;
+  filter: drop-shadow(0 0.15vmin 0 #e65100);
+}
+#deliveryman-bubble::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1.5vmin solid transparent;
+  border-top-color: #e65100;
+}
+#deliveryman-bubble img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+@keyframes dm-bubble-pop {
+  0%   { opacity: 0; transform: translateX(-50%) scale(0.7); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
 
 
 /* =========================
@@ -2789,12 +2838,12 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 /* ===== チュートリアルシステム CSS ===== */
 #tutorial-overlay {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  z-index: 500; pointer-events: none; display: none;
+  z-index: 610; pointer-events: none; display: none;
 }
 #tutorial-overlay.active { display: block; }
 
 #tutorial-msg-box {
-  position: absolute; bottom: 12%; left: 50%;
+  position: absolute; bottom: 22%; left: 50%;
   transform: translateX(-50%); width: 84%; min-height: 10vmin;
   background: linear-gradient(135deg, #fffde7 0%, #fff9c4 50%, #fff3e0 100%);
   border: 0.4vmin solid #f9a825;
@@ -2811,7 +2860,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 }
 /* チュートリアルメッセージ折りたたみトグルボタン */
 #tutorial-msg-toggle-btn {
-  position: absolute; bottom: 7.5%; left: 50%;
+  position: absolute; bottom: 17%; left: 50%;
   transform: translateX(-50%);
   z-index: 503; pointer-events: auto; display: none;
   background: linear-gradient(135deg, #ff9800, #e65100);
@@ -12905,6 +12954,9 @@ try{
 </div>
 
 <div id="deliveryman" style="position:absolute; bottom:15%; left:105%; width:12%; height:45%; z-index:260; display:none; pointer-events:auto;">
+  <div id="deliveryman-bubble">
+    <img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E7%81%AB%E6%B0%97%E5%8E%B3%E7%A6%81.png" alt="火気厳禁表示シート">
+  </div>
   <img id="deliveryman-img" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%85%8D%E9%81%94%E5%93%A1.gif" alt="配達員" style="width:100%; height:100%; object-fit:contain; pointer-events:none;">
 </div>
 
@@ -13233,6 +13285,36 @@ try{
       window.changeRoom.__deliveryHideOnRoomChangeWrapped = true;
     }
   }catch(e){}
+})();
+</script>
+
+<script id="patch-deliveryman-bubble-sync">
+// 配達員吹き出し同期：火気厳禁表示シート設置済みなら配達員頭上に吹き出しを表示
+(function(){
+  if(window.__deliveryBubbleSyncInstalled) return;
+  window.__deliveryBubbleSyncInstalled = true;
+  setInterval(function(){
+    try{
+      var dm = document.getElementById('deliveryman');
+      var bubble = document.getElementById('deliveryman-bubble');
+      if(!dm || !bubble) return;
+      if(dm.style.display === 'none' || dm.style.display === ''){
+        if(bubble.style.display !== 'none') bubble.style.display = 'none';
+        return;
+      }
+      // 設置済み火気厳禁表示シートを確認
+      var hasSign = !!document.querySelector('.placed-item[data-type="sign"]');
+      if(!hasSign && window.aptState){
+        var all = ((window.aptState.A && window.aptState.A.placedItems)||[]).concat((window.aptState.B && window.aptState.B.placedItems)||[]);
+        for(var i=0;i<all.length;i++){
+          var t = String(all[i] && all[i].type || '');
+          if(t==='sign'||t==='signSheet'||t==='sheet'){hasSign=true;break;}
+        }
+      }
+      var want = hasSign ? 'flex' : 'none';
+      if(bubble.style.display !== want) bubble.style.display = want;
+    }catch(e){}
+  }, 200);
 })();
 </script>
 
@@ -23066,6 +23148,22 @@ function checkTutorialProgress(){
     if(needRefresh){
       clearHighlights();
       step.highlightFn();
+      setTimeout(placeTutPointers, 50);
+    }
+  }
+
+  /* チュートリアル2ステップ2（メモ確認ステップ）：まだPlacementMode中なら「終了」ボタンを強調して閉じ方を案内 */
+  if(_tutNo === 2 && _tutStep === 2){
+    var stopBtnEl = document.querySelector('#detector-layer .detector-btn');
+    var inPlacement = typeof isPlacementMode !== 'undefined' && isPlacementMode;
+    var stopBtnIdx = stopBtnEl ? _tutHighlighted.indexOf(stopBtnEl) : -1;
+    if(inPlacement && stopBtnEl && stopBtnIdx < 0){
+      stopBtnEl.classList.add('tut-highlight');
+      _tutHighlighted.push(stopBtnEl);
+      setTimeout(placeTutPointers, 50);
+    } else if(!inPlacement && stopBtnIdx >= 0){
+      stopBtnEl.classList.remove('tut-highlight');
+      _tutHighlighted.splice(stopBtnIdx, 1);
       setTimeout(placeTutPointers, 50);
     }
   }
