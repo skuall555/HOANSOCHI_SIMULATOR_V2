@@ -3103,9 +3103,13 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       <div style="font-size:1.9vmin;font-weight:bold;">No.4　通報者との会話方法</div>
       <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">通報者宅をノックして入室し、安全確保の注意喚起をしよう</div>
     </button>
-    <button class="menu-btn" style="background:linear-gradient(to bottom,#00838f 0%,#006064 100%);margin-bottom:2.5vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(5)">
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#00838f 0%,#006064 100%);margin-bottom:2vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(5)">
       <div style="font-size:1.9vmin;font-weight:bold;">No.5　危険度メーターと保安措置</div>
       <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">危険度の上昇を窓開けや検知器調査で抑制する保安措置を実施しよう</div>
+    </button>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#37474f 0%,#263238 100%);margin-bottom:2.5vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(6)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.6　問診と検知器調査</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">通報者へ問診して臭気箇所を特定し、検知器で浴室内の反応箇所を調査しよう</div>
     </button>
     <button class="menu-btn sec" onclick="closeTutorialSelect()">← メニューへ戻る</button>
   </div>
@@ -22768,6 +22772,13 @@ var _tutT4KitchenCommOpened = false;
 var _tutT4SendPressed1 = false;
 var _tutT4SendPressed2 = false;
 var _tutT4FinalCommClosed = false;
+/* No.6チュートリアル用：状態追跡フラグ */
+var _tutT6CommOpened = false;
+var _tutT6Send1Done = false;
+var _tutT6Send2Done = false;
+var _tutT6BathSliderScanned = false;
+var _tutT6BathNearCount = 0;
+var _tutT6BathDetCount = 0;
 
 /* ---- チュートリアルステップ定義 ---- */
 var TUTORIAL_STEPS = {
@@ -23261,6 +23272,135 @@ var TUTORIAL_STEPS = {
       nextBtn: true, checkFn: null
     },
     { isClear: true }
+  ],
+
+  /* ============================================================
+     No.6 問診と検知器調査
+     ============================================================ */
+  6: [
+    /* Step 0: 通報者の緑ボタンへ話しかける */
+    {
+      msg: '通報者から臭気の情報を聞き出し、反応箇所がないか検知器で調査しましょう。\nまず、通報者へ話しかけます。',
+      icon: '💬',
+      highlightFn: function(){
+        var el = document.getElementById('talk-btn');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT6CommOpened; }
+    },
+    /* Step 1: 「どこ」を含む問診を送信 */
+    {
+      msg: '通報者へ問診して、臭気情報を聞き出します。問診では、「いつ」「どこで」「どの程度」「どんなとき」にガス臭気を感じたか、聞き出すことで大きなヒントにつながります。\n試しに「どこでガス臭気を感じたか」聞き出してみましょう。',
+      icon: '❓',
+      highlightFn: function(){
+        var el = document.getElementById('comm-input');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT6Send1Done; }
+    },
+    /* Step 2: 「どんな」を含む問診を送信 */
+    {
+      msg: 'グッジョブ！次に通報者へ「どんなときにガス臭気を感じたか」聞き出してみましょう。',
+      icon: '❓',
+      highlightFn: function(){
+        var el = document.getElementById('comm-input');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT6Send2Done; }
+    },
+    /* Step 3: 廊下へ移動 */
+    {
+      msg: 'どんなときに臭気を感じたか聞き出せると、調査範囲を更に絞り込むことができます。\nそれでは、通報者が臭気を感じた部屋へ向かってみましょう。操作パッドの左を押して、廊下へ移動します。',
+      icon: '🚶',
+      highlightFn: function(){
+        var btns = document.querySelectorAll('.controls-l .d-btn');
+        if(btns && btns[0]){ btns[0].classList.add('tut-highlight'); _tutHighlighted.push(btns[0]); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return typeof state !== 'undefined' && state.room === 5; }
+    },
+    /* Step 4: 脱衣所扉の滞留ガス確認 */
+    {
+      msg: '浴室は脱衣所の中に入口があります。脱衣所の扉を開けるときは、可燃性ガス検知器で、内部にガスが溜まっていないか確認しましょう。',
+      icon: '🔬',
+      highlightFn: function(){
+        var el = document.getElementById('door-bath-slider');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        if(_tutT6BathSliderScanned) return true;
+        var el = document.getElementById('door-bath-slider');
+        if(el && el.dataset.gasCleared === 'true'){ _tutT6BathSliderScanned = true; return true; }
+        return false;
+      }
+    },
+    /* Step 5: 浴室へ入室 */
+    {
+      msg: '浴室への入口は、脱衣所の一番奥の扉から入れます。',
+      icon: '🚪',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){ return typeof state !== 'undefined' && state.room === 8; }
+    },
+    /* Step 6: 臭気メーターで反応箇所に近づく */
+    {
+      msg: '浴室へ入りました。まずは臭気があるか確認しましょう。臭気メーターを頼りに、浴室内をゆっくり移動してみてください。',
+      icon: '👃',
+      highlightFn: function(){
+        var el = document.getElementById('odor-meter-panel');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return _tutT6BathNearCount >= 5; }
+    },
+    /* Step 7: 可燃性ガス検知器で反応箇所を発見 */
+    {
+      msg: 'この辺りで臭気があるようです。可燃性ガス検知器に持ち変えて、反応箇所を探してみましょう。調査はドラッグで行います。',
+      icon: '🔍',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-det');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return _tutT6BathDetCount >= 3; }
+    },
+    /* Step 8: 火気厳禁シートとポケット警報器を設置 */
+    {
+      msg: '反応箇所を発見しました！反応箇所を発見したら、安全のため、反応箇所の近くに「火気厳禁表示シート」と「ポケット警報器」を設置しましょう。\nポケット警報器は、設置個所の濃度が高くなると発報してくれます。',
+      icon: '⚠️',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){
+        var signs = document.querySelectorAll('.placed-item[data-type="sign"]');
+        var alarms = document.querySelectorAll('.placed-item[data-type="alm"]');
+        return signs.length >= 1 && alarms.length >= 1;
+      }
+    },
+    /* Step 9: 高濃度ガス識別検知器をクリック */
+    {
+      msg: '次にガス濃度とガス種を測定しましょう。高濃度ガス識別検知器を使用します。',
+      icon: '🔬',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-high');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof isGasIdMode !== 'undefined' && isGasIdMode === true;
+      }
+    },
+    /* Step 10: 説明 + OKボタン（nextBtn） */
+    {
+      msg: '検知モードになりました。反応箇所をクリックすることで、現在のガス濃度とガス種が確認できます。\n濃度が低いと、ガス種が判別できません。ガス種が識別不可になっている際は、少し時間を置いてから、改めて確認してみましょう。',
+      icon: '✅',
+      highlightFn: null,
+      nextBtn: true, checkFn: null
+    },
+    { isClear: true }
   ]
 };
 
@@ -23420,6 +23560,45 @@ function startTutorial(no){
     }catch(e){}
     renderVan(); renderInventory(); updateHand();
     changeRoom(3, 50);
+  } else if(no === 6){
+    /* No.6: 問診と検知器調査 */
+    _tutT6CommOpened = false;
+    _tutT6Send1Done = false;
+    _tutT6Send2Done = false;
+    _tutT6BathSliderScanned = false;
+    _tutT6BathNearCount = 0;
+    _tutT6BathDetCount = 0;
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'det', 'high', 'sign', 'alm'];
+    state.equipped = null;
+    state.itemCounts.sign = 10;
+    state.itemCounts.alm = 3;
+    /* 通報者部屋を設定（102号室）・入室済み */
+    try{ residentRoom = 2; roomOpened = true; }catch(e){}
+    /* 通報者は台所にいる */
+    try{ reporterRoom = 9; }catch(e){}
+    /* メーター社番を固定値で設定 */
+    try{
+      meterSerialCorrect = '123456789';
+      meterSerials = ['','987654321','123456789','',''];
+      updateCallMeterSerial();
+      try{ applyPsSerialLabels(); }catch(e2){}
+    }catch(e){}
+    /* 室内漏れを浴室（102号室）に設定 */
+    try{ _indoorLeakRoomNo = '102'; }catch(e){}
+    try{ if(activeScenario) activeScenario.indoorLeakRoomNo = '102'; }catch(e){}
+    /* 脱衣所扉をリセット（スキャン検知のため isDangerous を true にする） */
+    try{
+      var _bsd6 = document.getElementById('door-bath-slider');
+      if(_bsd6){
+        _bsd6.style.transform = 'translateX(0px)';
+        _bsd6.dataset.isDangerous = 'true';
+        _bsd6.dataset.gasCleared = 'false';
+        _bsd6.dataset.bonusApplied = 'false';
+      }
+    }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(9, 50);
   } else if(no === 5){
     /* No.5: 危険度メーターと保安措置 */
     _tutT5HatchScanned = false;
@@ -23645,6 +23824,19 @@ function checkTutorialProgress(){
     }
   }
 
+  /* チュートリアル6ステップ6（臭気メーターで浴室内に近づく）：浴室に滞在するとカウント増加 */
+  if(_tutNo === 6 && _tutStep === 6){
+    if(typeof state !== 'undefined' && state.room === 8){
+      _tutT6BathNearCount++;
+    }
+  }
+  /* チュートリアル6ステップ7（可燃性ガス検知器で浴室を調査）：浴室で検知器モードのままカウント増加 */
+  if(_tutNo === 6 && _tutStep === 7){
+    if(typeof isDetectorMode !== 'undefined' && isDetectorMode && typeof state !== 'undefined' && state.room === 8){
+      _tutT6BathDetCount++;
+    }
+  }
+
   /* チュートリアル2ステップ2（メモ確認ステップ）：まだPlacementMode中なら「終了」ボタンを強調して閉じ方を案内 */
   if(_tutNo === 2 && _tutStep === 2){
     var stopBtnEl = document.querySelector('#detector-layer .detector-btn');
@@ -23683,7 +23875,9 @@ function showTutorialClear(){
         ? 'No.3 ガスメーターからの漏洩検査'
         : _tutNo === 4
           ? 'No.4 通報者との会話方法'
-          : 'No.5 危険度メーターと保安措置';
+          : _tutNo === 5
+            ? 'No.5 危険度メーターと保安措置'
+            : 'No.6 問診と検知器調査';
   var clearMsg = document.getElementById('tutorial-clear-msg');
   if(clearMsg) clearMsg.textContent = 'チュートリアル ' + name + ' をクリアしました！\nプレイ記録を履歴に保存しました（C級扱い）。';
 
@@ -23698,10 +23892,11 @@ function saveTutorialHistory(no){
       2: 'チュートリアル2：アイテムの使用方法と扉の開放',
       3: 'チュートリアル3：ガスメーターからの漏洩検査',
       4: 'チュートリアル4：通報者との会話方法',
-      5: 'チュートリアル5：危険度メーターと保安措置'
+      5: 'チュートリアル5：危険度メーターと保安措置',
+      6: 'チュートリアル6：問診と検知器調査'
     };
     var record = {
-      scenarioNo: no === 1 ? -1 : no === 2 ? -2 : no === 3 ? -3 : no === 4 ? -4 : -5,
+      scenarioNo: no === 1 ? -1 : no === 2 ? -2 : no === 3 ? -3 : no === 4 ? -4 : no === 5 ? -5 : -6,
       scenarioName: names[no] || ('チュートリアル' + no),
       grade: 'C',
       totalPoints: 40,
@@ -23888,6 +24083,46 @@ window.tutorialGoHistory = tutorialGoHistory;
   _hookT4();
   setTimeout(_hookT4, 1000);
   setTimeout(_hookT4, 3000);
+})();
+
+/* ================================================================
+   No.6チュートリアル用フック
+   ================================================================ */
+(function(){
+  function _hookT6(){
+    /* openCommWindow フック：台所での会話ボタン検知 */
+    try{
+      if(typeof window.openCommWindow==='function' && !window.openCommWindow.__tutT6Hooked){
+        var _origOCW6 = window.openCommWindow;
+        window.openCommWindow = function(){
+          if(_tutActive && _tutNo===6 && _tutStep===0) _tutT6CommOpened=true;
+          return _origOCW6.apply(this, arguments);
+        };
+        window.openCommWindow.__tutT6Hooked = true;
+      }
+    }catch(e){}
+
+    /* sendComm フック：問診送信検知 */
+    try{
+      if(typeof window.sendComm==='function' && !window.sendComm.__tutT6Hooked){
+        var _origSC6 = window.sendComm;
+        window.sendComm = function(){
+          if(_tutActive && _tutNo===6){
+            var el = document.getElementById('comm-input');
+            var val = el ? el.value : '';
+            if(_tutStep===1 && /どこ/.test(val)) _tutT6Send1Done=true;
+            if(_tutStep===2 && /どんな/.test(val)) _tutT6Send2Done=true;
+          }
+          return _origSC6.apply(this, arguments);
+        };
+        window.sendComm.__tutT6Hooked = true;
+      }
+    }catch(e){}
+  }
+
+  _hookT6();
+  setTimeout(_hookT6, 1000);
+  setTimeout(_hookT6, 3000);
 })();
 
 })(); /* end tutorial IIFE */
