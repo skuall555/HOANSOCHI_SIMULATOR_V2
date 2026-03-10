@@ -7090,6 +7090,8 @@ if (isWindow) {
                 dangerRate += 0.2;
                 updateDangerUI();
                 if(window._gameStats) window._gameStats.safetyAwarenessPenalty = (window._gameStats.safetyAwarenessPenalty||0) + 5;
+                // ブッブ効果音：滞留ガス未確認のまま大きく開けた警告音
+                if(!isMuted){ try{ SE.detect_ng(); }catch(_eSE){} }
               }catch(_eWarn){}
             }
             return;
@@ -15751,6 +15753,22 @@ function calcScenarioStats(list){
   }
   var arr = [];
   for(var k in map) arr.push(map[k]);
+  arr.sort(function(a,b){ return a.scenarioNo - b.scenarioNo; });
+  // チュートリアル1～7はC級のみに常時表示（未プレイでも一覧に表示）
+  var tutNames = {
+    '-1':'チュートリアル1：アイテムの持ち出し方法と移動方法',
+    '-2':'チュートリアル2：アイテムの使用方法と扉の開放',
+    '-3':'チュートリアル3：ガスメーターからの漏洩検査',
+    '-4':'チュートリアル4：通報者との会話方法',
+    '-5':'チュートリアル5：危険度メーターと保安措置',
+    '-6':'チュートリアル6：問診と検知器調査',
+    '-7':'チュートリアル7：安全率メーターとクリア条件'
+  };
+  for(var tno = -7; tno <= -1; tno++){
+    if(!map[tno]){
+      arr.push({scenarioNo:tno, name:tutNames[String(tno)]||('チュートリアル'+Math.abs(tno)), attempts:0, correct:0, lastAt:null, bestGrade:'C'});
+    }
+  }
   arr.sort(function(a,b){ return a.scenarioNo - b.scenarioNo; });
   return arr;
 }
