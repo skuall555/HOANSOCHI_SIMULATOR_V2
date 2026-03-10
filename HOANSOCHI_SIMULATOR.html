@@ -23315,8 +23315,15 @@ function startTutorial(no){
     changeRoom(3, 50);
   }
 
-  /* チュートリアルオーバーレイ表示 */
+  /* チュートリアルオーバーレイ表示
+     app-container の直下に移動してから active にすることで、
+     #scene-game (z-index:10) のスタッキングコンテキストに縛られず
+     #comm-window (z-index:300) より上に描画されるようにする */
   var overlay = document.getElementById('tutorial-overlay');
+  var _appCont = document.getElementById('app-container');
+  if(overlay && _appCont && overlay.parentElement !== _appCont){
+    _appCont.appendChild(overlay);
+  }
   if(overlay) overlay.classList.add('active');
 
   /* ステップ開始 */
