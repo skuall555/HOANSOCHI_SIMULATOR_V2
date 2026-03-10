@@ -3112,8 +3112,8 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">通報者へ問診して臭気箇所を特定し、検知器で浴室内の反応箇所を調査しよう</div>
     </button>
     <button class="menu-btn" style="background:linear-gradient(to bottom,#c62828 0%,#b71c1c 100%);margin-bottom:2.5vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(7)">
-      <div style="font-size:1.9vmin;font-weight:bold;">No.7　問診と検知器調査（台所編）</div>
-      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">台所にいる通報者へ問診し、可燃性ガス検知器と高濃度ガス識別検知器で台所を調査しよう</div>
+      <div style="font-size:1.9vmin;font-weight:bold;">No.7　安全率メーターとクリア条件</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">安全率メーターの見方と、ノルマ達成でシナリオクリアになる仕組みを学ぼう</div>
     </button>
     <button class="menu-btn sec" onclick="closeTutorialSelect()">← メニューへ戻る</button>
   </div>
@@ -22784,10 +22784,9 @@ var _tutT6BathSliderScanned = false;
 var _tutT6BathNearCount = 0;
 var _tutT6BathDetCount = 0;
 /* No.7チュートリアル用：状態追跡フラグ */
-var _tutT7CommOpened = false;
-var _tutT7Send1Done = false;
-var _tutT7Send2Done = false;
-var _tutT7KitchenDetCount = 0;
+var _tutT7WindowOpened = false;
+var _tutT7SignPlaced = false;
+var _tutT7AlarmPlaced = false;
 
 /* ---- チュートリアルステップ定義 ---- */
 var TUTORIAL_STEPS = {
@@ -23413,107 +23412,81 @@ var TUTORIAL_STEPS = {
   ],
 
   /* ============================================================
-     No.7 問診と検知器調査（台所編）
+     No.7 安全率メーターとクリア条件
      ============================================================ */
   7: [
-    /* Step 0: 通報者へ話しかける */
+    /* Step 0: 安全率メーター説明 */
     {
-      msg: '台所にいる通報者に問診を行いましょう。「話しかける」ボタンをタップして会話ウィンドウを開いてください。',
-      icon: '💬',
+      msg: '保安措置を行うことで「安全率」が上昇します。\n安全率がノルマ（100%）に達すると「保安措置を完了する」ボタンが出現し、シナリオクリアとなります。\nまずは安全率メーターを確認しましょう。',
+      icon: '📊',
       highlightFn: function(){
-        document.querySelectorAll('.talk-btn, .comm-btn, [onclick*="openCommWindow"]').forEach(function(el){
-          el.classList.add('tut-highlight'); _tutHighlighted.push(el);
-        });
-      },
-      nextBtn: false,
-      checkFn: function(){ return _tutT7CommOpened; }
-    },
-    /* Step 1: 場所を問診 */
-    {
-      msg: '会話ウィンドウが開きました。まず「どこ」で臭気がするか確認しましょう。\n入力欄に「どこ」を含む文章を入力して送信してください。',
-      icon: '❓',
-      highlightFn: function(){
-        var el = document.getElementById('comm-input');
+        var el = document.getElementById('safety-panel');
         if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
-        var btn = document.querySelector('#comm-window .send-btn, #comm-window button[onclick*="sendComm"]');
-        if(btn){ btn.classList.add('tut-highlight'); _tutHighlighted.push(btn); }
       },
-      nextBtn: false,
-      checkFn: function(){ return _tutT7Send1Done; }
+      nextBtn: true, checkFn: null
     },
-    /* Step 2: 状態を問診 */
+    /* Step 1: 台所の窓を全開 */
     {
-      msg: '次に「どんな」状況か確認しましょう。\n入力欄に「どんな」を含む文章を入力して送信してください。',
-      icon: '❓',
+      msg: '試しに台所の窓を全開にしてみましょう。\n窓を開けると換気がされ、安全率が上昇します。',
+      icon: '🪟',
       highlightFn: function(){
-        var el = document.getElementById('comm-input');
-        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
-        var btn = document.querySelector('#comm-window .send-btn, #comm-window button[onclick*="sendComm"]');
-        if(btn){ btn.classList.add('tut-highlight'); _tutHighlighted.push(btn); }
-      },
-      nextBtn: false,
-      checkFn: function(){ return _tutT7Send2Done; }
-    },
-    /* Step 3: 可燃性ガス検知器を選択 */
-    {
-      msg: '問診が完了しました。台所内の臭気源を特定するために「可燃性ガス検知器」を選択してください。\n検知器はドラッグ操作で調査を行います。',
-      icon: '🔍',
-      highlightFn: function(){
-        var el = document.querySelector('.visual-det');
+        var el = document.getElementById('kitchen-window-b');
         if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
       },
       nextBtn: false,
-      checkFn: function(){ return typeof isDetectorMode !== 'undefined' && isDetectorMode === true; }
+      checkFn: function(){
+        if(_tutT7WindowOpened) return true;
+        var el = document.getElementById('kitchen-window-b');
+        if(!el) return false;
+        var tx = 0;
+        if(typeof _getTranslateX === 'function'){ tx = Math.abs(_getTranslateX(el)); }
+        if(!tx){ var m = el.style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/); if(m) tx = Math.abs(parseFloat(m[1])); }
+        if(tx >= 72){ _tutT7WindowOpened = true; return true; }
+        return false;
+      }
     },
-    /* Step 4: 台所内を検知器でスキャン */
+    /* Step 2: 安全率上昇確認 + 保安措置説明 */
     {
-      msg: '台所内をドラッグして、ガスの反応箇所を探しましょう。床下点検口付近を重点的に調べてみてください。',
-      icon: '🔍',
-      highlightFn: function(){
-        var el = document.getElementById('kitchen-hatch-a') || document.getElementById('kitchen-hatch') || document.querySelector('[id*="kitchen-hatch"]');
-        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
-      },
-      nextBtn: false,
-      checkFn: function(){ return _tutT7KitchenDetCount >= 5; }
-    },
-    /* Step 5: 火気厳禁表示シートを設置 */
-    {
-      msg: '反応箇所を発見しました！安全のため、反応箇所の近くに「火気厳禁表示シート」を設置しましょう。',
+      msg: 'グッジョブ！窓を全開にして安全率が上昇しました。\n次に、反応箇所の近くに「火気厳禁表示シート」を設置しましょう。\n設置すると安全率がさらに上昇します。',
       icon: '⚠️',
+      highlightFn: function(){
+        var el = document.getElementById('safety-panel');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    /* Step 3: 火気厳禁シートを設置 */
+    {
+      msg: '台所の反応箇所（光っているエリア）の近くに「火気厳禁表示シート」を設置しましょう。',
+      icon: '🚫',
       highlightFn: null,
       nextBtn: false,
       checkFn: function(){
-        return document.querySelectorAll('.placed-item[data-type="sign"]').length >= 1;
+        if(_tutT7SignPlaced) return true;
+        if(document.querySelectorAll('.placed-item[data-type="sign"]').length >= 1){ _tutT7SignPlaced = true; return true; }
+        return false;
       }
     },
-    /* Step 6: ポケット警報器を設置 */
+    /* Step 4: ポケット警報器を設置 */
     {
-      msg: '続いて「ポケット警報器」も設置しましょう。ポケット警報器は設置箇所のガス濃度が高くなると発報します。',
+      msg: '次に「ポケット警報器」も反応箇所の近くに設置しましょう。\nポケット警報器は設置箇所のガス濃度が高くなると発報します。',
       icon: '🚨',
       highlightFn: null,
       nextBtn: false,
       checkFn: function(){
-        return document.querySelectorAll('.placed-item[data-type="alm"]').length >= 1;
+        if(_tutT7AlarmPlaced) return true;
+        if(document.querySelectorAll('.placed-item[data-type="alm"]').length >= 1){ _tutT7AlarmPlaced = true; return true; }
+        return false;
       }
     },
-    /* Step 7: 高濃度ガス識別検知器を選択 */
+    /* Step 5: クリア条件説明 + OKボタン */
     {
-      msg: '保安措置が完了しました。次にガス濃度とガス種を測定するために「高濃度ガス識別検知器」に持ち変えましょう。',
-      icon: '🔬',
+      msg: '保安措置が完了しました！\n安全率がノルマ（100%）に達すると、画面下部に「保安措置を完了する」ボタンが出現します。このボタンを押すとシナリオクリアとなります。\nシナリオ設定でノルマ値を変更することもできます。',
+      icon: '✅',
       highlightFn: function(){
-        var el = document.querySelector('.visual-high');
+        var el = document.getElementById('safety-panel');
         if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
       },
-      nextBtn: false,
-      checkFn: function(){
-        return typeof isGasIdMode !== 'undefined' && isGasIdMode === true;
-      }
-    },
-    /* Step 8: 説明 + OKボタン（nextBtn） */
-    {
-      msg: '高濃度ガス識別検知器の検知モードになりました。反応箇所をクリックすることで、現在のガス濃度とガス種が確認できます。\n以上が台所での問診と検知器調査の基本的な流れです。',
-      icon: '✅',
-      highlightFn: null,
       nextBtn: true, checkFn: null
     },
     { isClear: true }
@@ -23562,6 +23535,19 @@ function startTutorial(no){
   try{ disableInGameBGM=true; stopBGMAll(); }catch(e){}
   try{ if(typeof resetCommHistory==='function') resetCommHistory(); }catch(e){}
   try{ if(typeof resetConversationHistory==='function') resetConversationHistory(); }catch(e){}
+
+  /* 前回チュートリアルのアイテム使用モードをリセット */
+  try{ if(typeof stopMode === 'function') stopMode(); }catch(e){}
+  try{ isGasIdMode = false; }catch(e){}
+  try{ isDetectorMode = false; }catch(e){}
+  try{ isPlacementMode = false; }catch(e){}
+  try{ isVentMode = false; }catch(e){}
+  try{
+    var _dtool = document.getElementById('detector-tool');
+    if(_dtool) _dtool.style.display = 'none';
+    var _dlayer = document.getElementById('detector-layer');
+    if(_dlayer) _dlayer.style.display = 'none';
+  }catch(e){}
 
   /* ゲーム初期化 */
   initGame();
@@ -23703,6 +23689,9 @@ function startTutorial(no){
     /* 室内漏れを浴室（102号室）に設定 */
     try{ _indoorLeakRoomNo = '102'; }catch(e){}
     try{ if(activeScenario) activeScenario.indoorLeakRoomNo = '102'; }catch(e){}
+    /* 反応箇所（hotspot1）を浴室に設定 */
+    try{ if(activeScenario) activeScenario.leak1 = '浴室'; }catch(e){}
+    try{ hotspot1 = buildHotspot2('浴室', 1); hotspotFound1 = false; hotspot2 = null; hotspotFound2 = false; }catch(e){}
     /* 脱衣所扉をリセット（スキャン検知のため isDangerous を true にする） */
     try{
       var _bsd6 = document.getElementById('door-bath-slider');
@@ -23716,20 +23705,17 @@ function startTutorial(no){
     renderVan(); renderInventory(); updateHand();
     changeRoom(9, 50);
   } else if(no === 7){
-    /* No.7: 問診と検知器調査（台所編） */
-    _tutT7CommOpened = false;
-    _tutT7Send1Done = false;
-    _tutT7Send2Done = false;
-    _tutT7KitchenDetCount = 0;
+    /* No.7: 安全率メーターとクリア条件 */
+    _tutT7WindowOpened = false;
+    _tutT7SignPlaced = false;
+    _tutT7AlarmPlaced = false;
     state.vanStock = [];
-    state.inventory = ['phone', 'memo', 'det', 'high', 'sign', 'alm'];
+    state.inventory = ['phone', 'memo', 'det', 'sign', 'alm'];
     state.equipped = null;
     state.itemCounts.sign = 10;
     state.itemCounts.alm = 3;
-    /* 通報者部屋を設定（102号室）・入室済み */
-    try{ residentRoom = 2; roomOpened = true; }catch(e){}
-    /* 通報者は台所にいる */
-    try{ reporterRoom = 9; }catch(e){}
+    /* 通報者部屋を設定（102号室 B側）・入室済み */
+    try{ residentRoom = 2; roomOpened = true; currentApartmentOwner = 'B'; }catch(e){}
     /* メーター社番を固定値で設定 */
     try{
       meterSerialCorrect = '123456789';
@@ -23737,19 +23723,13 @@ function startTutorial(no){
       updateCallMeterSerial();
       try{ applyPsSerialLabels(); }catch(e2){}
     }catch(e){}
-    /* 室内漏れを台所（102号室）に設定 */
-    try{ _indoorLeakRoomNo = '102'; }catch(e){}
-    try{ if(activeScenario) activeScenario.indoorLeakRoomNo = '102'; }catch(e){}
-    /* 台所の床下点検口を「滞留ガスの可能性あり」に設定（検知器でスキャン可能にする） */
+    /* 反応箇所（hotspot1）を台所（B側）に設定 */
+    try{ if(activeScenario) activeScenario.leak1 = '台所'; }catch(e){}
+    try{ hotspot1 = buildHotspot2('台所', 1); hotspotFound1 = false; hotspot2 = null; hotspotFound2 = false; }catch(e){}
+    /* 台所の窓を全閉状態にリセット */
     try{
-      var _kh7 = document.getElementById('kitchen-hatch-a') || document.getElementById('kitchen-hatch') || document.querySelector('[id*="kitchen-hatch"]:not([id*="-b"])');
-      if(_kh7){
-        _kh7.dataset.isDangerous = 'true';
-        _kh7.dataset.gasCleared = 'false';
-        _kh7.dataset.bonusApplied = 'false';
-        _kh7.style.transform = 'translateX(0px)';
-        _kh7.style.opacity = '1';
-      }
+      var _kw7 = document.getElementById('kitchen-window-b');
+      if(_kw7){ _kw7.style.transform = 'translateX(0px)'; _kw7.dataset.bonusApplied = 'false'; }
     }catch(e){}
     renderVan(); renderInventory(); updateHand();
     changeRoom(9, 50);
@@ -23885,7 +23865,7 @@ function placeTutPointers(){
       var ptr = document.createElement('div');
       ptr.className = 'tut-pointer';
       var cx = rect.left + rect.width / 2 - appRect.left;
-      var ty = rect.top - appRect.top - 1;
+      var ty = rect.bottom - appRect.top;
       ptr.style.left = cx + 'px';
       ptr.style.top = ty + 'px';
       ptr.style.transform = 'translateX(-50%)';
