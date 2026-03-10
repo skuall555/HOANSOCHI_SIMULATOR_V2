@@ -2899,7 +2899,6 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 .tut-highlight {
   outline: 0.4vmin solid #ff9800 !important;
   outline-offset: 0.3vmin;
-  z-index: 600 !important;
   animation: tut-glow 0.9s infinite alternate ease-in-out !important;
 }
 @keyframes tut-glow {
@@ -3092,9 +3091,13 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       <div style="font-size:1.9vmin;font-weight:bold;">No.1　アイテムの持ち出し方法と移動方法</div>
       <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">駐車場から車両のアイテムを取り出し、集合住宅へ移動しよう</div>
     </button>
-    <button class="menu-btn" style="background:linear-gradient(to bottom,#388e3c 0%,#1b5e20 100%);margin-bottom:2.5vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(2)">
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#388e3c 0%,#1b5e20 100%);margin-bottom:2vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(2)">
       <div style="font-size:1.9vmin;font-weight:bold;">No.2　アイテムの使用方法と扉の開放</div>
       <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">火気厳禁シートの設置・検知器でパイプシャフト内のガスを確認しよう</div>
+    </button>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#1565c0 0%,#0d47a1 100%);margin-bottom:2.5vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(3)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.3　ガスメーターからの漏洩検査</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">デジタルマノメーターで灯内内管の気密試験を実施しよう</div>
     </button>
     <button class="menu-btn sec" onclick="closeTutorialSelect()">← メニューへ戻る</button>
   </div>
@@ -22926,6 +22929,79 @@ var TUTORIAL_STEPS = {
       }
     },
     { isClear: true }
+  ],
+
+  /* ============================================================
+     No.3 ガスメーターからの漏洩検査
+     ============================================================ */
+  3: [
+    {
+      msg: '今回は、通報宅の灯内内管（ガスメーターよりも二次側）でガス漏れがないか調査しましょう。\n調査するためには、まずはガスメーターをクリックし、メーターガス栓を閉止します。',
+      icon: '🔍',
+      highlightFn: function(){
+        /* 通報宅(102号室)=右=meter-art-2 をハイライト */
+        var el = document.getElementById('meter-art-2');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof meterStatus !== 'undefined' && Array.isArray(meterStatus) && meterStatus[2] === true;
+      }
+    },
+    {
+      msg: 'メーターガス栓を閉止した状態で、デジタルマノメーターを使用して漏洩試験（灯内内管の気密が保持できるか）を実施しましょう。',
+      icon: '📏',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-mano');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof isPressureTestMode !== 'undefined' && isPressureTestMode === true;
+      }
+    },
+    {
+      msg: 'それでは、デジタルマノメーターを使用した状態で、漏洩検査をかけたいガスメーターをクリックします。',
+      icon: '🔬',
+      highlightFn: function(){
+        var el = document.getElementById('meter-art-2');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof _pressureRunning !== 'undefined' && _pressureRunning === true;
+      }
+    },
+    {
+      msg: '漏洩試験が完了するまで待ちます。「圧力降下あり！」と表示された場合、そのシナリオの漏洩系統が確定します。',
+      icon: '⏱️',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){
+        return typeof _pressureRunning !== 'undefined' && !_pressureRunning &&
+          ((_pressureOk && _pressureOk[2]) || (_pressureNg && _pressureNg[2]));
+      }
+    },
+    {
+      msg: '「圧力降下あり！」と表示されました。今回のガス漏れは、通報宅の灯内内管であることが分かりました。',
+      icon: '⚠️',
+      highlightFn: null,
+      nextBtn: true,
+      checkFn: null
+    },
+    {
+      msg: 'デジタルマノメーターモードを終了しましょう。終了ボタンを押してください。',
+      icon: '✅',
+      highlightFn: function(){
+        var el = document.querySelector('#detector-layer .detector-btn');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof isPressureTestMode !== 'undefined' && isPressureTestMode === false;
+      }
+    },
+    { isClear: true }
   ]
 };
 
@@ -23021,6 +23097,41 @@ function startTutorial(no){
     try{
       document.querySelectorAll('.ps-door').forEach(function(d){
         d.style.transform = 'translateX(0px)';
+        d.dataset.gasCleared = 'false';
+      });
+    }catch(e){}
+  } else if(no === 3){
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'det', 'mano'];
+    state.equipped = null;
+    /* 通報者部屋を設定（C級No.1: 102号室） */
+    try{ residentRoom = 2; roomOpened = true; }catch(e){}
+    /* メーター社番を固定値（102号室対応）で設定 */
+    try{
+      meterSerialCorrect = '123456789';
+      meterSerials = ['','987654321','123456789','',''];
+      updateCallMeterSerial();
+      try{ applyPsSerialLabels(); }catch(e2){}
+    }catch(e){}
+    /* メーター状態リセット（全開） */
+    try{ meterStatus = [false,false,false,false,false,false,false]; }catch(e){}
+    /* 圧力試験状態リセット */
+    try{
+      _pressureOk = [false,false,false,false,false];
+      _pressureNg = [false,false,false,false,false];
+      _pressureRunning = false;
+      if(_pressureTimer){ clearInterval(_pressureTimer); _pressureTimer = null; }
+      document.querySelectorAll('.pressure-overlay').forEach(function(ov){ ov.style.display='none'; });
+    }catch(e){}
+    /* 灯内内管漏れを102号室（通報宅）に設定 */
+    try{ _indoorLeakRoomNo = '102'; }catch(e){}
+    try{ if(activeScenario) activeScenario.indoorLeakRoomNo = '102'; }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(3, 50);
+    /* パイプシャフトの扉を全て開放状態にする */
+    try{
+      document.querySelectorAll('.ps-door').forEach(function(d){
+        d.style.transform = 'translateX(80px)';
         d.dataset.gasCleared = 'false';
       });
     }catch(e){}
@@ -23216,7 +23327,9 @@ function showTutorialClear(){
   /* クリアバナー表示 */
   var name = _tutNo === 1
     ? 'No.1 アイテムの持ち出し方法と移動方法'
-    : 'No.2 アイテムの使用方法と扉の開放';
+    : _tutNo === 2
+      ? 'No.2 アイテムの使用方法と扉の開放'
+      : 'No.3 ガスメーターからの漏洩検査';
   var clearMsg = document.getElementById('tutorial-clear-msg');
   if(clearMsg) clearMsg.textContent = 'チュートリアル ' + name + ' をクリアしました！\nプレイ記録を履歴に保存しました（C級扱い）。';
 
@@ -23228,10 +23341,11 @@ function saveTutorialHistory(no){
   try{
     var names = {
       1: 'チュートリアル1：アイテムの持ち出し方法と移動方法',
-      2: 'チュートリアル2：アイテムの使用方法と扉の開放'
+      2: 'チュートリアル2：アイテムの使用方法と扉の開放',
+      3: 'チュートリアル3：ガスメーターからの漏洩検査'
     };
     var record = {
-      scenarioNo: no === 1 ? -1 : -2,
+      scenarioNo: no === 1 ? -1 : no === 2 ? -2 : -3,
       scenarioName: names[no] || ('チュートリアル' + no),
       grade: 'C',
       totalPoints: 40,
