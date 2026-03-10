@@ -709,7 +709,7 @@ z-index: 100;
 .apt-door::before { content: ''; position: absolute; bottom: 20%; left: 20%; width: 60%; height: 2vmin; background: #e0e0e0; border: 0.2vmin solid #666; }
 .apt-door::after { content: ''; position: absolute; top: 55%; width: 2vmin; height: 2vmin; background: #e0e0e0; border-radius: 50%; border: 0.2vmin solid #999; }
 .apt-l { left: 15%; } .apt-l::after { right: 10%; } .apt-r { right: 15%; } .apt-r::after { left: 10%; }
-.ps-container { position: absolute; bottom: 15%; width: 18%; height: 55%; background: #ccc; border: 0.5vmin solid #555; overflow: hidden; pointer-events: auto; }
+.ps-container { position: absolute; bottom: 15%; width: 18%; height: 55%; background: #ccc; border: 0.5vmin solid #555; overflow: hidden; pointer-events: auto; z-index: 4; }
 .ps-l { left: 33%; width: 12%; }
 .ps-r { right: 33%; width: 12%; }
 .stairs-zone { position: absolute; bottom: 0; width: 12%; height: 100%; background: linear-gradient(to right, rgba(0,0,0,0.2), transparent); display: flex; align-items: flex-end; justify-content: center; }
@@ -2220,6 +2220,55 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 /* Delivery danger event label tweak */
 #scene-delivery-danger .smoke-danger-head{ background:#000; color:#fdd835; }
 
+/* 配達員吹き出し（火気厳禁表示シート設置時） */
+#deliveryman-bubble {
+  position: absolute;
+  bottom: 102%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 0.35vmin solid #e65100;
+  border-radius: 50%;
+  width: 9vmin;
+  height: 9vmin;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6vmin;
+  box-shadow: 0 0.3vmin 1.2vmin rgba(0,0,0,0.28);
+  pointer-events: none;
+  z-index: 1;
+  animation: dm-bubble-pop 0.3s ease-out;
+}
+#deliveryman-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1.3vmin solid transparent;
+  border-top-color: #fff;
+  filter: drop-shadow(0 0.15vmin 0 #e65100);
+}
+#deliveryman-bubble::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1.5vmin solid transparent;
+  border-top-color: #e65100;
+}
+#deliveryman-bubble img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+@keyframes dm-bubble-pop {
+  0%   { opacity: 0; transform: translateX(-50%) scale(0.7); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
 
 
 /* =========================
@@ -2786,6 +2835,149 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 }
 .tel-call-btn:active { filter: brightness(0.8); }
 
+/* ===== チュートリアルシステム CSS ===== */
+#tutorial-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 610; pointer-events: none; display: none;
+}
+#tutorial-overlay.active { display: block; }
+
+#tutorial-msg-box {
+  position: absolute; bottom: 22%; left: 50%;
+  transform: translateX(-50%); width: 84%; min-height: 10vmin;
+  background: linear-gradient(135deg, #fffde7 0%, #fff9c4 50%, #fff3e0 100%);
+  border: 0.4vmin solid #f9a825;
+  border-radius: 2vmin;
+  padding: 2.5vmin 2.5vmin 1.8vmin 4vmin;
+  box-shadow: 0 0.6vmin 3vmin rgba(249,168,37,0.6), 0 0 0 0.3vmin rgba(255,255,255,0.8);
+  display: none; pointer-events: auto; z-index: 501;
+  animation: tut-pop 0.25s ease-out;
+  transition: transform 0.3s ease;
+}
+#tutorial-msg-box.visible { display: block; }
+#tutorial-msg-box.tut-slide-out {
+  transform: translateX(-50%) translateY(calc(100% + 22vmin)) !important;
+}
+/* チュートリアルメッセージ折りたたみトグルボタン */
+#tutorial-msg-toggle-btn {
+  position: absolute; bottom: 17%; left: 50%;
+  transform: translateX(-50%);
+  z-index: 503; pointer-events: auto; display: none;
+  background: linear-gradient(135deg, #ff9800, #e65100);
+  color: #fff; border: none; border-radius: 2vmin;
+  padding: 0.5vmin 2.5vmin; cursor: pointer;
+  font-size: 1.6vmin; font-weight: bold;
+  box-shadow: 0 0.3vmin 1vmin rgba(230,81,0,0.5);
+  transition: filter 0.15s; white-space: nowrap;
+}
+#tutorial-msg-toggle-btn:hover { filter: brightness(1.15); }
+#tutorial-msg-icon {
+  font-size: 2.8vmin; position: absolute; top: -1.8vmin; left: 2vmin;
+  background: #fff; border: 0.3vmin solid #f9a825; border-radius: 50%;
+  width: 3.8vmin; height: 3.8vmin;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0.2vmin 0.8vmin rgba(249,168,37,0.6);
+}
+#tutorial-msg-text {
+  font-size: 1.9vmin; font-weight: bold; color: #2d2d2d;
+  line-height: 1.75; padding-top: 0.2vmin; white-space: pre-line;
+}
+#tutorial-msg-actions { display: flex; justify-content: flex-end; margin-top: 1.2vmin; }
+#tutorial-next-btn {
+  padding: 0.7vmin 2.8vmin;
+  background: linear-gradient(135deg, #ff9800, #e65100);
+  color: #fff; border: none; border-radius: 3vmin;
+  font-size: 1.8vmin; font-weight: bold; cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 0.3vmin 1vmin rgba(230,81,0,0.5);
+  transition: all 0.15s; display: none;
+}
+#tutorial-next-btn.visible { display: block; }
+#tutorial-next-btn:hover { background: linear-gradient(135deg,#ffa726,#f57c00); transform: scale(1.04); }
+
+/* Tutorial pointer highlight */
+.tut-highlight {
+  outline: 0.4vmin solid #ff9800 !important;
+  outline-offset: 0.3vmin;
+  animation: tut-glow 0.9s infinite alternate ease-in-out !important;
+}
+@keyframes tut-glow {
+  0%   { box-shadow: 0 0 0.5vmin rgba(255,152,0,0.5), 0 0 1.5vmin rgba(255,152,0,0.3); }
+  100% { box-shadow: 0 0 1.5vmin rgba(255,152,0,0.9), 0 0 3vmin rgba(255,152,0,0.5); }
+}
+
+/* Floating pointer arrow */
+.tut-pointer {
+  position: absolute; z-index: 502; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center;
+  animation: tut-bounce 0.75s infinite alternate ease-in-out;
+}
+.tut-pointer-arrow { font-size: 4.5vmin; line-height: 1; filter: drop-shadow(0 0 0.8vmin rgba(255,152,0,0.9)); }
+.tut-pointer-label {
+  background: #e65100; color: #fff; font-size: 1.5vmin; font-weight: bold;
+  padding: 0.3vmin 1.2vmin; border-radius: 1vmin; white-space: nowrap;
+  margin-top: 0.2vmin; box-shadow: 0 0.2vmin 0.8vmin rgba(230,81,0,0.6);
+}
+@keyframes tut-bounce {
+  0%   { transform: translateY(0)       scale(1); }
+  100% { transform: translateY(-1.5vmin) scale(1.1); }
+}
+@keyframes tut-pop {
+  0%   { opacity:0; transform: translateX(-50%) scale(0.85); }
+  100% { opacity:1; transform: translateX(-50%) scale(1); }
+}
+
+/* Tutorial clear banner */
+#tutorial-clear-banner {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #1b5e20, #2e7d32);
+  border: 0.4vmin solid #a5d6a7; border-radius: 2.5vmin;
+  padding: 4vmin 6vmin; text-align: center;
+  z-index: 510; pointer-events: auto;
+  box-shadow: 0 1.5vmin 5vmin rgba(0,0,0,0.7);
+  display: none; animation: tut-clear-pop 0.4s ease-out;
+}
+#tutorial-clear-banner.visible { display: block; }
+@keyframes tut-clear-pop {
+  0%   { opacity:0; transform: translate(-50%,-50%) scale(0.7); }
+  70%  { transform: translate(-50%,-50%) scale(1.05); }
+  100% { opacity:1; transform: translate(-50%,-50%) scale(1); }
+}
+#tutorial-clear-banner h2 {
+  color: #fff; font-size: 4vmin; margin: 0 0 1.5vmin 0;
+  text-shadow: 0 0 1.5vmin rgba(165,214,167,0.9);
+  font-family: 'Press Start 2P', 'MS Gothic', sans-serif;
+}
+#tutorial-clear-banner .tut-clear-stars { font-size: 5vmin; margin-bottom: 1.5vmin; }
+#tutorial-clear-banner p { color: #c8e6c9; font-size: 1.9vmin; margin: 0 0 2.5vmin 0; line-height: 1.6; }
+.tut-clear-btn {
+  display: inline-block; margin: 0.5vmin 0.8vmin;
+  padding: 1vmin 3vmin;
+  font-size: 1.9vmin; font-weight: bold; cursor: pointer;
+  border-radius: 1.5vmin; border: 0.3vmin solid;
+}
+.tut-clear-btn-history {
+  background: linear-gradient(135deg,#42a5f5,#1565c0); color:#fff;
+  border-color: #90caf9;
+  box-shadow: 0 0.3vmin 1vmin rgba(66,165,245,0.5);
+}
+.tut-clear-btn-menu {
+  background: linear-gradient(135deg,#fffde7,#fff9c4); color:#333;
+  border-color: #f9a825;
+  box-shadow: 0 0.3vmin 1vmin rgba(249,168,37,0.4);
+}
+.tut-clear-btn:hover { filter: brightness(1.1); transform: scale(1.03); }
+
+/* Tutorial badge in history */
+.tut-hist-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 3vmin; height: 3vmin; border-radius: 50%;
+  background: linear-gradient(135deg,#ff9800,#e65100);
+  color:#fff; font-weight:900; font-size:1.6vmin;
+  box-shadow: 0 0 0.8vmin rgba(255,152,0,0.7); flex-shrink:0;
+}
+
 </style>
 
 <script>
@@ -2848,8 +3040,6 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="tap-area" onclick="startApp()"><div class="tap-msg">TAP TO START</div></div>
 <div class="title-ui">
 <input type="file" id="import-file" class="file-input-hidden" accept=".html" onchange="handleImport(this)">
-<button class="hud-btn" style="background:#0056b3; font-weight:bold; font-size:60%; padding:2%;" onclick="document.getElementById('import-file').click()">📂 データ読込</button>
-<button class="hud-btn" style="background:#003366; font-weight:bold; font-size:60%; padding:2%;" onclick="event.stopPropagation(); showCustom();">⚙ カスタマイズ</button>
 <button class="hud-btn" style="background:#2e7d32; font-weight:bold; font-size:60%; padding:2%;" onclick="event.stopPropagation(); showScenarioList();">📝 シナリオ設定</button>
 <button class="hud-btn" style="background:#8e24aa; font-weight:bold; font-size:60%; padding:2%;" onclick="event.stopPropagation(); showStageEditor();">🗺 ステージ作成・編集</button>
 </div>
@@ -2859,6 +3049,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="menu-panel">
 <h2 style="color:#000; margin:0 0 5% 0; font-family: 'Press Start 2P', 'MS Gothic', 'Meiryo', sans-serif; text-shadow: 2px 2px 0px rgba(255,255,255,0.3);">メニュー</h2>
 <button class="menu-btn" onclick="startGame()">シミュレーション</button>
+<button class="menu-btn" style="background:linear-gradient(to bottom,#f57c00 0%,#e65100 100%);margin-top:1.5vmin;" onclick="showTutorialSelect()">🎓 チュートリアル</button>
 <button class="menu-btn sec" onclick="showScenarioList()">📝 シナリオ設定</button>
 <button class="menu-btn sec" onclick="openHistory()">📈 履歴/統計</button>
 <button class="menu-btn sec" onclick="openSaveDataManager()">💾 セーブデータ管理</button>
@@ -2888,6 +3079,43 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
     <button class="menu-btn sec" style="margin-bottom:1.5vmin;" onclick="openHistoryFromStartSetup()">📋 リストからシナリオを選択する</button>
     <button class="menu-btn" onclick="confirmStartSetup()">開始（会話へ）</button>
     <button class="menu-btn sec" onclick="closeStartSetup()">キャンセル</button>
+  </div>
+</div>
+
+<!-- チュートリアル選択画面 -->
+<div id="scene-tutorial-select" class="overlay-screen">
+  <div class="menu-panel" style="max-width:76vmin;width:92%;">
+    <h2 style="color:#000;margin:0 0 2.5vmin 0;font-family:'Press Start 2P','MS Gothic',sans-serif;font-size:2.4vmin;">🎓 チュートリアル</h2>
+    <p style="font-size:1.8vmin;color:#444;margin:0 0 2.5vmin 0;line-height:1.6;">操作方法をステップごとに学ぶことができます。<br>チュートリアルのプレイ記録は履歴に残ります（C級扱い）。</p>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#f57c00 0%,#e65100 100%);margin-bottom:2vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(1)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.1　アイテムの持ち出し方法と移動方法</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">駐車場から車両のアイテムを取り出し、集合住宅へ移動しよう</div>
+    </button>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#388e3c 0%,#1b5e20 100%);margin-bottom:2vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(2)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.2　アイテムの使用方法と扉の開放</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">火気厳禁シートの設置・検知器でパイプシャフト内のガスを確認しよう</div>
+    </button>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#1565c0 0%,#0d47a1 100%);margin-bottom:2vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(3)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.3　ガスメーターからの漏洩検査</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">デジタルマノメーターで灯内内管の気密試験を実施しよう</div>
+    </button>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#6a1b9a 0%,#4a148c 100%);margin-bottom:2vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(4)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.4　通報者との会話方法</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">通報者宅をノックして入室し、安全確保の注意喚起をしよう</div>
+    </button>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#00838f 0%,#006064 100%);margin-bottom:2vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(5)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.5　危険度メーターと保安措置</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">危険度の上昇を窓開けや検知器調査で抑制する保安措置を実施しよう</div>
+    </button>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#37474f 0%,#263238 100%);margin-bottom:2vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(6)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.6　問診と検知器調査</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">通報者へ問診して臭気箇所を特定し、検知器で浴室内の反応箇所を調査しよう</div>
+    </button>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#c62828 0%,#b71c1c 100%);margin-bottom:2.5vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(7)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.7　安全率メーターとクリア条件</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">安全率メーターの見方と、ノルマ達成でシナリオクリアになる仕組みを学ぼう</div>
+    </button>
+    <button class="menu-btn sec" onclick="closeTutorialSelect()">← メニューへ戻る</button>
   </div>
 </div>
 
@@ -5283,6 +5511,7 @@ document.querySelector('.controls-l').classList.add('hidden');
 document.querySelector('.controls-r').classList.add('hidden');
 document.getElementById('toolbar-container').classList.add('hidden-det');
 document.getElementById('player').style.display = 'none';
+document.getElementById('detector-layer').style.display = '';
 document.getElementById('detector-layer').classList.add('active');
 document.getElementById('detector-overlay').classList.add('active');
 document.getElementById('mode-msg').textContent = "検知器モード -ガスの反応がありそうな場所をタップ-";
@@ -5299,6 +5528,7 @@ function startPlacementMode(type) {
     document.querySelector('.controls-r').classList.add('hidden');
     document.getElementById('toolbar-container').classList.add('hidden-det');
     document.getElementById('player').style.display = 'none';
+    document.getElementById('detector-layer').style.display = '';
     document.getElementById('detector-layer').classList.add('active');
     document.getElementById('detector-overlay').classList.add('active');
     document.getElementById('mode-msg').textContent = "必要な箇所を選択して設置、回収する。";
@@ -5799,6 +6029,49 @@ function checkDoorGasAtPos(e) {
     }catch(err){}
 }
 
+/* 初期状態で少し開いている扉・点検口のガス確認（ドラッグ不要） */
+function checkInitialOpenDoorGas(e){
+    try{
+        var cx = e.clientX, cy = e.clientY;
+        if(e.touches && e.touches[0]){ cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
+        var elems = document.elementsFromPoint(cx, cy);
+        for(var i=0; i<elems.length; i++){
+            var el = elems[i];
+            var door = null;
+            if(el.classList.contains('ps-door')){
+                door = el;
+            } else if(el.classList.contains('ps-container') || el.classList.contains('ent-hatch-box') ||
+                      el.classList.contains('ent-pit') || el.classList.contains('ent-panel') ||
+                      el.classList.contains('hatch-container')){
+                door = el.querySelector('.ps-door');
+            }
+            if(!door) continue;
+            if(door.dataset.isDangerous !== "true" || door.dataset.gasCleared === "true") continue;
+            /* 扉が初期から少し開いている場合のみ対象 */
+            var m = door.style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+            if(!m || Math.abs(parseFloat(m[1])) < 3) continue;
+            /* ガス確認実行 */
+            door.dataset.gasCleared = "true";
+            door.dataset.isDangerous = "false";
+            try{ playAudio('se_ching', SE.ching); }catch(e2){}
+            try{ dangerValue = Math.floor(dangerValue * 0.95); dangerRate = Math.max(0.1, dangerRate - 0.05); }catch(e3){}
+            try{ showSystemMsg("ガス滞留なし。危険度低下！"); updateDangerUI(); }catch(e4){}
+            try{
+                if(isDetectorMode){
+                    if(!window._noGasBonusDoors) window._noGasBonusDoors = new Set();
+                    var dk = door.id || (door.className + '_' + state.room);
+                    if(!window._noGasBonusDoors.has(dk)){
+                        window._noGasBonusDoors.add(dk);
+                        if(window._gameStats) window._gameStats.noGasConfirmed++;
+                        addSafety(5, "【保安措置】滞留ガスなし確認！安全率+5%！");
+                    }
+                }
+            }catch(e5){}
+            break;
+        }
+    }catch(err){}
+}
+
 const playDetectSE = () => {
     if(!isPlayingSE) {
         isPlayingSE = true;
@@ -5813,11 +6086,15 @@ const playDetectSE = () => {
 // mousedown: クリックだけでは緑の円は表示しない。扉チェックもしない。
 detOv.addEventListener('mousedown', (e)=>{ handleOverlayClick(e); });
 // mousemove: ドラッグ中(_scanActive=true)のみ緑の円を表示し扉チェックを実行
+// ただし初期状態で少し開いている扉・点検口はドラッグなしでも検知可能
 detOv.addEventListener('mousemove', (e)=>{
     if(!isPlacementMode && (isDetectorMode || isGasIdMode)){
         if(_scanActive){
             updateDetToolPos(e);
             checkDoorGasAtPos(e);
+        } else {
+            /* 初期開放扉チェック：少し開いている(translateX>0)危険扉はホバーのみで検知 */
+            checkInitialOpenDoorGas(e);
         }
     }
 });
@@ -9293,6 +9570,7 @@ function startGasIdMode(){
   document.querySelector('.controls-r').classList.add('hidden');
   document.getElementById('toolbar-container').classList.add('hidden-det');
   document.getElementById('player').style.display='none';
+  document.getElementById('detector-layer').style.display = '';
   document.getElementById('detector-layer').classList.add('active');
   document.getElementById('detector-overlay').classList.add('active');
   document.getElementById('mode-msg').textContent = 'ガス識別モード -反応箇所に当てて識別-';
@@ -11930,6 +12208,8 @@ try{
     renderMemoCards();
   }
   function closeMemo(){ closeOverlay('scene-memo', prevOverlaysMemo); }
+  window.openMemo = openMemo;
+  window.closeMemo = closeMemo;
 
     // Hook buttons
     function bindButtons(){
@@ -11939,7 +12219,7 @@ try{
     if(em && !em.__bound){ em.addEventListener('click', function(){ closeOverlay('scene-cardget', prevOverlaysCard); }); em.__bound=true; }
 
     var mc=$('memo-close');
-    if(mc && !mc.__bound){ mc.addEventListener('click', closeMemo); mc.__bound=true; }
+    if(mc && !mc.__bound){ mc.addEventListener('click', function(){ window.closeMemo(); }); mc.__bound=true; }
 
     if(!bindButtons.__esc){
       document.addEventListener('keydown', function(ev){
@@ -11947,7 +12227,7 @@ try{
           var cg=$('scene-cardget');
           if(cg && cg.classList.contains('active')){ closeOverlay('scene-cardget', prevOverlaysCard); return; }
           var mm=$('scene-memo');
-          if(mm && mm.classList.contains('active')){ closeMemo(); return; }
+          if(mm && mm.classList.contains('active')){ window.closeMemo(); return; }
         }
       }, true);
       bindButtons.__esc=true;
@@ -12104,7 +12384,7 @@ try{
     window.selectItem=function(key){
       try{
         if(key==='memo'){
-          openMemo();
+          (window.openMemo || openMemo)();
           // 見た目を選択状態に
           try{ if(window.state){ window.state.equipped='memo'; if(typeof window.updateHand==='function') window.updateHand(); if(typeof window.renderInventory==='function') window.renderInventory(); } }catch(e2){}
           return;
@@ -12696,6 +12976,9 @@ try{
 </div>
 
 <div id="deliveryman" style="position:absolute; bottom:15%; left:105%; width:12%; height:45%; z-index:260; display:none; pointer-events:auto;">
+  <div id="deliveryman-bubble">
+    <img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E7%81%AB%E6%B0%97%E5%8E%B3%E7%A6%81.png" alt="火気厳禁表示シート">
+  </div>
   <img id="deliveryman-img" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%85%8D%E9%81%94%E5%93%A1.gif" alt="配達員" style="width:100%; height:100%; object-fit:contain; pointer-events:none;">
 </div>
 
@@ -13024,6 +13307,36 @@ try{
       window.changeRoom.__deliveryHideOnRoomChangeWrapped = true;
     }
   }catch(e){}
+})();
+</script>
+
+<script id="patch-deliveryman-bubble-sync">
+// 配達員吹き出し同期：火気厳禁表示シート設置済みなら配達員頭上に吹き出しを表示
+(function(){
+  if(window.__deliveryBubbleSyncInstalled) return;
+  window.__deliveryBubbleSyncInstalled = true;
+  setInterval(function(){
+    try{
+      var dm = document.getElementById('deliveryman');
+      var bubble = document.getElementById('deliveryman-bubble');
+      if(!dm || !bubble) return;
+      if(dm.style.display === 'none' || dm.style.display === ''){
+        if(bubble.style.display !== 'none') bubble.style.display = 'none';
+        return;
+      }
+      // 設置済み火気厳禁表示シートを確認
+      var hasSign = !!document.querySelector('.placed-item[data-type="sign"]');
+      if(!hasSign && window.aptState){
+        var all = ((window.aptState.A && window.aptState.A.placedItems)||[]).concat((window.aptState.B && window.aptState.B.placedItems)||[]);
+        for(var i=0;i<all.length;i++){
+          var t = String(all[i] && all[i].type || '');
+          if(t==='sign'||t==='signSheet'||t==='sheet'){hasSign=true;break;}
+        }
+      }
+      var want = hasSign ? 'flex' : 'none';
+      if(bubble.style.display !== want) bubble.style.display = want;
+    }catch(e){}
+  }, 200);
 })();
 </script>
 
@@ -13783,6 +14096,7 @@ try{
     window.handleHotspotCheck2.__bplanV3Wrapped = true;
   }
 
+})();
 
 
 
@@ -15317,7 +15631,10 @@ function openScenarioHistory(scenarioNo){
         if(list[i].scenarioNo === scenarioNo){ found = list[i]; break; }
       }
       var name = found ? (found.scenarioName || '(名称未設定)') : '(名称未設定)';
-      titleEl.textContent = '📋 No.' + scenarioNo + '：' + name + '　詳細履歴';
+      var noLabel = (scenarioNo < 0)
+        ? ('🎓 チュートリアル' + Math.abs(scenarioNo))
+        : ('📋 No.' + scenarioNo);
+      titleEl.textContent = noLabel + '：' + name + '　詳細履歴';
     }
     // レベルフィルターリセット
     var dlf = document.getElementById('detail-level-filter');
@@ -15465,15 +15782,30 @@ function renderStats(stats){
         + '<span style="display:inline-flex;align-items:center;justify-content:center;width:3vmin;height:3vmin;border-radius:50%;background:' + gc + ';color:#fff;font-weight:900;font-size:1.8vmin;box-shadow:0 0 0.8vmin ' + gc + ';">' + _esc(s.bestGrade) + '</span>'
         + '</div>';
     }
-    h += '<div onclick="openScenarioHistory(' + s.scenarioNo + ')" style="padding:1.2vmin 1.5vmin;margin-bottom:1vmin;background:rgba(255,255,255,0.05);border:0.2vmin solid rgba(100,181,246,0.2);border-radius:1vmin;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(66,165,245,0.12)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.05)\'">'
+    var isTutorial = (s.scenarioNo < 0);
+    var noLabel = isTutorial
+      ? ('チュートリアル' + Math.abs(s.scenarioNo))
+      : ('No.' + s.scenarioNo);
+    var rowBg = isTutorial
+      ? 'rgba(255,152,0,0.08)'
+      : 'rgba(255,255,255,0.05)';
+    var rowBorder = isTutorial
+      ? '0.2vmin solid rgba(255,152,0,0.4)'
+      : '0.2vmin solid rgba(100,181,246,0.2)';
+    var noColor = isTutorial ? '#ffcc80' : '#64b5f6';
+    var tutBadge = isTutorial
+      ? '<span class="tut-hist-badge" style="margin-right:0.5vmin;">T</span>'
+      : '';
+    h += '<div onclick="openScenarioHistory(' + s.scenarioNo + ')" style="padding:1.2vmin 1.5vmin;margin-bottom:1vmin;background:' + rowBg + ';border:' + rowBorder + ';border-radius:1vmin;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(66,165,245,0.12)\'" onmouseout="this.style.background=\'' + rowBg + '\'">'
       + '<div style="display:flex;align-items:center;gap:1.5vmin;margin-bottom:0.6vmin;">'
-      + '<div style="font-size:1.8vmin;font-weight:900;color:#64b5f6;white-space:nowrap;">No.' + s.scenarioNo + '</div>'
+      + tutBadge
+      + '<div style="font-size:1.8vmin;font-weight:900;color:' + noColor + ';white-space:nowrap;">' + noLabel + '</div>'
       + '<div style="flex:1;font-size:2vmin;font-weight:700;color:#e3f2fd;">' + _esc(s.name || '(名称未設定)') + '</div>'
       + '<div style="font-size:1.5vmin;color:#64b5f6;">詳細 ▶</div>'
       + '</div>'
       + '<div style="display:flex;gap:2vmin;align-items:center;flex-wrap:wrap;">'
       + '<div style="font-size:1.7vmin;color:#b0bec5;">クリア回数：<b style="color:#fff;">' + s.attempts + '回</b></div>'
-      + '<div style="font-size:1.7vmin;color:#b0bec5;">正答率：<b style="color:#' + (correctRate >= 70 ? '4caf50' : correctRate >= 40 ? 'ffa726' : 'ef5350') + ';">' + correctRate + '%</b></div>'
+      + (isTutorial ? '' : '<div style="font-size:1.7vmin;color:#b0bec5;">正答率：<b style="color:#' + (correctRate >= 70 ? '4caf50' : correctRate >= 40 ? 'ffa726' : 'ef5350') + ';">' + correctRate + '%</b></div>')
       + (bestGradeHtml ? bestGradeHtml : '')
       + '</div>'
       + '</div>';
@@ -15635,6 +15967,45 @@ function renderStats(stats){
   }
 
   var h = '';
+
+  // チュートリアル欄を常に先頭に表示
+  var tutDefs = [
+    { no: -1, name: 'チュートリアル1：アイテムの持ち出し方法と移動方法' },
+    { no: -2, name: 'チュートリアル2：アイテムの使用方法と扉の開放' }
+  ];
+  for(var ti=0; ti<tutDefs.length; ti++){
+    var td = tutDefs[ti];
+    var tst = statsMap[td.no] || null;
+    var tIsUnplayed = !tst;
+    var tRowBg = tIsUnplayed ? 'rgba(255,152,0,0.04)' : 'rgba(255,152,0,0.08)';
+    var tRowBorder = '0.2vmin solid rgba(255,152,0,' + (tIsUnplayed?'0.2':'0.4') + ')';
+    var tBadge = '<span class="tut-hist-badge" style="margin-right:0.3vmin;flex-shrink:0;">T</span>';
+    var tNoLabel = 'チュートリアル' + Math.abs(td.no);
+    var tRight = '';
+    if(tIsUnplayed){
+      tRight = '<span style="color:#ef5350;font-size:1.8vmin;font-weight:bold;">未クリア</span>';
+    } else {
+      var tBestGradeHtml = tst.bestGrade ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:3vmin;height:3vmin;border-radius:50%;background:' + gradeColor(tst.bestGrade) + ';color:#fff;font-weight:900;font-size:1.8vmin;margin-left:0.5vmin;">' + _esc(tst.bestGrade) + '</span>' : '';
+      tRight = '<span style="font-size:1.7vmin;color:#b0bec5;">クリア <b style="color:#fff;">' + tst.attempts + '回</b></span>' + (tBestGradeHtml ? '<span style="margin-left:1vmin;font-size:1.5vmin;color:#90caf9;">最高</span>' + tBestGradeHtml : '');
+    }
+    h += '<div onclick="openScenarioHistory(' + td.no + ')" style="padding:1.2vmin 1.5vmin;margin-bottom:1vmin;background:' + tRowBg + ';border:' + tRowBorder + ';border-radius:1vmin;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(255,152,0,0.15)\'" onmouseout="this.style.background=\'' + tRowBg + '\'">'
+      + '<div style="display:flex;align-items:center;gap:1vmin;margin-bottom:0.6vmin;flex-wrap:wrap;">'
+      + tBadge
+      + '<div style="font-size:1.8vmin;font-weight:900;color:#ffcc80;white-space:nowrap;">' + tNoLabel + '</div>'
+      + '<div style="flex:1;font-size:2vmin;font-weight:700;color:#ffe0b2;">' + _esc(td.name) + '</div>'
+      + (!tIsUnplayed ? '<div style="font-size:1.5vmin;color:#ffcc80;white-space:nowrap;">詳細 ▶</div>' : '')
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:1.5vmin;flex-wrap:wrap;justify-content:space-between;">'
+      + '<div style="display:flex;gap:1.5vmin;align-items:center;flex-wrap:wrap;">' + tRight + '</div>'
+      + '<button onclick="event.stopPropagation();startTutorial(' + Math.abs(td.no) + ')" style="padding:0.5vmin 1.5vmin;font-size:1.5vmin;background:linear-gradient(135deg,#ff9800,#e65100);color:#fff;border:none;border-radius:0.5vmin;cursor:pointer;white-space:nowrap;font-weight:bold;">▶ チュートリアルを始める</button>'
+      + '</div>'
+      + '</div>';
+  }
+  // 区切り
+  if(allScenarios.length > 0){
+    h += '<div style="border-top:0.2vmin solid rgba(100,181,246,0.25);margin:1vmin 0 1.5vmin;"></div>';
+  }
+
   for(var n=0; n<allScenarios.length; n++){
     var sc2 = allScenarios[n];
     var st = statsMap[sc2.no] || null;
@@ -18477,12 +18848,20 @@ window._tantouGenerateReply = function(rawText){
       var py = (pR.top + pR.height/2) - appR.top;
       var bestProx = 0;
       function checkHS(hs, vented){
-        if(!hs || !hs.rect) return 0;
+        if(!hs) return 0;
         if(vented) return 0;
         var room = document.getElementById(hs.roomId);
         if(!room || !room.classList.contains('active')) return 0;
-        var hcx = hs.rect.x + hs.rect.w/2;
-        var hcy = hs.rect.y + hs.rect.h/2;
+        var hcx, hcy;
+        if(hs.rect){
+          hcx = hs.rect.x + hs.rect.w/2;
+          hcy = hs.rect.y + hs.rect.h/2;
+        } else {
+          /* 反応箇所未発見の場合は部屋の中心を近似位置として使用 */
+          var rR = room.getBoundingClientRect();
+          hcx = (rR.left + rR.width/2) - appR.left;
+          hcy = (rR.top + rR.height/2) - appR.top;
+        }
         var dist = Math.sqrt((px-hcx)*(px-hcx)+(py-hcy)*(py-hcy));
         var maxDist = Math.max(appR.width, appR.height) * 0.5;
         return Math.max(0, 1 - dist/maxDist);
@@ -21624,25 +22003,37 @@ function positionHintBtn(){
 // ============================================================
 function _buildCharCard(key, container){
   var c = CHAR_DATA[key];
+  /* wrapper: キャラ画像カード ＋ 選択ボタンを縦に並べる */
+  var wrapper = document.createElement('div');
+  wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:1.5vmin;';
+  /* card: 画像とラベルのみ（クリック対象外） */
   var card = document.createElement('div');
-  card.style.cssText = 'cursor:pointer;text-align:center;background:rgba(255,255,255,0.12);'
-    +'border:0.4vmin solid rgba(255,255,255,0.45);border-radius:2vmin;padding:2vmin 3vmin;'
-    +'box-shadow:0 4px 18px rgba(0,0,0,0.55);transition:background 0.15s;user-select:none;-webkit-user-select:none;';
+  card.style.cssText = 'text-align:center;background:rgba(255,255,255,0.10);'
+    +'border:0.4vmin solid rgba(255,255,255,0.35);border-radius:2vmin;padding:2vmin 3vmin;'
+    +'box-shadow:0 4px 18px rgba(0,0,0,0.55);display:flex;flex-direction:column;align-items:center;gap:1vmin;pointer-events:none;';
   var img = document.createElement('img');
   img.src = c.stand;
-  img.style.cssText = 'width:15vmin;height:24vmin;object-fit:contain;display:block;margin:0 auto;pointer-events:none;';
+  img.style.cssText = 'width:15vmin;height:24vmin;object-fit:contain;display:block;pointer-events:none;';
   var lbl = document.createElement('div');
   lbl.textContent = c.label;
-  lbl.style.cssText = 'color:#fff;font-size:2vmin;margin-top:1.2vmin;font-weight:bold;pointer-events:none;';
+  lbl.style.cssText = 'color:#fff;font-size:2vmin;font-weight:bold;pointer-events:none;';
   card.appendChild(img);
   card.appendChild(lbl);
-  // pointerdownで即反応（clickより確実）
+  /* 選択ボタン：画像の外（下）に配置して確実に1タップで選択できるようにする */
+  var btn = document.createElement('button');
+  btn.textContent = 'このキャラを選ぶ';
+  btn.style.cssText = 'background:#1a56a8;color:#fff;border:none;border-radius:1.2vmin;'
+    +'padding:1.5vmin 4vmin;font-size:2.2vmin;font-weight:bold;cursor:pointer;width:100%;'
+    +'box-shadow:0 2px 8px rgba(0,0,0,0.4);touch-action:manipulation;';
   function doSelect(e){ e.stopPropagation(); window._r6SelectChar(key); }
-  card.addEventListener('pointerdown', doSelect);
-  card.addEventListener('click', doSelect);
-  card.addEventListener('pointerenter', function(){ card.style.background='rgba(255,255,255,0.28)'; });
-  card.addEventListener('pointerleave', function(){ card.style.background='rgba(255,255,255,0.12)'; });
-  container.appendChild(card);
+  btn.addEventListener('pointerdown', doSelect);
+  btn.addEventListener('click', doSelect);
+  btn.addEventListener('touchend', function(e){ e.preventDefault(); doSelect(e); });
+  btn.addEventListener('pointerenter', function(){ btn.style.background='#0d3b8e'; });
+  btn.addEventListener('pointerleave', function(){ btn.style.background='#1a56a8'; });
+  wrapper.appendChild(card);
+  wrapper.appendChild(btn);
+  container.appendChild(wrapper);
 }
 
 function createCharSelectUI(){
@@ -21766,7 +22157,6 @@ setInterval(function(){
   hookEntranceNpc();
   checkConeCollisions();
   positionHintBtn();
-  hookStartGameForChar();
   if(_selectedChar) applyCharImage(_playerMoving);
 }, 300);
 
@@ -21816,14 +22206,17 @@ var _handCache   = [];     // 所持カードキャッシュ（差分検知用�
       'border-radius:0.7vmin;font-size:1.4vmin;display:flex;align-items:center;',
       'cursor:grab;user-select:none;touch-action:none;white-space:nowrap;border:1.5px solid #90caf9;}',
     /* 所持カードドロワーパネル */
-    '#_tm-drawer{position:fixed;bottom:0;left:0;right:0;height:48vh;background:#fff;',
-      'border-top:2px solid #1a56a8;box-shadow:0 -4px 20px rgba(0,0,0,0.25);z-index:320000;',
-      'display:none;flex-direction:column;padding:1.5vmin;}',
+    '#_tm-drawer{position:fixed;bottom:0;left:0;right:0;',
+      'background:rgba(8,16,50,0.97);',
+      'border-top:2px solid rgba(255,255,255,0.25);box-shadow:0 -6px 28px rgba(0,0,0,0.7);z-index:320000;',
+      'display:none;flex-direction:column;padding:1.5vmin 2vmin;}',
     '#_tm-drawer.open{display:flex;}',
-    '#_tm-drawer-row{display:flex;gap:1.2vmin;overflow-x:auto;flex:1;align-items:center;padding:1vmin 0;}',
-    '._tm-drawer-hd{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}',
-    '._tm-drawer-title{font-size:2vmin;font-weight:bold;color:#1a56a8;}',
-    '._tm-drawer-close{background:none;border:none;font-size:3vmin;cursor:pointer;color:#555;padding:0 1vmin;}',
+    '#_tm-drawer-row{display:flex;gap:2vmin;overflow-x:auto;flex:1;align-items:center;',
+      'padding:1.5vmin 0.5vmin;min-height:calc(var(--bt-card-w,14vmin)*4/3 + 2vmin);}',
+    '._tm-drawer-hd{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-bottom:0.5vmin;}',
+    '._tm-drawer-title{font-size:2vmin;font-weight:bold;color:#fff;}',
+    '._tm-drawer-close{background:rgba(255,255,255,0.15);border:none;border-radius:50%;font-size:2.5vmin;',
+      'cursor:pointer;color:#fff;padding:0.2vmin 0.8vmin;line-height:1;}',
     '._tm-hand-btn{background:#1a56a8;color:#fff;border:none;border-radius:0.8vmin;',
       'font-size:1.5vmin;font-weight:bold;cursor:pointer;padding:0.8vmin 1.4vmin;white-space:nowrap;}',
     '._tm-hand-btn:hover{background:#0d3b8e;}',
@@ -21954,17 +22347,23 @@ window._tmOpenDrawer = function(){
     row.appendChild(m);
   } else {
     ids.forEach(function(id){
-      var imgUrl=_cardImg(id); var el;
+      var card=document.createElement('div');
+      card.className='bt-card';
+      card.dataset.cardId=id;
+      var imgUrl=_cardImg(id);
       if(imgUrl){
-        el=document.createElement('img');
-        el.className='_tm-hand-card'; el.src=imgUrl; el.alt=id; el.title=id;
+        var img=document.createElement('img');
+        img.src=imgUrl; img.alt=id;
+        img.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;';
+        card.appendChild(img);
       } else {
-        el=document.createElement('div');
-        el.className='_tm-hand-card-lbl'; el.textContent=id; el.title=id;
+        var lbl=document.createElement('div');
+        lbl.textContent=id;
+        lbl.style.cssText='font-size:1.2vmin;text-align:center;padding:0.5vmin;color:#fff;pointer-events:none;word-break:break-all;';
+        card.appendChild(lbl);
       }
-      el.dataset.cardId=id;
-      _attachDrag(el);
-      row.appendChild(el);
+      _attachDrag(card);
+      row.appendChild(card);
     });
   }
   var panel=document.getElementById('_tm-drawer');
@@ -22044,8 +22443,16 @@ function _attachDrag(el){
     var r=el.getBoundingClientRect();
     _drag.active=true; _drag.el=el; _drag.cardId=el.dataset.cardId;
     _drag.ox=ev.clientX-r.left; _drag.oy=ev.clientY-r.top;
-    el.style.cssText+='position:fixed;left:'+r.left+'px;top:'+r.top+'px;'
-      +'width:'+r.width+'px;height:'+r.height+'px;z-index:320000;opacity:0.75;pointer-events:none;transition:none;';
+    el.style.position='fixed';
+    el.style.left=r.left+'px';
+    el.style.top=r.top+'px';
+    el.style.width=r.width+'px';
+    el.style.height=r.height+'px';
+    el.style.zIndex='320000';
+    el.style.opacity='0.8';
+    el.style.pointerEvents='none';
+    el.style.transition='none';
+    el.style.cursor='grabbing';
     var dz=document.getElementById('_tm-dz');
     if(dz) dz.classList.add('drag-over');
   },{passive:false});
@@ -22292,6 +22699,14 @@ function _startPatrol(){
         _handCache=[];
         _buildCardUI();
       }
+    } else {
+      /* 通信担当者以外はテキスト入力を必ず有効化（カードモード無効化の影響を除去） */
+      setTimeout(function(){
+        var inp=document.getElementById('comm-input');
+        if(inp){ inp.disabled=false; inp.placeholder='聞きたいことを入力...'; inp.style.opacity=''; }
+        var btn=document.querySelector('#comm-window .comm-send');
+        if(btn){ btn.disabled=false; btn.style.opacity=''; }
+      },50);
     }
   };
   window.openCommWindow.__tmHooked=true;
@@ -22344,5 +22759,1606 @@ function _showModeOverlay(onCard,onText){
 
 })(); /* end IIFE */
 </script>
+
+<script>
+/* ================================================================
+   チュートリアルシステム
+   ================================================================ */
+(function(){
+'use strict';
+
+var _tutNo = 0;
+var _tutStep = 0;
+var _tutActive = false;
+var _tutCompleted = false;
+var _tutInterval = null;
+var _tutHighlighted = [];
+var _tutMsgHidden = false;
+/* No.2チュートリアル用：メモ開閉追跡フラグ */
+var _tutMemoOpened = false;
+var _tutMemoClosed = false;
+/* No.4チュートリアル用：状態追跡フラグ */
+var _tutT4KnockDone = false;
+/* No.5チュートリアル用：状態追跡フラグ */
+var _tutT5HatchScanned = false;
+var _tutT5DetCount = 0;
+var _tutT4FirstCommClosed = false;
+var _tutT4KitchenCommOpened = false;
+var _tutT4SendPressed1 = false;
+var _tutT4SendPressed2 = false;
+var _tutT4FinalCommClosed = false;
+/* No.6チュートリアル用：状態追跡フラグ */
+var _tutT6CommOpened = false;
+var _tutT6Send1Done = false;
+var _tutT6Send2Done = false;
+var _tutT6BathSliderScanned = false;
+var _tutT6BathNearCount = 0;
+var _tutT6BathDetCount = 0;
+/* No.7チュートリアル用：状態追跡フラグ */
+var _tutT7SafetyFull = false;
+var _tutT7CompletePressed = false;
+var _tutT7AnswerSubmitted = false;
+
+/* ---- チュートリアルステップ定義 ---- */
+var TUTORIAL_STEPS = {
+  /* ============================================================
+     No.1 アイテムの持ち出し方法と移動方法
+     ============================================================ */
+  1: [
+    {
+      msg: '車両（バン）に積まれているアイテムを取り出してみましょう。\n「可燃性ガス検知器」と「高濃度ガス識別検知器」を選択してください。',
+      icon: '🚐',
+      highlightFn: function(){
+        /* van-container 内の .item を強調 */
+        document.querySelectorAll('#van-container .item').forEach(function(el){
+          el.classList.add('tut-highlight'); _tutHighlighted.push(el);
+        });
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return state.inventory.indexOf('det') >= 0 && state.inventory.indexOf('high') >= 0;
+      }
+    },
+    {
+      msg: 'プレイヤーは操作パッドで操作ができます。\nまずは画面の左端に向かって進み、別のマップへ進んでみましょう。',
+      icon: '🎮',
+      highlightFn: function(){
+        /* 左移動ボタンを強調 */
+        var btns = document.querySelectorAll('.controls-l .d-btn');
+        if(btns && btns[0]){ btns[0].classList.add('tut-highlight'); _tutHighlighted.push(btns[0]); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return state.room === 1; }
+    },
+    {
+      msg: '扉や階段でアクションボタンを押すことで、別のマップへ移動ができます。\n集合住宅の扉まで進み、中に入ってみましょう。',
+      icon: '🚪',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){ return state.room === 2; }
+    },
+    { isClear: true }
+  ],
+
+  /* ============================================================
+     No.2 アイテムの使用方法と扉の開放
+     ============================================================ */
+  2: [
+    {
+      msg: '通報宅前に到着したら、第三者に火気を持ち込まれないように、火気厳禁表示シートを目につきやすい箇所に設置しましょう。\nもし調査範囲内に入ってきた場合は、第三者をクリックすることで、直接危険を周知することができます。',
+      icon: '🔥',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-sign');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: '火気厳禁表示シートは画面の自由な場所に設置または回収ができます。\n所持数：10個\n\n【次のメッセージへ：シートを1枚以上使用してください】',
+      icon: '📋',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-sign');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        /* 設置済みシートが1枚以上あるか、または所持数が減少したらOK */
+        var placed = document.querySelectorAll('.placed-item[data-type="sign"]');
+        if(placed.length > 0) return true;
+        /* 所持数が初期の10個から減っていればOK（設置後回収含む） */
+        var usedAny = (typeof state !== 'undefined' && state.itemCounts && state.itemCounts.sign < 10);
+        return !!usedAny;
+      }
+    },
+    {
+      msg: '次に通報宅のガスメーターを特定しましょう。\nメモからメーター社番を確認できます。\n\n【次のメッセージへ：メモを開いて閉じてください】',
+      icon: '📝',
+      highlightFn: function(){
+        /* メモが開いていればメーター社番をハイライト、そうでなければメモアイコン */
+        var memoOpen = document.getElementById('scene-memo');
+        if(memoOpen && memoOpen.classList.contains('active')){
+          var serialEl = document.getElementById('memo-meter-serial');
+          if(serialEl && serialEl.parentElement){ serialEl.parentElement.classList.add('tut-highlight'); _tutHighlighted.push(serialEl.parentElement); }
+        } else {
+          var el = document.querySelector('.visual-memo');
+          if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+        }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return _tutMemoOpened && _tutMemoClosed;
+      }
+    },
+    {
+      msg: 'ガスメーターの社番を確認しましょう。\nガスメーターはパイプシャフトの扉の中に設置されていることもあります。',
+      icon: '🔍',
+      highlightFn: function(){
+        document.querySelectorAll('#room-corridor1 .ps-container').forEach(function(el){
+          el.classList.add('tut-highlight'); _tutHighlighted.push(el);
+        });
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: 'パイプシャフトや戸棚のような密閉された空間の扉を開放する場合は、大きく開放する前に、内部にガスが溜まっていないか確認する必要があります。\n中にガスが溜まっていないか調査するために、まずは少しだけパイプシャフトの扉を開けてみましょう。\n扉はドラッグ操作で開閉できます。',
+      icon: '🚪',
+      highlightFn: function(){
+        ['ps1-1','ps1-2','ps2-1','ps2-2'].forEach(function(id){
+          var el = document.getElementById(id);
+          if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+        });
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var doors = document.querySelectorAll('.room.active .ps-door');
+        for(var i=0;i<doors.length;i++){
+          var m = doors[i].style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+          /* 初期状態で少し開いている場合（0px超）もそのまま通過 */
+          if(m && Math.abs(parseFloat(m[1])) > 0) return true;
+        }
+        return false;
+      }
+    },
+    {
+      msg: '可燃性ガスの有無を調査するには、可燃性ガス検知器を使用します。',
+      icon: '🔬',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-det');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: '可燃性ガス検知器を選択すると、検知器モードに移行します。\nドラッグ操作で、ガスの反応の有無を調査できます。',
+      icon: '📡',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-det');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: '先ほど開けたパイプシャフトの隙間を可燃性ガス検知器で調査してみましょう。',
+      icon: '🔬',
+      highlightFn: function(){
+        ['ps1-1','ps1-2','ps2-1','ps2-2'].forEach(function(id){
+          var el = document.getElementById(id);
+          if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+        });
+      },
+      nextBtn: false,
+      checkFn: function(){
+        /* 検知器使用数が増えたらクリア */
+        var stats = window._gameStats;
+        if(stats && stats.detectorChecks > 0) return true;
+        /* PS扉のgas-cleared確認 */
+        var doors = document.querySelectorAll('.room.active .ps-door');
+        for(var i=0;i<doors.length;i++){
+          if(doors[i].dataset.gasCleared === 'true') return true;
+        }
+        return false;
+      }
+    },
+    {
+      msg: 'メモで確認したメーター社番と同じメーター社番であるか確認しましょう。',
+      icon: '🔑',
+      highlightFn: function(){
+        document.querySelectorAll('#room-corridor1 .ps-container').forEach(function(el){
+          el.classList.add('tut-highlight'); _tutHighlighted.push(el);
+        });
+      },
+      nextBtn: true, checkFn: null
+    },
+    {
+      msg: 'ガスメーターをクリックすることで、室内へのガスの供給を遮断することができます。',
+      icon: '🔒',
+      highlightFn: function(){
+        /* 通報宅(102号室)=右=meter-art-2 をハイライト */
+        var el = document.getElementById('meter-art-2');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        /* 通報宅(meter 2)が閉止されたらクリア */
+        return typeof meterStatus !== 'undefined' && Array.isArray(meterStatus) && meterStatus[2] === true;
+      }
+    },
+    { isClear: true }
+  ],
+
+  /* ============================================================
+     No.3 ガスメーターからの漏洩検査
+     ============================================================ */
+  3: [
+    {
+      msg: '今回は、通報宅の灯内内管（ガスメーターよりも二次側）でガス漏れがないか調査しましょう。\n調査するためには、まずはガスメーターをクリックし、メーターガス栓を閉止します。',
+      icon: '🔍',
+      highlightFn: function(){
+        /* 通報宅(102号室)=右=meter-art-2 をハイライト */
+        var el = document.getElementById('meter-art-2');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof meterStatus !== 'undefined' && Array.isArray(meterStatus) && meterStatus[2] === true;
+      }
+    },
+    {
+      msg: 'メーターガス栓を閉止した状態で、デジタルマノメーターを使用して漏洩試験（灯内内管の気密が保持できるか）を実施しましょう。',
+      icon: '📏',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-mano');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof isPressureTestMode !== 'undefined' && isPressureTestMode === true;
+      }
+    },
+    {
+      msg: 'それでは、デジタルマノメーターを使用した状態で、漏洩検査をかけたいガスメーターをクリックします。',
+      icon: '🔬',
+      highlightFn: function(){
+        var el = document.getElementById('meter-art-2');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof _pressureRunning !== 'undefined' && _pressureRunning === true;
+      }
+    },
+    {
+      msg: '漏洩試験が完了するまで待ちます。「圧力降下あり！」と表示された場合、そのシナリオの漏洩系統が確定します。',
+      icon: '⏱️',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){
+        return typeof _pressureRunning !== 'undefined' && !_pressureRunning &&
+          ((_pressureOk && _pressureOk[2]) || (_pressureNg && _pressureNg[2]));
+      }
+    },
+    {
+      msg: '「圧力降下あり！」と表示されました。今回のガス漏れは、通報宅の灯内内管であることが分かりました。',
+      icon: '⚠️',
+      highlightFn: null,
+      nextBtn: true,
+      checkFn: null
+    },
+    {
+      msg: 'デジタルマノメーターモードを終了しましょう。終了ボタンを押してください。',
+      icon: '✅',
+      highlightFn: function(){
+        var el = document.querySelector('#detector-layer .detector-btn');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof isPressureTestMode !== 'undefined' && isPressureTestMode === false;
+      }
+    },
+    { isClear: true }
+  ],
+
+  /* ============================================================
+     No.4 通報者との会話方法
+     ============================================================ */
+  4: [
+    /* Step 0: 通報者宅のドアをノック */
+    {
+      msg: '通報者宅の扉をノックして、声掛けを行いましょう。\nインターホンは着火源になるため原則、使用しません。',
+      icon: '🚪',
+      highlightFn: function(){
+        var el = document.getElementById('door-2');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4KnockDone; }
+    },
+    /* Step 1: 自己紹介（ガスを含む言葉を入力） */
+    {
+      msg: '通報者が扉から出てきました。まずは自己紹介しましょう。\n例：〇〇ガスです。',
+      icon: '👋',
+      highlightFn: function(){
+        var el = document.getElementById('comm-input');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var el = document.getElementById('comm-input');
+        if(!el) return false;
+        return /ガス/.test(el.value);
+      }
+    },
+    /* Step 2: 送信・コミュニケーションウィンドウを閉じる */
+    {
+      msg: '文字が入力出来たら、送信を押しましょう。\n入力された言葉に返信が返ってきます。',
+      icon: '📤',
+      highlightFn: function(){
+        var el = document.querySelector('#comm-window .close-talk-btn');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4FirstCommClosed; }
+    },
+    /* Step 3: 入室 */
+    {
+      msg: '扉が開きました。アクションボタンで入室しましょう。',
+      icon: '🚪',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){ return typeof state !== 'undefined' && state.room === 5; }
+    },
+    /* Step 4: 台所へ移動 */
+    {
+      msg: '通報者宅の室内へ入室しました。通報者は台所にいるようです。台所へ向かいましょう。\n台所は、廊下をずっと右に進んだ場所にあります。',
+      icon: '🚶',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){ return typeof state !== 'undefined' && state.room === 9; }
+    },
+    /* Step 5: 台所到着・緑ボタンを押す */
+    {
+      msg: '台所に到着しました。通報者など、会話できるキャラクターがその空間にいる場合、会話ボタンが表示されます。',
+      icon: '💬',
+      highlightFn: function(){
+        var el = document.getElementById('talk-btn');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4KitchenCommOpened; }
+    },
+    /* Step 6: 火気の使用禁止を入力 */
+    {
+      msg: 'コミュニケーションウィンドウが開きました。コミュニケーションウィンドウでは、先ほど同様、文字入力で会話ができます。\n会話の目的は大きく２つ。１つ目に調査中に危険な行為をされないように注意喚起をします。\n火気を使用されないように、チャットに「火気を使用しないで下さい。」と入力してみましょう。',
+      icon: '🔥',
+      highlightFn: function(){
+        var el = document.getElementById('comm-input');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var el = document.getElementById('comm-input');
+        if(!el) return false;
+        return /火/.test(el.value);
+      }
+    },
+    /* Step 7: 火気注意喚起・送信ボタンを押す */
+    {
+      msg: '火気の使用禁止を注意喚起していない場合、通報者は火気を使用することもあるため注意しましょう。',
+      icon: '⚠️',
+      highlightFn: function(){
+        var el = document.querySelector('#comm-window .comm-send');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4SendPressed1; }
+    },
+    /* Step 8: 電気スイッチの使用禁止を入力 */
+    {
+      msg: '次に、「電気スイッチには触れないように」と、チャットでお願いしましょう。',
+      icon: '⚡',
+      highlightFn: function(){
+        var el = document.getElementById('comm-input');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var el = document.getElementById('comm-input');
+        if(!el) return false;
+        return /電/.test(el.value);
+      }
+    },
+    /* Step 9: 電気注意喚起・送信ボタンを押す */
+    {
+      msg: 'リモコンやスマホ、換気扇のスイッチなど、電気スイッチの操作も使用により、着火源になる恐れがあるため、十分な注意喚起を行いましょう。',
+      icon: '⚠️',
+      highlightFn: function(){
+        var el = document.querySelector('#comm-window .comm-send');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4SendPressed2; }
+    },
+    /* Step 10: 完了メッセージ・×ボタンで閉じる */
+    {
+      msg: 'グッジョブです。これで通報者は、調査中に火気の使用や電気スイッチの操作をしなくなりました。',
+      icon: '🎉',
+      highlightFn: function(){
+        var el = document.querySelector('#comm-window .close-talk-btn');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4FinalCommClosed; }
+    },
+    { isClear: true }
+  ],
+
+  /* ============================================================
+     No.5 危険度メーターと保安措置
+     ============================================================ */
+  5: [
+    /* Step 0: 危険度メーター説明 + OK */
+    {
+      msg: 'シミュレーション中は危険度が上昇します。危険度が１００％に到達した場合、シナリオクリア失敗となってしまいます。\n溜まった危険度は保安措置を行うことで減少します。さらに危険度の１秒あたりの上昇率も下がっていきます。\n試しに、台所の窓を全開にしてみましょう。',
+      icon: '⚠️',
+      highlightFn: function(){
+        var el = document.getElementById('danger-panel');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    /* Step 1: 台所の窓を全開 */
+    {
+      msg: '台所の窓を全開にしてみましょう。',
+      icon: '🪟',
+      highlightFn: function(){
+        var el = document.getElementById('kitchen-window-b');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var el = document.getElementById('kitchen-window-b');
+        if(!el) return false;
+        var tx = (typeof _getTranslateX === 'function') ? Math.abs(_getTranslateX(el)) : 0;
+        if(!tx){
+          var m = el.style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+          if(m) tx = Math.abs(parseFloat(m[1]));
+        }
+        return tx >= 72;
+      }
+    },
+    /* Step 2: 窓開け成功フィードバック + 点検口説明 + OK */
+    {
+      msg: 'グッジョブ！窓を全開にしたため、危険度が下がりました。\n窓開けのほかにも、戸棚や点検口などにガスが溜まっていないか、可燃性ガス検知器で調査するなど、危険がないか確認する度に、危険度は減少します。\n試しに、台所の床下点検口を少しだけ開け、内部にガスが溜まっていないか確認してみましょう。',
+      icon: '✅',
+      highlightFn: null,
+      nextBtn: true, checkFn: null
+    },
+    /* Step 3: 台所の床下点検口を少し開ける */
+    {
+      msg: '台所の床下点検口を少しだけ開けてみましょう。\n扉はドラッグ操作で開閉できます。',
+      icon: '🚪',
+      highlightFn: function(){
+        var el = document.getElementById('kitchen-hatch-b');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var el = document.getElementById('kitchen-hatch-b');
+        if(!el) return false;
+        var tx = (typeof _getTranslateX === 'function') ? Math.abs(_getTranslateX(el)) : 0;
+        if(!tx){
+          var m = el.style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+          if(m) tx = Math.abs(parseFloat(m[1]));
+        }
+        return tx > 3;
+      }
+    },
+    /* Step 4: 可燃性ガス検知器を選択 */
+    {
+      msg: '床下点検口を少し開け、隙間をつくったら、可燃性ガス検知器を使用してガスが溜まっていないか確認しましょう。',
+      icon: '🔬',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-det');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof isDetectorMode !== 'undefined' && isDetectorMode === true;
+      }
+    },
+    /* Step 5: 検知器で床下点検口を調査 */
+    {
+      msg: '床下点検口の隙間を検知器で調査（ドラッグ）してみましょう。',
+      icon: '📡',
+      highlightFn: function(){
+        var el = document.getElementById('kitchen-hatch-b');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        if(_tutT5HatchScanned) return true;
+        var hatch = document.getElementById('kitchen-hatch-b');
+        if(hatch && hatch.dataset.gasCleared === 'true') return true;
+        return false;
+      }
+    },
+    /* Step 6: 完了メッセージ + OKボタン */
+    {
+      msg: 'グッジョブ！また危険度が下がりました。窓や点検口、戸棚はいくつか配置されているので、通報宅の室内に入室したら、先行して保安措置を実施しましょう。',
+      icon: '🎉',
+      highlightFn: null,
+      nextBtn: true, checkFn: null
+    },
+    { isClear: true }
+  ],
+
+  /* ============================================================
+     No.6 問診と検知器調査
+     ============================================================ */
+  6: [
+    /* Step 0: 通報者の緑ボタンへ話しかける */
+    {
+      msg: '通報者から臭気の情報を聞き出し、反応箇所がないか検知器で調査しましょう。\nまず、通報者へ話しかけます。',
+      icon: '💬',
+      highlightFn: function(){
+        var el = document.getElementById('talk-btn');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT6CommOpened; }
+    },
+    /* Step 1: 「どこ」を含む問診を送信 */
+    {
+      msg: '通報者へ問診して、臭気情報を聞き出します。問診では、「いつ」「どこで」「どの程度」「どんなとき」にガス臭気を感じたか、聞き出すことで大きなヒントにつながります。\n試しに「どこでガス臭気を感じたか」聞き出してみましょう。',
+      icon: '❓',
+      highlightFn: function(){
+        var el = document.getElementById('comm-input');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT6Send1Done; }
+    },
+    /* Step 2: 「どんな」を含む問診を送信 */
+    {
+      msg: 'グッジョブ！次に通報者へ「どんなときにガス臭気を感じたか」聞き出してみましょう。',
+      icon: '❓',
+      highlightFn: function(){
+        var el = document.getElementById('comm-input');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT6Send2Done; }
+    },
+    /* Step 3: 廊下へ移動 */
+    {
+      msg: 'どんなときに臭気を感じたか聞き出せると、調査範囲を更に絞り込むことができます。\nそれでは、通報者が臭気を感じた部屋へ向かってみましょう。操作パッドの左を押して、廊下へ移動します。',
+      icon: '🚶',
+      highlightFn: function(){
+        var btns = document.querySelectorAll('.controls-l .d-btn');
+        if(btns && btns[0]){ btns[0].classList.add('tut-highlight'); _tutHighlighted.push(btns[0]); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return typeof state !== 'undefined' && state.room === 5; }
+    },
+    /* Step 4: 脱衣所扉の滞留ガス確認 */
+    {
+      msg: '浴室は脱衣所の中に入口があります。脱衣所の扉を開けるときは、可燃性ガス検知器で、内部にガスが溜まっていないか確認しましょう。',
+      icon: '🔬',
+      highlightFn: function(){
+        var el = document.getElementById('door-bath-slider');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        if(_tutT6BathSliderScanned) return true;
+        var el = document.getElementById('door-bath-slider');
+        if(el && el.dataset.gasCleared === 'true'){ _tutT6BathSliderScanned = true; return true; }
+        return false;
+      }
+    },
+    /* Step 5: 浴室へ入室 */
+    {
+      msg: '浴室への入口は、脱衣所の一番奥の扉から入れます。',
+      icon: '🚪',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){ return typeof state !== 'undefined' && state.room === 8; }
+    },
+    /* Step 6: 臭気メーターで反応箇所に近づく */
+    {
+      msg: '浴室へ入りました。まずは臭気があるか確認しましょう。臭気メーターを頼りに、浴室内をゆっくり移動してみてください。',
+      icon: '👃',
+      highlightFn: function(){
+        var el = document.getElementById('odor-meter-panel');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return _tutT6BathNearCount >= 5; }
+    },
+    /* Step 7: 可燃性ガス検知器で反応箇所を発見 */
+    {
+      msg: 'この辺りで臭気があるようです。可燃性ガス検知器に持ち変えて、反応箇所を探してみましょう。調査はドラッグで行います。',
+      icon: '🔍',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-det');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return _tutT6BathDetCount >= 3; }
+    },
+    /* Step 8: 火気厳禁シートとポケット警報器を設置 */
+    {
+      msg: '反応箇所を発見しました！反応箇所を発見したら、安全のため、反応箇所の近くに「火気厳禁表示シート」と「ポケット警報器」を設置しましょう。\nポケット警報器は、設置個所の濃度が高くなると発報してくれます。',
+      icon: '⚠️',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){
+        var signs = document.querySelectorAll('.placed-item[data-type="sign"]');
+        var alarms = document.querySelectorAll('.placed-item[data-type="alm"]');
+        return signs.length >= 1 && alarms.length >= 1;
+      }
+    },
+    /* Step 9: 高濃度ガス識別検知器をクリック */
+    {
+      msg: '次にガス濃度とガス種を測定しましょう。高濃度ガス識別検知器を使用します。',
+      icon: '🔬',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-high');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof isGasIdMode !== 'undefined' && isGasIdMode === true;
+      }
+    },
+    /* Step 10: 説明 + OKボタン（nextBtn） */
+    {
+      msg: '検知モードになりました。反応箇所をクリックすることで、現在のガス濃度とガス種が確認できます。\n濃度が低いと、ガス種が判別できません。ガス種が識別不可になっている際は、少し時間を置いてから、改めて確認してみましょう。',
+      icon: '✅',
+      highlightFn: null,
+      nextBtn: true, checkFn: null
+    },
+    { isClear: true }
+  ],
+
+  /* ============================================================
+     No.7 安全率メーターとクリア条件
+     ============================================================ */
+  7: [
+    /* Step 0: イントロ */
+    {
+      msg: 'C級　最後のチュートリアルです。',
+      icon: '🎓',
+      highlightFn: null,
+      nextBtn: true, checkFn: null
+    },
+    /* Step 1: 安全率メーター説明 */
+    {
+      msg: 'シミュレーションでは、画面左部に安全率メーターが表示されています。',
+      icon: '📊',
+      highlightFn: function(){
+        var el = document.getElementById('safety-panel');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    /* Step 2: 安全率上昇方法説明 → 安全率満タンになるまで待つ */
+    {
+      msg: '保安措置を実施する、デジタルマノメーターで圧力降下を確認するなど、保安措置と調査を進めることで、安全率は上昇していきます。\n安全率メーターが満タンになると、「保安措置を完了する」ボタンが表示され、いつでもシミュレーションを完了させることができるようになります。\nまずは、これまでのチュートリアル内容を思い出し、危険度が１００％になる前に、安全率メーターを満タンにしてみましょう。',
+      icon: '💪',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){
+        if(_tutT7SafetyFull) return true;
+        var norma = 100;
+        try{
+          var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+          if(sc && sc.safetyNorma && !isNaN(parseInt(sc.safetyNorma))) norma = Math.max(1, parseInt(sc.safetyNorma));
+        }catch(e){}
+        if((typeof safetyValue !== 'undefined') && safetyValue >= norma){ _tutT7SafetyFull = true; return true; }
+        return false;
+      }
+    },
+    /* Step 3: 安全率満タン確認 → 保安措置を完了するボタン押下を待つ */
+    {
+      msg: 'グッジョブ！安全率メーターが満タンになり、「保安措置を完了する」ボタンが表示されました。やり残したことがなければ、ボタンを押してみましょう。',
+      icon: '✅',
+      highlightFn: function(){
+        var el = document.getElementById('complete-safety-btn');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        if(_tutT7CompletePressed) return true;
+        var scl = document.getElementById('scene-clear');
+        if(scl && scl.classList.contains('active')){ _tutT7CompletePressed = true; return true; }
+        return false;
+      }
+    },
+    /* Step 4: 漏洩系統回答を促す → 回答するボタン押下を待つ */
+    {
+      msg: 'どのシナリオでも、最後に漏洩系統はどこであると判断したか問われます。調査の結果、あなたが判断した漏洩系統を選択してみましょう。',
+      icon: '🔍',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){
+        if(_tutT7AnswerSubmitted) return true;
+        var step2 = document.getElementById('clear-step2');
+        if(step2 && step2.style.display === 'flex'){ _tutT7AnswerSubmitted = true; return true; }
+        return false;
+      }
+    },
+    /* Step 5: レーダーチャート説明 */
+    {
+      msg: 'シミュレーションが完了すると、レーダーチャートとシナリオの解説が表示されます。',
+      icon: '📈',
+      highlightFn: null,
+      nextBtn: true, checkFn: null
+    },
+    /* Step 6: 完了メッセージ */
+    {
+      msg: '以上で、C級のチュートリアルは完了です。お疲れ様でした。',
+      icon: '🎉',
+      highlightFn: null,
+      nextBtn: true, checkFn: null
+    },
+    { isClear: true }
+  ]
+};
+
+/* ---- 公開関数 ---- */
+function showTutorialSelect(){
+  try{ hideMenu(); }catch(e){}
+  var el = document.getElementById('scene-tutorial-select');
+  if(el) el.classList.add('active');
+}
+window.showTutorialSelect = showTutorialSelect;
+
+function closeTutorialSelect(){
+  var el = document.getElementById('scene-tutorial-select');
+  if(el) el.classList.remove('active');
+  try{ showMenu(); }catch(e){}
+}
+window.closeTutorialSelect = closeTutorialSelect;
+
+function startTutorial(no){
+  _tutNo = no;
+  _tutStep = 0;
+  _tutActive = true;
+  _tutCompleted = false;
+
+  /* 全画面クリア・ゲーム開始 */
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.overlay-screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('scene-game').classList.add('active');
+
+  /* C級 No.1シナリオを使用 */
+  try{
+    selectedDifficulty = 'C級';
+    selectedScenarioIdx = 0;
+    activeScenario = scenarioData[0];
+    window.currentScenarioGasKind = '13A';
+    window.currentScenarioWeather = '晴れ';
+    try{ setWeather('晴れ'); }catch(e){}
+    try{ loadStageComposition(''); }catch(e){}
+  }catch(e){}
+
+  /* BGM */
+  try{ stopMenuBGM(); }catch(e){}
+  try{ disableInGameBGM=true; stopBGMAll(); }catch(e){}
+  try{ if(typeof resetCommHistory==='function') resetCommHistory(); }catch(e){}
+  try{ if(typeof resetConversationHistory==='function') resetConversationHistory(); }catch(e){}
+
+  /* 前回チュートリアルのアイテム使用モードをリセット */
+  try{ if(typeof stopMode === 'function') stopMode(); }catch(e){}
+  try{ isGasIdMode = false; }catch(e){}
+  try{ isDetectorMode = false; }catch(e){}
+  try{ isPlacementMode = false; }catch(e){}
+  try{ isVentMode = false; }catch(e){}
+  try{
+    var _dtool = document.getElementById('detector-tool');
+    if(_dtool) _dtool.style.display = 'none';
+    var _dlayer = document.getElementById('detector-layer');
+    if(_dlayer) _dlayer.style.display = 'none';
+  }catch(e){}
+
+  /* ゲーム初期化 */
+  initGame();
+  try{ applyAllCustoms(); }catch(e){}
+  try{ updateGuideSignsForStage(0); }catch(e){}
+
+  /* 危険タイマー停止（チュートリアル中は爆発なし） */
+  if(dangerTimer){ clearInterval(dangerTimer); dangerTimer = null; }
+
+  /* 前回チュートリアルの設置物を完全リセット */
+  try{
+    if(window.aptState){
+      if(window.aptState.A){ window.aptState.A.placedItems = []; window.aptState.A.inited = false; }
+      if(window.aptState.B){ window.aptState.B.placedItems = []; window.aptState.B.inited = false; }
+    }
+    document.querySelectorAll('.placed-item').forEach(function(el){ el.remove(); });
+  }catch(e){}
+
+  /* チュートリアル別の初期状態 */
+  if(no === 1){
+    state.room = 0; state.x = 30;
+    state.vanStock = ['det', 'high'];
+    state.inventory = ['phone', 'memo'];
+    state.equipped = null;
+    renderVan(); renderInventory(); updateHand();
+    try{ document.getElementById('room-parking').classList.add('active'); }catch(e){}
+    try{ document.getElementById('parking-msg').style.display='block'; }catch(e){}
+  } else if(no === 2){
+    _tutMemoOpened = false;
+    _tutMemoClosed = false;
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'sign', 'det'];
+    state.equipped = null;
+    state.itemCounts.sign = 10;
+    /* 通報者部屋を設定（C級No.1: 102号室） */
+    try{ residentRoom = 2; roomOpened = true; }catch(e){}
+    /* メーター社番を固定値（102号室対応）で設定 */
+    try{
+      meterSerialCorrect = '123456789';
+      /* 通報宅(102号室=右=meter2)→123456789、非通報宅(101号室=左=meter1)→987654321 */
+      meterSerials = ['','987654321','123456789','',''];
+      updateCallMeterSerial();
+      try{ applyPsSerialLabels(); }catch(e2){}
+    }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(3, 50);
+    /* パイプシャフトの扉を初期状態（閉：translateX 0px）にリセット */
+    try{
+      document.querySelectorAll('.ps-door').forEach(function(d){
+        d.style.transform = 'translateX(0px)';
+        d.dataset.gasCleared = 'false';
+      });
+    }catch(e){}
+  } else if(no === 3){
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'det', 'mano'];
+    state.equipped = null;
+    /* 通報者部屋を設定（C級No.1: 102号室） */
+    try{ residentRoom = 2; roomOpened = true; }catch(e){}
+    /* メーター社番を固定値（102号室対応）で設定 */
+    try{
+      meterSerialCorrect = '123456789';
+      meterSerials = ['','987654321','123456789','',''];
+      updateCallMeterSerial();
+      try{ applyPsSerialLabels(); }catch(e2){}
+    }catch(e){}
+    /* メーター状態リセット（全開） */
+    try{ meterStatus = [false,false,false,false,false,false,false]; }catch(e){}
+    /* 圧力試験状態リセット */
+    try{
+      _pressureOk = [false,false,false,false,false];
+      _pressureNg = [false,false,false,false,false];
+      _pressureRunning = false;
+      if(_pressureTimer){ clearInterval(_pressureTimer); _pressureTimer = null; }
+      document.querySelectorAll('.pressure-overlay').forEach(function(ov){ ov.style.display='none'; });
+    }catch(e){}
+    /* 灯内内管漏れを102号室（通報宅）に設定 */
+    try{ _indoorLeakRoomNo = '102'; }catch(e){}
+    try{ if(activeScenario) activeScenario.indoorLeakRoomNo = '102'; }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(3, 50);
+    /* パイプシャフトの扉を全て開放状態にする */
+    try{
+      document.querySelectorAll('.ps-door').forEach(function(d){
+        d.style.transform = 'translateX(80px)';
+        d.dataset.gasCleared = 'false';
+      });
+    }catch(e){}
+  } else if(no === 4){
+    /* No.4: 通報者との会話方法 */
+    _tutT4KnockDone = false;
+    _tutT4FirstCommClosed = false;
+    _tutT4KitchenCommOpened = false;
+    _tutT4SendPressed1 = false;
+    _tutT4SendPressed2 = false;
+    _tutT4FinalCommClosed = false;
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'det', 'sign', 'alm'];
+    state.equipped = null;
+    state.itemCounts.sign = 10;
+    state.itemCounts.alm = 3;
+    /* 通報者部屋を設定（102号室） */
+    try{ residentRoom = 2; roomOpened = false; }catch(e){}
+    /* 通報者の位置を台所に設定 */
+    try{ reporterRoom = 9; }catch(e){}
+    /* メーター社番を固定値で設定 */
+    try{
+      meterSerialCorrect = '123456789';
+      meterSerials = ['','987654321','123456789','',''];
+      updateCallMeterSerial();
+      try{ applyPsSerialLabels(); }catch(e2){}
+    }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(3, 50);
+  } else if(no === 6){
+    /* No.6: 問診と検知器調査 */
+    _tutT6CommOpened = false;
+    _tutT6Send1Done = false;
+    _tutT6Send2Done = false;
+    _tutT6BathSliderScanned = false;
+    _tutT6BathNearCount = 0;
+    _tutT6BathDetCount = 0;
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'det', 'high', 'sign', 'alm'];
+    state.equipped = null;
+    state.itemCounts.sign = 10;
+    state.itemCounts.alm = 3;
+    /* 通報者部屋を設定（102号室）・入室済み */
+    try{ residentRoom = 2; roomOpened = true; }catch(e){}
+    /* 通報者は台所にいる */
+    try{ reporterRoom = 9; }catch(e){}
+    /* メーター社番を固定値で設定 */
+    try{
+      meterSerialCorrect = '123456789';
+      meterSerials = ['','987654321','123456789','',''];
+      updateCallMeterSerial();
+      try{ applyPsSerialLabels(); }catch(e2){}
+    }catch(e){}
+    /* 室内漏れを浴室（102号室）に設定 */
+    try{ _indoorLeakRoomNo = '102'; }catch(e){}
+    try{ if(activeScenario) activeScenario.indoorLeakRoomNo = '102'; }catch(e){}
+    /* 反応箇所（hotspot1）を浴室に設定 */
+    try{ if(activeScenario) activeScenario.leak1 = '浴室'; }catch(e){}
+    try{ hotspot1 = buildHotspot2('浴室', 1); hotspotFound1 = false; hotspot2 = null; hotspotFound2 = false; }catch(e){}
+    /* 脱衣所扉をリセット（スキャン検知のため isDangerous を true にする） */
+    try{
+      var _bsd6 = document.getElementById('door-bath-slider');
+      if(_bsd6){
+        _bsd6.style.transform = 'translateX(0px)';
+        _bsd6.dataset.isDangerous = 'true';
+        _bsd6.dataset.gasCleared = 'false';
+        _bsd6.dataset.bonusApplied = 'false';
+      }
+    }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(9, 50);
+  } else if(no === 7){
+    /* No.7: 安全率メーターとクリア条件 */
+    _tutT7SafetyFull = false;
+    _tutT7CompletePressed = false;
+    _tutT7AnswerSubmitted = false;
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'det', 'high', 'mano', 'sign', 'alm'];
+    state.equipped = null;
+    state.itemCounts.sign = 10;
+    state.itemCounts.alm = 3;
+    /* 通報者部屋を設定（102号室）・入室済み */
+    try{ residentRoom = 2; roomOpened = true; }catch(e){}
+    /* 通報者は台所にいる */
+    try{ reporterRoom = 9; }catch(e){}
+    /* メーター社番を固定値で設定 */
+    try{
+      meterSerialCorrect = '123456789';
+      meterSerials = ['','987654321','123456789','',''];
+      updateCallMeterSerial();
+      try{ applyPsSerialLabels(); }catch(e2){}
+    }catch(e){}
+    /* 室内漏れを浴室（102号室）に設定 */
+    try{ _indoorLeakRoomNo = '102'; }catch(e){}
+    try{ if(activeScenario) activeScenario.indoorLeakRoomNo = '102'; }catch(e){}
+    /* 反応箇所（hotspot1）を浴室に設定 */
+    try{ if(activeScenario) activeScenario.leak1 = '浴室'; }catch(e){}
+    try{ hotspot1 = buildHotspot2('浴室', 1); hotspotFound1 = false; hotspot2 = null; hotspotFound2 = false; }catch(e){}
+    /* 脱衣所扉をリセット（スキャン検知のため isDangerous を true にする） */
+    try{
+      var _bsd7 = document.getElementById('door-bath-slider');
+      if(_bsd7){
+        _bsd7.style.transform = 'translateX(0px)';
+        _bsd7.dataset.isDangerous = 'true';
+        _bsd7.dataset.gasCleared = 'false';
+        _bsd7.dataset.bonusApplied = 'false';
+      }
+    }catch(e){}
+    /* 危険タイマーを再起動（危険度が上昇するシナリオ） */
+    try{
+      dangerValue = 0;
+      dangerRate = 0.2;
+      if(dangerTimer){ clearInterval(dangerTimer); dangerTimer = null; }
+      dangerTimer = setInterval(updateDanger, 1000);
+      updateDangerUI();
+    }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(3, 50);  /* 1F共用部から開始 */
+  } else if(no === 5){
+    /* No.5: 危険度メーターと保安措置 */
+    _tutT5HatchScanned = false;
+    _tutT5DetCount = 0;
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'det', 'sign', 'alm'];
+    state.equipped = null;
+    state.itemCounts.sign = 10;
+    state.itemCounts.alm = 3;
+    /* 通報者部屋を設定（102号室 = B side）*/
+    try{ residentRoom = 2; roomOpened = true; }catch(e){}
+    /* B棟の台所 (room-kitchen-b) を使用するため currentApartmentOwner を設定 */
+    try{ currentApartmentOwner = 'B'; }catch(e){}
+    /* メーター社番を固定値で設定 */
+    try{
+      meterSerialCorrect = '123456789';
+      meterSerials = ['','987654321','123456789','',''];
+      updateCallMeterSerial();
+      try{ applyPsSerialLabels(); }catch(e2){}
+    }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(9, 50);
+    /* 危険タイマーを再起動（Tutorial 5 では危険度が上昇する） */
+    try{
+      dangerValue = 0;
+      dangerRate = 0.7;
+      if(dangerTimer){ clearInterval(dangerTimer); dangerTimer = null; }
+      dangerTimer = setInterval(updateDanger, 1000);
+      updateDangerUI();
+    }catch(e){}
+    /* 台所の床下点検口を「滞留ガスの可能性あり」に設定（検知器でスキャン可能にする）*/
+    try{
+      var _kh5 = document.getElementById('kitchen-hatch-b');
+      if(_kh5){
+        _kh5.dataset.isDangerous = 'true';
+        _kh5.dataset.gasCleared = 'false';
+        _kh5.dataset.bonusApplied = 'false';
+        _kh5.style.transform = 'translateX(0px)';
+        _kh5.style.opacity = '1';
+      }
+    }catch(e){}
+    /* 台所の窓を全閉状態にリセット */
+    try{
+      var _kw5 = document.getElementById('kitchen-window-b');
+      if(_kw5){
+        _kw5.style.transform = 'translateX(0px)';
+        _kw5.style.opacity = '1';
+        _kw5.dataset.bonusApplied = 'false';
+      }
+    }catch(e){}
+  }
+
+  /* チュートリアルオーバーレイ表示
+     app-container の直下に移動してから active にすることで、
+     #scene-game (z-index:10) のスタッキングコンテキストに縛られず
+     #comm-window (z-index:300) より上に描画されるようにする */
+  var overlay = document.getElementById('tutorial-overlay');
+  var _appCont = document.getElementById('app-container');
+  if(overlay && _appCont && overlay.parentElement !== _appCont){
+    _appCont.appendChild(overlay);
+  }
+  if(overlay) overlay.classList.add('active');
+
+  /* ステップ開始 */
+  showTutorialStep();
+  startTutorialPolling();
+}
+window.startTutorial = startTutorial;
+
+function showTutorialStep(){
+  var steps = TUTORIAL_STEPS[_tutNo];
+  if(!steps || _tutStep >= steps.length) return;
+  var step = steps[_tutStep];
+
+  if(step.isClear){ showTutorialClear(); return; }
+
+  /* メッセージボックス更新 */
+  var msgBox  = document.getElementById('tutorial-msg-box');
+  var msgText = document.getElementById('tutorial-msg-text');
+  var msgIcon = document.getElementById('tutorial-msg-icon');
+  var nextBtn = document.getElementById('tutorial-next-btn');
+  if(!msgBox) return;
+
+  msgText.textContent = step.msg;
+  msgIcon.textContent = step.icon || '📖';
+
+  if(step.nextBtn){
+    nextBtn.classList.add('visible');
+  } else {
+    nextBtn.classList.remove('visible');
+  }
+
+  /* 折りたたみを解除して必ずメッセージを表示 */
+  _tutMsgHidden = false;
+  msgBox.classList.remove('tut-slide-out');
+  var toggleBtn = document.getElementById('tutorial-msg-toggle-btn');
+  if(toggleBtn){ toggleBtn.style.display = 'block'; toggleBtn.textContent = '▼ 隠す'; }
+
+  /* アニメーションリセット */
+  msgBox.style.animation = 'none';
+  msgBox.offsetHeight;
+  msgBox.style.animation = '';
+  msgBox.classList.add('visible');
+
+  /* ハイライト更新 */
+  clearHighlights();
+  if(step.highlightFn) setTimeout(function(){ step.highlightFn(); setTimeout(placeTutPointers, 50); }, 300);
+}
+
+function clearHighlights(){
+  _tutHighlighted.forEach(function(el){ el.classList.remove('tut-highlight'); });
+  _tutHighlighted = [];
+  var ptc = document.getElementById('tutorial-pointer-container');
+  if(ptc) ptc.innerHTML = '';
+}
+
+/* ハイライト要素の上に 👆 ポインターアイコンを配置 */
+function placeTutPointers(){
+  var container = document.getElementById('tutorial-pointer-container');
+  if(!container) return;
+  container.innerHTML = '';
+  var appEl = document.getElementById('app-container');
+  if(!appEl) return;
+  var appRect = appEl.getBoundingClientRect();
+  _tutHighlighted.forEach(function(el){
+    if(!document.contains(el)) return;
+    try{
+      var rect = el.getBoundingClientRect();
+      if(rect.width === 0 && rect.height === 0) return;
+      var ptr = document.createElement('div');
+      ptr.className = 'tut-pointer';
+      var cx = rect.left + rect.width / 2 - appRect.left;
+      var ty = rect.bottom - appRect.top;
+      ptr.style.left = cx + 'px';
+      ptr.style.top = ty + 'px';
+      ptr.style.transform = 'translateX(-50%)';
+      ptr.innerHTML = '<div class="tut-pointer-arrow">👆</div>';
+      container.appendChild(ptr);
+    }catch(e){}
+  });
+}
+
+/* チュートリアルメッセージ折りたたみトグル */
+function toggleTutorialMsgBox(){
+  var box = document.getElementById('tutorial-msg-box');
+  var btn = document.getElementById('tutorial-msg-toggle-btn');
+  if(!box) return;
+  if(_tutMsgHidden){
+    _tutMsgHidden = false;
+    box.classList.remove('tut-slide-out');
+    if(btn) btn.textContent = '▼ 隠す';
+  } else {
+    _tutMsgHidden = true;
+    box.classList.add('tut-slide-out');
+    if(btn) btn.textContent = '▲ 表示する';
+  }
+}
+window.toggleTutorialMsgBox = toggleTutorialMsgBox;
+
+function tutorialNextStep(){
+  _tutStep++;
+  showTutorialStep();
+}
+window.tutorialNextStep = tutorialNextStep;
+
+function startTutorialPolling(){
+  stopTutorialPolling();
+  _tutInterval = setInterval(checkTutorialProgress, 350);
+}
+
+function stopTutorialPolling(){
+  if(_tutInterval){ clearInterval(_tutInterval); _tutInterval = null; }
+}
+
+function _playTutCorrectSE(){
+  try{
+    initAudio();
+    if(isMuted) return;
+    if(!actx) return;
+    var t0 = actx.currentTime;
+    var freqs = [523, 659, 784, 1047];
+    freqs.forEach(function(f, i){
+      var o = actx.createOscillator();
+      var g = actx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f, t0 + i * 0.1);
+      g.gain.setValueAtTime(0.0001, t0 + i * 0.1);
+      g.gain.exponentialRampToValueAtTime(0.12, t0 + i * 0.1 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.1 + 0.18);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t0 + i * 0.1); o.stop(t0 + i * 0.1 + 0.2);
+    });
+  }catch(e){}
+}
+
+function checkTutorialProgress(){
+  if(!_tutActive || _tutCompleted) return;
+  var steps = TUTORIAL_STEPS[_tutNo];
+  if(!steps || _tutStep >= steps.length) return;
+  var step = steps[_tutStep];
+  if(!step.nextBtn && step.checkFn && step.checkFn()){
+    _playTutCorrectSE();
+    _tutStep++;
+    showTutorialStep();
+    return;
+  }
+  /* ハイライトを最新DOM状態に合わせて更新（DOMが再生成された場合も対応） */
+  if(step.highlightFn){
+    var needRefresh = _tutHighlighted.length === 0 ||
+      _tutHighlighted.some(function(el){ return !document.contains(el); });
+    if(needRefresh){
+      clearHighlights();
+      step.highlightFn();
+      setTimeout(placeTutPointers, 50);
+    }
+  }
+
+  /* チュートリアル5ステップ5（検知器スキャンステップ）：検知器モードで一定時間操作されたらスキャン済みとみなす */
+  if(_tutNo === 5 && _tutStep === 5){
+    if(typeof isDetectorMode !== 'undefined' && isDetectorMode){
+      _tutT5DetCount++;
+      if(_tutT5DetCount >= 3){ _tutT5HatchScanned = true; }
+    }
+  }
+
+  /* チュートリアル6ステップ6（臭気メーターで浴室内に近づく）：浴室に滞在するとカウント増加 */
+  if(_tutNo === 6 && _tutStep === 6){
+    if(typeof state !== 'undefined' && state.room === 8){
+      _tutT6BathNearCount++;
+    }
+  }
+  /* チュートリアル6ステップ7（可燃性ガス検知器で浴室を調査）：浴室で検知器モードのままカウント増加 */
+  if(_tutNo === 6 && _tutStep === 7){
+    if(typeof isDetectorMode !== 'undefined' && isDetectorMode && typeof state !== 'undefined' && state.room === 8){
+      _tutT6BathDetCount++;
+    }
+  }
+
+
+
+  /* チュートリアル2ステップ2（メモ確認ステップ）：まだPlacementMode中なら「終了」ボタンを強調して閉じ方を案内 */
+  if(_tutNo === 2 && _tutStep === 2){
+    var stopBtnEl = document.querySelector('#detector-layer .detector-btn');
+    var inPlacement = typeof isPlacementMode !== 'undefined' && isPlacementMode;
+    var stopBtnIdx = stopBtnEl ? _tutHighlighted.indexOf(stopBtnEl) : -1;
+    if(inPlacement && stopBtnEl && stopBtnIdx < 0){
+      stopBtnEl.classList.add('tut-highlight');
+      _tutHighlighted.push(stopBtnEl);
+      setTimeout(placeTutPointers, 50);
+    } else if(!inPlacement && stopBtnIdx >= 0){
+      stopBtnEl.classList.remove('tut-highlight');
+      _tutHighlighted.splice(stopBtnIdx, 1);
+      setTimeout(placeTutPointers, 50);
+    }
+  }
+}
+
+function showTutorialClear(){
+  _tutCompleted = true;
+  stopTutorialPolling();
+  clearHighlights();
+
+  /* メッセージボックスを非表示 */
+  var msgBox = document.getElementById('tutorial-msg-box');
+  if(msgBox) msgBox.classList.remove('visible');
+
+  /* 履歴に保存 */
+  saveTutorialHistory(_tutNo);
+
+  /* クリアバナー表示 */
+  var name = _tutNo === 1
+    ? 'No.1 アイテムの持ち出し方法と移動方法'
+    : _tutNo === 2
+      ? 'No.2 アイテムの使用方法と扉の開放'
+      : _tutNo === 3
+        ? 'No.3 ガスメーターからの漏洩検査'
+        : _tutNo === 4
+          ? 'No.4 通報者との会話方法'
+          : _tutNo === 5
+            ? 'No.5 危険度メーターと保安措置'
+            : _tutNo === 6
+              ? 'No.6 問診と検知器調査'
+              : 'No.7 安全率メーターとクリア条件';
+  var clearMsg = document.getElementById('tutorial-clear-msg');
+  if(clearMsg) clearMsg.textContent = 'チュートリアル ' + name + ' をクリアしました！\nプレイ記録を履歴に保存しました（C級扱い）。';
+
+  var banner = document.getElementById('tutorial-clear-banner');
+  if(banner) banner.classList.add('visible');
+}
+
+function saveTutorialHistory(no){
+  try{
+    var names = {
+      1: 'チュートリアル1：アイテムの持ち出し方法と移動方法',
+      2: 'チュートリアル2：アイテムの使用方法と扉の開放',
+      3: 'チュートリアル3：ガスメーターからの漏洩検査',
+      4: 'チュートリアル4：通報者との会話方法',
+      5: 'チュートリアル5：危険度メーターと保安措置',
+      6: 'チュートリアル6：問診と検知器調査',
+      7: 'チュートリアル7：安全率メーターとクリア条件'
+    };
+    var record = {
+      scenarioNo: no === 1 ? -1 : no === 2 ? -2 : no === 3 ? -3 : no === 4 ? -4 : no === 5 ? -5 : no === 6 ? -6 : -7,
+      scenarioName: names[no] || ('チュートリアル' + no),
+      grade: 'C',
+      totalPoints: 40,
+      isCorrect: null,
+      playerAnswer: 'チュートリアルクリア',
+      correctCause: '-',
+      at: Date.now(),
+      scores:{ safety:40, comm:40, speed:40, density:40, customer:40 }
+    };
+    var key = 'gasGame_clearHistory';
+    var list = [];
+    try{ list = JSON.parse(localStorage.getItem(key)||'[]'); if(!Array.isArray(list)) list=[]; }catch(e){ list=[]; }
+    list.unshift(record);
+    var limit = typeof getHistoryLimit==='function' ? getHistoryLimit() : 500;
+    if(limit>0) list=list.slice(0,limit);
+    localStorage.setItem(key, JSON.stringify(list));
+  }catch(e){ console.error(e); }
+}
+
+function _exitTutorialCleanup(){
+  _tutActive = false;
+  _tutMsgHidden = false;
+  stopTutorialPolling();
+  clearHighlights();
+  var overlay = document.getElementById('tutorial-overlay');
+  if(overlay) overlay.classList.remove('active');
+  var msgBox = document.getElementById('tutorial-msg-box');
+  if(msgBox){ msgBox.classList.remove('visible'); msgBox.classList.remove('tut-slide-out'); }
+  var banner = document.getElementById('tutorial-clear-banner');
+  if(banner) banner.classList.remove('visible');
+  var toggleBtn = document.getElementById('tutorial-msg-toggle-btn');
+  if(toggleBtn) toggleBtn.style.display = 'none';
+}
+
+function tutorialGoMenu(){
+  _exitTutorialCleanup();
+  /* ゲームタイマー停止 */
+  if(dangerTimer){ clearInterval(dangerTimer); dangerTimer=null; }
+  try{ stopBGMAll(); }catch(e){}
+  try{ startMenuBGM(); }catch(e){}
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.overlay-screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('scene-title').classList.add('active');
+  try{ showMenu(); }catch(e){}
+}
+window.tutorialGoMenu = tutorialGoMenu;
+
+function tutorialGoHistory(){
+  _exitTutorialCleanup();
+  if(dangerTimer){ clearInterval(dangerTimer); dangerTimer=null; }
+  try{ stopBGMAll(); }catch(e){}
+  try{ startMenuBGM(); }catch(e){}
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.overlay-screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('scene-title').classList.add('active');
+  try{ openHistory(); }catch(e){ try{ showMenu(); }catch(e2){} }
+}
+window.tutorialGoHistory = tutorialGoHistory;
+
+/* confirmExit 時もチュートリアルクリーンアップ */
+(function(){
+  if(typeof window.confirmExit!=='function'||window.confirmExit.__tutClean) return;
+  var _orig = window.confirmExit;
+  window.confirmExit = function(){
+    try{ _exitTutorialCleanup(); }catch(e){}
+    return _orig.apply(this, arguments);
+  };
+  window.confirmExit.__tutClean = true;
+})();
+
+/* No.2チュートリアル用：メモ開閉フックを openMemo / closeMemo に設定 */
+(function(){
+  function _hookMemo(){
+    /* openMemo フック */
+    try{
+      if(typeof window.openMemo==='function' && !window.openMemo.__tutMemoHooked){
+        var _origOpen = window.openMemo;
+        window.openMemo = function(){
+          var r = _origOpen.apply(this, arguments);
+          if(_tutActive && _tutNo===2){ _tutMemoOpened = true; _tutMemoClosed = false; }
+          return r;
+        };
+        window.openMemo.__tutMemoHooked = true;
+      }
+    }catch(e){}
+    /* scene-memo の ×ボタン(closeMemo)フック */
+    try{
+      if(typeof window.closeMemo==='function' && !window.closeMemo.__tutMemoHooked){
+        var _origClose = window.closeMemo;
+        window.closeMemo = function(){
+          var r = _origClose.apply(this, arguments);
+          if(_tutActive && _tutNo===2 && _tutMemoOpened){ _tutMemoClosed = true; }
+          return r;
+        };
+        window.closeMemo.__tutMemoHooked = true;
+      }
+    }catch(e){}
+  }
+  /* openMemo/closeMemo はローカルスコープ関数のため、DOMロード後に再試行 */
+  _hookMemo();
+  setTimeout(_hookMemo, 1000);
+  setTimeout(_hookMemo, 3000);
+})();
+
+/* ================================================================
+   No.4チュートリアル用フック
+   ================================================================ */
+(function(){
+  function _hookT4(){
+    /* doorAction フック：102号室ノック検知 */
+    try{
+      if(typeof window.doorAction==='function' && !window.doorAction.__tutT4Hooked){
+        var _origDA = window.doorAction;
+        window.doorAction = function(type){
+          if(_tutActive && _tutNo===4 && type==='knock'){
+            try{ if(typeof currentDoorId!=='undefined' && typeof residentRoom!=='undefined' && currentDoorId===residentRoom) _tutT4KnockDone=true; }catch(e){}
+          }
+          return _origDA.apply(this, arguments);
+        };
+        window.doorAction.__tutT4Hooked = true;
+      }
+    }catch(e){}
+
+    /* closeMsgBox フック：ノック後にopenCommWindowを開く（openTalkの代わり） */
+    try{
+      if(typeof window.closeMsgBox==='function' && !window.closeMsgBox.__tutT4Hooked){
+        var _origCMB = window.closeMsgBox;
+        window.closeMsgBox = function(){
+          if(_tutActive && _tutNo===4 && typeof currentDoorId!=='undefined' && typeof residentRoom!=='undefined' && currentDoorId===residentRoom){
+            try{ document.getElementById('dm-msg-box').classList.remove('show'); }catch(e){}
+            try{ document.getElementById('door-modal').classList.remove('active'); }catch(e){}
+            try{ openCommWindow('knock','reporter'); }catch(e){}
+            return;
+          }
+          return _origCMB.apply(this, arguments);
+        };
+        window.closeMsgBox.__tutT4Hooked = true;
+      }
+    }catch(e){}
+
+    /* closeCommWindow フック：×ボタン押下検知 */
+    try{
+      if(typeof window.closeCommWindow==='function' && !window.closeCommWindow.__tutT4Hooked){
+        var _origCCW = window.closeCommWindow;
+        window.closeCommWindow = function(){
+          if(_tutActive && _tutNo===4){
+            if(_tutStep===2){ _tutT4FirstCommClosed=true; try{ roomOpened=true; }catch(e){} }
+            if(_tutStep===10){ _tutT4FinalCommClosed=true; }
+          }
+          return _origCCW.apply(this, arguments);
+        };
+        window.closeCommWindow.__tutT4Hooked = true;
+      }
+    }catch(e){}
+
+    /* openCommWindow フック：台所での会話ボタン検知 */
+    try{
+      if(typeof window.openCommWindow==='function' && !window.openCommWindow.__tutT4Hooked){
+        var _origOCW = window.openCommWindow;
+        window.openCommWindow = function(){
+          if(_tutActive && _tutNo===4 && _tutStep===5) _tutT4KitchenCommOpened=true;
+          return _origOCW.apply(this, arguments);
+        };
+        window.openCommWindow.__tutT4Hooked = true;
+      }
+    }catch(e){}
+
+    /* sendComm フック：送信ボタン押下検知 */
+    try{
+      if(typeof window.sendComm==='function' && !window.sendComm.__tutT4Hooked){
+        var _origSC = window.sendComm;
+        window.sendComm = function(){
+          if(_tutActive && _tutNo===4){
+            if(_tutStep===7) _tutT4SendPressed1=true;
+            if(_tutStep===9) _tutT4SendPressed2=true;
+          }
+          return _origSC.apply(this, arguments);
+        };
+        window.sendComm.__tutT4Hooked = true;
+      }
+    }catch(e){}
+  }
+
+  _hookT4();
+  setTimeout(_hookT4, 1000);
+  setTimeout(_hookT4, 3000);
+})();
+
+/* ================================================================
+   No.6チュートリアル用フック
+   ================================================================ */
+(function(){
+  function _hookT6(){
+    /* openCommWindow フック：台所での会話ボタン検知 */
+    try{
+      if(typeof window.openCommWindow==='function' && !window.openCommWindow.__tutT6Hooked){
+        var _origOCW6 = window.openCommWindow;
+        window.openCommWindow = function(){
+          if(_tutActive && _tutNo===6 && _tutStep===0) _tutT6CommOpened=true;
+          return _origOCW6.apply(this, arguments);
+        };
+        window.openCommWindow.__tutT6Hooked = true;
+      }
+    }catch(e){}
+
+    /* sendComm フック：問診送信検知 */
+    try{
+      if(typeof window.sendComm==='function' && !window.sendComm.__tutT6Hooked){
+        var _origSC6 = window.sendComm;
+        window.sendComm = function(){
+          if(_tutActive && _tutNo===6){
+            var el = document.getElementById('comm-input');
+            var val = el ? el.value : '';
+            if(_tutStep===1 && /どこ/.test(val)) _tutT6Send1Done=true;
+            if(_tutStep===2 && /どんな/.test(val)) _tutT6Send2Done=true;
+          }
+          return _origSC6.apply(this, arguments);
+        };
+        window.sendComm.__tutT6Hooked = true;
+      }
+    }catch(e){}
+  }
+
+  _hookT6();
+  setTimeout(_hookT6, 1000);
+  setTimeout(_hookT6, 3000);
+})();
+
+/* ================================================================
+   No.7チュートリアル用フック
+   ================================================================ */
+(function(){
+  function _hookT7(){
+    /* openCommWindow フック：台所での会話ボタン検知 */
+    try{
+      if(typeof window.openCommWindow==='function' && !window.openCommWindow.__tutT7Hooked){
+        var _origOCW7 = window.openCommWindow;
+        window.openCommWindow = function(){
+          if(_tutActive && _tutNo===7 && _tutStep===0) _tutT7CommOpened=true;
+          return _origOCW7.apply(this, arguments);
+        };
+        window.openCommWindow.__tutT7Hooked = true;
+      }
+    }catch(e){}
+
+    /* sendComm フック：問診送信検知 */
+    try{
+      if(typeof window.sendComm==='function' && !window.sendComm.__tutT7Hooked){
+        var _origSC7 = window.sendComm;
+        window.sendComm = function(){
+          if(_tutActive && _tutNo===7){
+            var el = document.getElementById('comm-input');
+            var val = el ? el.value : '';
+            if(_tutStep===1 && /どこ/.test(val)) _tutT7Send1Done=true;
+            if(_tutStep===2 && /どんな/.test(val)) _tutT7Send2Done=true;
+          }
+          return _origSC7.apply(this, arguments);
+        };
+        window.sendComm.__tutT7Hooked = true;
+      }
+    }catch(e){}
+  }
+
+  _hookT7();
+  setTimeout(_hookT7, 1000);
+  setTimeout(_hookT7, 3000);
+})();
+
+})(); /* end tutorial IIFE */
+</script>
+
+<!-- チュートリアルオーバーレイ -->
+<div id="tutorial-overlay">
+  <button id="tutorial-msg-toggle-btn" onclick="toggleTutorialMsgBox()">▼ 隠す</button>
+  <div id="tutorial-msg-box">
+    <div id="tutorial-msg-icon">📖</div>
+    <div id="tutorial-msg-text"></div>
+    <div id="tutorial-msg-actions">
+      <button id="tutorial-next-btn" onclick="tutorialNextStep()">次へ ▶</button>
+    </div>
+  </div>
+  <div id="tutorial-pointer-container"></div>
+  <div id="tutorial-clear-banner">
+    <div class="tut-clear-stars">⭐ ⭐ ⭐</div>
+    <h2>チュートリアル<br>クリア！</h2>
+    <p id="tutorial-clear-msg">お疲れ様でした！<br>プレイ記録を履歴に保存しました。</p>
+    <div>
+      <button class="tut-clear-btn tut-clear-btn-history" onclick="tutorialGoHistory()">📈 履歴を確認する</button>
+      <button class="tut-clear-btn tut-clear-btn-menu" onclick="tutorialGoMenu()">🏠 メニューへ戻る</button>
+    </div>
+  </div>
+</div>
 
 </div></div></body></html>
