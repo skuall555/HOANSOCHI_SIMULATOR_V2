@@ -3095,9 +3095,13 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       <div style="font-size:1.9vmin;font-weight:bold;">No.2　アイテムの使用方法と扉の開放</div>
       <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">火気厳禁シートの設置・検知器でパイプシャフト内のガスを確認しよう</div>
     </button>
-    <button class="menu-btn" style="background:linear-gradient(to bottom,#1565c0 0%,#0d47a1 100%);margin-bottom:2.5vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(3)">
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#1565c0 0%,#0d47a1 100%);margin-bottom:2vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(3)">
       <div style="font-size:1.9vmin;font-weight:bold;">No.3　ガスメーターからの漏洩検査</div>
       <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">デジタルマノメーターで灯内内管の気密試験を実施しよう</div>
+    </button>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#6a1b9a 0%,#4a148c 100%);margin-bottom:2.5vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(4)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.4　通報者との会話方法</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">通報者宅をノックして入室し、安全確保の注意喚起をしよう</div>
     </button>
     <button class="menu-btn sec" onclick="closeTutorialSelect()">← メニューへ戻る</button>
   </div>
@@ -21975,30 +21979,37 @@ function positionHintBtn(){
 // ============================================================
 function _buildCharCard(key, container){
   var c = CHAR_DATA[key];
+  /* wrapper: キャラ画像カード ＋ 選択ボタンを縦に並べる */
+  var wrapper = document.createElement('div');
+  wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:1.5vmin;';
+  /* card: 画像とラベルのみ（クリック対象外） */
   var card = document.createElement('div');
   card.style.cssText = 'text-align:center;background:rgba(255,255,255,0.10);'
     +'border:0.4vmin solid rgba(255,255,255,0.35);border-radius:2vmin;padding:2vmin 3vmin;'
-    +'box-shadow:0 4px 18px rgba(0,0,0,0.55);display:flex;flex-direction:column;align-items:center;gap:1.5vmin;';
+    +'box-shadow:0 4px 18px rgba(0,0,0,0.55);display:flex;flex-direction:column;align-items:center;gap:1vmin;pointer-events:none;';
   var img = document.createElement('img');
   img.src = c.stand;
   img.style.cssText = 'width:15vmin;height:24vmin;object-fit:contain;display:block;pointer-events:none;';
   var lbl = document.createElement('div');
   lbl.textContent = c.label;
   lbl.style.cssText = 'color:#fff;font-size:2vmin;font-weight:bold;pointer-events:none;';
-  // 選択ボタン（ボタンで確実に選択）
+  card.appendChild(img);
+  card.appendChild(lbl);
+  /* 選択ボタン：画像の外（下）に配置して確実に1タップで選択できるようにする */
   var btn = document.createElement('button');
   btn.textContent = 'このキャラを選ぶ';
   btn.style.cssText = 'background:#1a56a8;color:#fff;border:none;border-radius:1.2vmin;'
-    +'padding:1.2vmin 2.5vmin;font-size:2vmin;font-weight:bold;cursor:pointer;width:100%;'
-    +'box-shadow:0 2px 8px rgba(0,0,0,0.4);';
-  btn.addEventListener('pointerdown', function(e){ e.stopPropagation(); window._r6SelectChar(key); });
-  btn.addEventListener('click',       function(e){ e.stopPropagation(); window._r6SelectChar(key); });
+    +'padding:1.5vmin 4vmin;font-size:2.2vmin;font-weight:bold;cursor:pointer;width:100%;'
+    +'box-shadow:0 2px 8px rgba(0,0,0,0.4);touch-action:manipulation;';
+  function doSelect(e){ e.stopPropagation(); window._r6SelectChar(key); }
+  btn.addEventListener('pointerdown', doSelect);
+  btn.addEventListener('click', doSelect);
+  btn.addEventListener('touchend', function(e){ e.preventDefault(); doSelect(e); });
   btn.addEventListener('pointerenter', function(){ btn.style.background='#0d3b8e'; });
   btn.addEventListener('pointerleave', function(){ btn.style.background='#1a56a8'; });
-  card.appendChild(img);
-  card.appendChild(lbl);
-  card.appendChild(btn);
-  container.appendChild(card);
+  wrapper.appendChild(card);
+  wrapper.appendChild(btn);
+  container.appendChild(wrapper);
 }
 
 function createCharSelectUI(){
@@ -22743,6 +22754,13 @@ var _tutMsgHidden = false;
 /* No.2チュートリアル用：メモ開閉追跡フラグ */
 var _tutMemoOpened = false;
 var _tutMemoClosed = false;
+/* No.4チュートリアル用：状態追跡フラグ */
+var _tutT4KnockDone = false;
+var _tutT4FirstCommClosed = false;
+var _tutT4KitchenCommOpened = false;
+var _tutT4SendPressed1 = false;
+var _tutT4SendPressed2 = false;
+var _tutT4FinalCommClosed = false;
 
 /* ---- チュートリアルステップ定義 ---- */
 var TUTORIAL_STEPS = {
@@ -23002,6 +23020,140 @@ var TUTORIAL_STEPS = {
       }
     },
     { isClear: true }
+  ],
+
+  /* ============================================================
+     No.4 通報者との会話方法
+     ============================================================ */
+  4: [
+    /* Step 0: 通報者宅のドアをノック */
+    {
+      msg: '通報者宅の扉をノックして、声掛けを行いましょう。\nインターホンは着火源になるため原則、使用しません。',
+      icon: '🚪',
+      highlightFn: function(){
+        var el = document.getElementById('door-2');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4KnockDone; }
+    },
+    /* Step 1: 自己紹介（ガスを含む言葉を入力） */
+    {
+      msg: '通報者が扉から出てきました。まずは自己紹介しましょう。\n例：〇〇ガスです。',
+      icon: '👋',
+      highlightFn: function(){
+        var el = document.getElementById('comm-input');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var el = document.getElementById('comm-input');
+        if(!el) return false;
+        return /ガス/.test(el.value);
+      }
+    },
+    /* Step 2: 送信・コミュニケーションウィンドウを閉じる */
+    {
+      msg: '文字が入力出来たら、送信を押しましょう。\n入力された言葉に返信が返ってきます。',
+      icon: '📤',
+      highlightFn: function(){
+        var el = document.querySelector('#comm-window .close-talk-btn');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4FirstCommClosed; }
+    },
+    /* Step 3: 入室 */
+    {
+      msg: '扉が開きました。アクションボタンで入室しましょう。',
+      icon: '🚪',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){ return typeof state !== 'undefined' && state.room === 5; }
+    },
+    /* Step 4: 台所へ移動 */
+    {
+      msg: '通報者宅の室内へ入室しました。通報者は台所にいるようです。台所へ向かいましょう。\n台所は、廊下をずっと右に進んだ場所にあります。',
+      icon: '🚶',
+      highlightFn: null,
+      nextBtn: false,
+      checkFn: function(){ return typeof state !== 'undefined' && state.room === 9; }
+    },
+    /* Step 5: 台所到着・緑ボタンを押す */
+    {
+      msg: '台所に到着しました。通報者など、会話できるキャラクターがその空間にいる場合、会話ボタンが表示されます。',
+      icon: '💬',
+      highlightFn: function(){
+        var el = document.getElementById('talk-btn');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4KitchenCommOpened; }
+    },
+    /* Step 6: 火気の使用禁止を入力 */
+    {
+      msg: 'コミュニケーションウィンドウが開きました。コミュニケーションウィンドウでは、先ほど同様、文字入力で会話ができます。\n会話の目的は大きく２つ。１つ目に調査中に危険な行為をされないように注意喚起をします。\n火気を使用されないように、チャットに「火気を使用しないで下さい。」と入力してみましょう。',
+      icon: '🔥',
+      highlightFn: function(){
+        var el = document.getElementById('comm-input');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var el = document.getElementById('comm-input');
+        if(!el) return false;
+        return /火/.test(el.value);
+      }
+    },
+    /* Step 7: 火気注意喚起・送信ボタンを押す */
+    {
+      msg: '火気の使用禁止を注意喚起していない場合、通報者は火気を使用することもあるため注意しましょう。',
+      icon: '⚠️',
+      highlightFn: function(){
+        var el = document.querySelector('#comm-window .comm-send');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4SendPressed1; }
+    },
+    /* Step 8: 電気スイッチの使用禁止を入力 */
+    {
+      msg: '次に、「電気スイッチには触れないように」と、チャットでお願いしましょう。',
+      icon: '⚡',
+      highlightFn: function(){
+        var el = document.getElementById('comm-input');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var el = document.getElementById('comm-input');
+        if(!el) return false;
+        return /電/.test(el.value);
+      }
+    },
+    /* Step 9: 電気注意喚起・送信ボタンを押す */
+    {
+      msg: 'リモコンやスマホ、換気扇のスイッチなど、電気スイッチの操作も使用により、着火源になる恐れがあるため、十分な注意喚起を行いましょう。',
+      icon: '⚠️',
+      highlightFn: function(){
+        var el = document.querySelector('#comm-window .comm-send');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4SendPressed2; }
+    },
+    /* Step 10: 完了メッセージ・×ボタンで閉じる */
+    {
+      msg: 'グッジョブです。これで通報者は、調査中に火気の使用や電気スイッチの操作をしなくなりました。',
+      icon: '🎉',
+      highlightFn: function(){
+        var el = document.querySelector('#comm-window .close-talk-btn');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!_tutT4FinalCommClosed; }
+    },
+    { isClear: true }
   ]
 };
 
@@ -23135,6 +23287,32 @@ function startTutorial(no){
         d.dataset.gasCleared = 'false';
       });
     }catch(e){}
+  } else if(no === 4){
+    /* No.4: 通報者との会話方法 */
+    _tutT4KnockDone = false;
+    _tutT4FirstCommClosed = false;
+    _tutT4KitchenCommOpened = false;
+    _tutT4SendPressed1 = false;
+    _tutT4SendPressed2 = false;
+    _tutT4FinalCommClosed = false;
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'det', 'sign', 'alm'];
+    state.equipped = null;
+    state.itemCounts.sign = 10;
+    state.itemCounts.alm = 3;
+    /* 通報者部屋を設定（102号室） */
+    try{ residentRoom = 2; roomOpened = false; }catch(e){}
+    /* 通報者の位置を台所に設定 */
+    try{ reporterRoom = 9; }catch(e){}
+    /* メーター社番を固定値で設定 */
+    try{
+      meterSerialCorrect = '123456789';
+      meterSerials = ['','987654321','123456789','',''];
+      updateCallMeterSerial();
+      try{ applyPsSerialLabels(); }catch(e2){}
+    }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(3, 50);
   }
 
   /* チュートリアルオーバーレイ表示 */
@@ -23329,7 +23507,9 @@ function showTutorialClear(){
     ? 'No.1 アイテムの持ち出し方法と移動方法'
     : _tutNo === 2
       ? 'No.2 アイテムの使用方法と扉の開放'
-      : 'No.3 ガスメーターからの漏洩検査';
+      : _tutNo === 3
+        ? 'No.3 ガスメーターからの漏洩検査'
+        : 'No.4 通報者との会話方法';
   var clearMsg = document.getElementById('tutorial-clear-msg');
   if(clearMsg) clearMsg.textContent = 'チュートリアル ' + name + ' をクリアしました！\nプレイ記録を履歴に保存しました（C級扱い）。';
 
@@ -23342,10 +23522,11 @@ function saveTutorialHistory(no){
     var names = {
       1: 'チュートリアル1：アイテムの持ち出し方法と移動方法',
       2: 'チュートリアル2：アイテムの使用方法と扉の開放',
-      3: 'チュートリアル3：ガスメーターからの漏洩検査'
+      3: 'チュートリアル3：ガスメーターからの漏洩検査',
+      4: 'チュートリアル4：通報者との会話方法'
     };
     var record = {
-      scenarioNo: no === 1 ? -1 : no === 2 ? -2 : -3,
+      scenarioNo: no === 1 ? -1 : no === 2 ? -2 : no === 3 ? -3 : -4,
       scenarioName: names[no] || ('チュートリアル' + no),
       grade: 'C',
       totalPoints: 40,
@@ -23448,6 +23629,90 @@ window.tutorialGoHistory = tutorialGoHistory;
   _hookMemo();
   setTimeout(_hookMemo, 1000);
   setTimeout(_hookMemo, 3000);
+})();
+
+/* ================================================================
+   No.4チュートリアル用フック
+   ================================================================ */
+(function(){
+  function _hookT4(){
+    /* doorAction フック：102号室ノック検知 */
+    try{
+      if(typeof window.doorAction==='function' && !window.doorAction.__tutT4Hooked){
+        var _origDA = window.doorAction;
+        window.doorAction = function(type){
+          if(_tutActive && _tutNo===4 && type==='knock'){
+            try{ if(typeof currentDoorId!=='undefined' && typeof residentRoom!=='undefined' && currentDoorId===residentRoom) _tutT4KnockDone=true; }catch(e){}
+          }
+          return _origDA.apply(this, arguments);
+        };
+        window.doorAction.__tutT4Hooked = true;
+      }
+    }catch(e){}
+
+    /* closeMsgBox フック：ノック後にopenCommWindowを開く（openTalkの代わり） */
+    try{
+      if(typeof window.closeMsgBox==='function' && !window.closeMsgBox.__tutT4Hooked){
+        var _origCMB = window.closeMsgBox;
+        window.closeMsgBox = function(){
+          if(_tutActive && _tutNo===4 && typeof currentDoorId!=='undefined' && typeof residentRoom!=='undefined' && currentDoorId===residentRoom){
+            try{ document.getElementById('dm-msg-box').classList.remove('show'); }catch(e){}
+            try{ document.getElementById('door-modal').classList.remove('active'); }catch(e){}
+            try{ openCommWindow('knock','reporter'); }catch(e){}
+            return;
+          }
+          return _origCMB.apply(this, arguments);
+        };
+        window.closeMsgBox.__tutT4Hooked = true;
+      }
+    }catch(e){}
+
+    /* closeCommWindow フック：×ボタン押下検知 */
+    try{
+      if(typeof window.closeCommWindow==='function' && !window.closeCommWindow.__tutT4Hooked){
+        var _origCCW = window.closeCommWindow;
+        window.closeCommWindow = function(){
+          if(_tutActive && _tutNo===4){
+            if(_tutStep===2){ _tutT4FirstCommClosed=true; try{ roomOpened=true; }catch(e){} }
+            if(_tutStep===10){ _tutT4FinalCommClosed=true; }
+          }
+          return _origCCW.apply(this, arguments);
+        };
+        window.closeCommWindow.__tutT4Hooked = true;
+      }
+    }catch(e){}
+
+    /* openCommWindow フック：台所での会話ボタン検知 */
+    try{
+      if(typeof window.openCommWindow==='function' && !window.openCommWindow.__tutT4Hooked){
+        var _origOCW = window.openCommWindow;
+        window.openCommWindow = function(){
+          if(_tutActive && _tutNo===4 && _tutStep===5) _tutT4KitchenCommOpened=true;
+          return _origOCW.apply(this, arguments);
+        };
+        window.openCommWindow.__tutT4Hooked = true;
+      }
+    }catch(e){}
+
+    /* sendComm フック：送信ボタン押下検知 */
+    try{
+      if(typeof window.sendComm==='function' && !window.sendComm.__tutT4Hooked){
+        var _origSC = window.sendComm;
+        window.sendComm = function(){
+          if(_tutActive && _tutNo===4){
+            if(_tutStep===7) _tutT4SendPressed1=true;
+            if(_tutStep===9) _tutT4SendPressed2=true;
+          }
+          return _origSC.apply(this, arguments);
+        };
+        window.sendComm.__tutT4Hooked = true;
+      }
+    }catch(e){}
+  }
+
+  _hookT4();
+  setTimeout(_hookT4, 1000);
+  setTimeout(_hookT4, 3000);
 })();
 
 })(); /* end tutorial IIFE */
