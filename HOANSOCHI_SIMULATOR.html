@@ -3099,9 +3099,13 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       <div style="font-size:1.9vmin;font-weight:bold;">No.3　ガスメーターからの漏洩検査</div>
       <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">デジタルマノメーターで灯内内管の気密試験を実施しよう</div>
     </button>
-    <button class="menu-btn" style="background:linear-gradient(to bottom,#6a1b9a 0%,#4a148c 100%);margin-bottom:2.5vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(4)">
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#6a1b9a 0%,#4a148c 100%);margin-bottom:2vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(4)">
       <div style="font-size:1.9vmin;font-weight:bold;">No.4　通報者との会話方法</div>
       <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">通報者宅をノックして入室し、安全確保の注意喚起をしよう</div>
+    </button>
+    <button class="menu-btn" style="background:linear-gradient(to bottom,#00838f 0%,#006064 100%);margin-bottom:2.5vmin;text-align:left;padding:1.5vmin 2vmin;" onclick="startTutorial(5)">
+      <div style="font-size:1.9vmin;font-weight:bold;">No.5　危険度メーターと保安措置</div>
+      <div style="font-size:1.5vmin;opacity:0.9;margin-top:0.5vmin;">危険度の上昇を窓開けや検知器調査で抑制する保安措置を実施しよう</div>
     </button>
     <button class="menu-btn sec" onclick="closeTutorialSelect()">← メニューへ戻る</button>
   </div>
@@ -22756,6 +22760,9 @@ var _tutMemoOpened = false;
 var _tutMemoClosed = false;
 /* No.4チュートリアル用：状態追跡フラグ */
 var _tutT4KnockDone = false;
+/* No.5チュートリアル用：状態追跡フラグ */
+var _tutT5HatchScanned = false;
+var _tutT5DetCount = 0;
 var _tutT4FirstCommClosed = false;
 var _tutT4KitchenCommOpened = false;
 var _tutT4SendPressed1 = false;
@@ -23154,6 +23161,106 @@ var TUTORIAL_STEPS = {
       checkFn: function(){ return !!_tutT4FinalCommClosed; }
     },
     { isClear: true }
+  ],
+
+  /* ============================================================
+     No.5 危険度メーターと保安措置
+     ============================================================ */
+  5: [
+    /* Step 0: 危険度メーター説明 + OK */
+    {
+      msg: 'シミュレーション中は危険度が上昇します。危険度が１００％に到達した場合、シナリオクリア失敗となってしまいます。\n溜まった危険度は保安措置を行うことで減少します。さらに危険度の１秒あたりの上昇率も下がっていきます。\n試しに、台所の窓を全開にしてみましょう。',
+      icon: '⚠️',
+      highlightFn: function(){
+        var el = document.getElementById('danger-panel');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: true, checkFn: null
+    },
+    /* Step 1: 台所の窓を全開 */
+    {
+      msg: '台所の窓を全開にしてみましょう。',
+      icon: '🪟',
+      highlightFn: function(){
+        var el = document.getElementById('kitchen-window-b');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var el = document.getElementById('kitchen-window-b');
+        if(!el) return false;
+        var tx = (typeof _getTranslateX === 'function') ? Math.abs(_getTranslateX(el)) : 0;
+        if(!tx){
+          var m = el.style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+          if(m) tx = Math.abs(parseFloat(m[1]));
+        }
+        return tx >= 72;
+      }
+    },
+    /* Step 2: 窓開け成功フィードバック + 点検口説明 + OK */
+    {
+      msg: 'グッジョブ！窓を全開にしたため、危険度が下がりました。\n窓開けのほかにも、戸棚や点検口などにガスが溜まっていないか、可燃性ガス検知器で調査するなど、危険がないか確認する度に、危険度は減少します。\n試しに、台所の床下点検口を少しだけ開け、内部にガスが溜まっていないか確認してみましょう。',
+      icon: '✅',
+      highlightFn: null,
+      nextBtn: true, checkFn: null
+    },
+    /* Step 3: 台所の床下点検口を少し開ける */
+    {
+      msg: '台所の床下点検口を少しだけ開けてみましょう。\n扉はドラッグ操作で開閉できます。',
+      icon: '🚪',
+      highlightFn: function(){
+        var el = document.getElementById('kitchen-hatch-b');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var el = document.getElementById('kitchen-hatch-b');
+        if(!el) return false;
+        var tx = (typeof _getTranslateX === 'function') ? Math.abs(_getTranslateX(el)) : 0;
+        if(!tx){
+          var m = el.style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+          if(m) tx = Math.abs(parseFloat(m[1]));
+        }
+        return tx > 3;
+      }
+    },
+    /* Step 4: 可燃性ガス検知器を選択 */
+    {
+      msg: '床下点検口を少し開け、隙間をつくったら、可燃性ガス検知器を使用してガスが溜まっていないか確認しましょう。',
+      icon: '🔬',
+      highlightFn: function(){
+        var el = document.querySelector('.visual-det');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        return typeof isDetectorMode !== 'undefined' && isDetectorMode === true;
+      }
+    },
+    /* Step 5: 検知器で床下点検口を調査 */
+    {
+      msg: '床下点検口の隙間を検知器で調査（ドラッグ）してみましょう。',
+      icon: '📡',
+      highlightFn: function(){
+        var el = document.getElementById('kitchen-hatch-b');
+        if(el){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        if(_tutT5HatchScanned) return true;
+        var hatch = document.getElementById('kitchen-hatch-b');
+        if(hatch && hatch.dataset.gasCleared === 'true') return true;
+        return false;
+      }
+    },
+    /* Step 6: 完了メッセージ + OKボタン */
+    {
+      msg: 'グッジョブ！また危険度が下がりました。窓や点検口、戸棚はいくつか配置されているので、通報宅の室内に入室したら、先行して保安措置を実施しましょう。',
+      icon: '🎉',
+      highlightFn: null,
+      nextBtn: true, checkFn: null
+    },
+    { isClear: true }
   ]
 };
 
@@ -23313,6 +23420,56 @@ function startTutorial(no){
     }catch(e){}
     renderVan(); renderInventory(); updateHand();
     changeRoom(3, 50);
+  } else if(no === 5){
+    /* No.5: 危険度メーターと保安措置 */
+    _tutT5HatchScanned = false;
+    _tutT5DetCount = 0;
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'det', 'sign', 'alm'];
+    state.equipped = null;
+    state.itemCounts.sign = 10;
+    state.itemCounts.alm = 3;
+    /* 通報者部屋を設定（102号室 = B side）*/
+    try{ residentRoom = 2; roomOpened = true; }catch(e){}
+    /* B棟の台所 (room-kitchen-b) を使用するため currentApartmentOwner を設定 */
+    try{ currentApartmentOwner = 'B'; }catch(e){}
+    /* メーター社番を固定値で設定 */
+    try{
+      meterSerialCorrect = '123456789';
+      meterSerials = ['','987654321','123456789','',''];
+      updateCallMeterSerial();
+      try{ applyPsSerialLabels(); }catch(e2){}
+    }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(9, 50);
+    /* 危険タイマーを再起動（Tutorial 5 では危険度が上昇する） */
+    try{
+      dangerValue = 0;
+      dangerRate = 0.7;
+      if(dangerTimer){ clearInterval(dangerTimer); dangerTimer = null; }
+      dangerTimer = setInterval(updateDanger, 1000);
+      updateDangerUI();
+    }catch(e){}
+    /* 台所の床下点検口を「滞留ガスの可能性あり」に設定（検知器でスキャン可能にする）*/
+    try{
+      var _kh5 = document.getElementById('kitchen-hatch-b');
+      if(_kh5){
+        _kh5.dataset.isDangerous = 'true';
+        _kh5.dataset.gasCleared = 'false';
+        _kh5.dataset.bonusApplied = 'false';
+        _kh5.style.transform = 'translateX(0px)';
+        _kh5.style.opacity = '1';
+      }
+    }catch(e){}
+    /* 台所の窓を全閉状態にリセット */
+    try{
+      var _kw5 = document.getElementById('kitchen-window-b');
+      if(_kw5){
+        _kw5.style.transform = 'translateX(0px)';
+        _kw5.style.opacity = '1';
+        _kw5.dataset.bonusApplied = 'false';
+      }
+    }catch(e){}
   }
 
   /* チュートリアルオーバーレイ表示
@@ -23480,6 +23637,14 @@ function checkTutorialProgress(){
     }
   }
 
+  /* チュートリアル5ステップ5（検知器スキャンステップ）：検知器モードで一定時間操作されたらスキャン済みとみなす */
+  if(_tutNo === 5 && _tutStep === 5){
+    if(typeof isDetectorMode !== 'undefined' && isDetectorMode){
+      _tutT5DetCount++;
+      if(_tutT5DetCount >= 3){ _tutT5HatchScanned = true; }
+    }
+  }
+
   /* チュートリアル2ステップ2（メモ確認ステップ）：まだPlacementMode中なら「終了」ボタンを強調して閉じ方を案内 */
   if(_tutNo === 2 && _tutStep === 2){
     var stopBtnEl = document.querySelector('#detector-layer .detector-btn');
@@ -23516,7 +23681,9 @@ function showTutorialClear(){
       ? 'No.2 アイテムの使用方法と扉の開放'
       : _tutNo === 3
         ? 'No.3 ガスメーターからの漏洩検査'
-        : 'No.4 通報者との会話方法';
+        : _tutNo === 4
+          ? 'No.4 通報者との会話方法'
+          : 'No.5 危険度メーターと保安措置';
   var clearMsg = document.getElementById('tutorial-clear-msg');
   if(clearMsg) clearMsg.textContent = 'チュートリアル ' + name + ' をクリアしました！\nプレイ記録を履歴に保存しました（C級扱い）。';
 
@@ -23530,10 +23697,11 @@ function saveTutorialHistory(no){
       1: 'チュートリアル1：アイテムの持ち出し方法と移動方法',
       2: 'チュートリアル2：アイテムの使用方法と扉の開放',
       3: 'チュートリアル3：ガスメーターからの漏洩検査',
-      4: 'チュートリアル4：通報者との会話方法'
+      4: 'チュートリアル4：通報者との会話方法',
+      5: 'チュートリアル5：危険度メーターと保安措置'
     };
     var record = {
-      scenarioNo: no === 1 ? -1 : no === 2 ? -2 : no === 3 ? -3 : -4,
+      scenarioNo: no === 1 ? -1 : no === 2 ? -2 : no === 3 ? -3 : no === 4 ? -4 : -5,
       scenarioName: names[no] || ('チュートリアル' + no),
       grade: 'C',
       totalPoints: 40,
