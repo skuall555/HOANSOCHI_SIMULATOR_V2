@@ -5511,6 +5511,7 @@ document.querySelector('.controls-l').classList.add('hidden');
 document.querySelector('.controls-r').classList.add('hidden');
 document.getElementById('toolbar-container').classList.add('hidden-det');
 document.getElementById('player').style.display = 'none';
+document.getElementById('detector-layer').style.display = '';
 document.getElementById('detector-layer').classList.add('active');
 document.getElementById('detector-overlay').classList.add('active');
 document.getElementById('mode-msg').textContent = "検知器モード -ガスの反応がありそうな場所をタップ-";
@@ -5527,6 +5528,7 @@ function startPlacementMode(type) {
     document.querySelector('.controls-r').classList.add('hidden');
     document.getElementById('toolbar-container').classList.add('hidden-det');
     document.getElementById('player').style.display = 'none';
+    document.getElementById('detector-layer').style.display = '';
     document.getElementById('detector-layer').classList.add('active');
     document.getElementById('detector-overlay').classList.add('active');
     document.getElementById('mode-msg').textContent = "必要な箇所を選択して設置、回収する。";
@@ -9568,6 +9570,7 @@ function startGasIdMode(){
   document.querySelector('.controls-r').classList.add('hidden');
   document.getElementById('toolbar-container').classList.add('hidden-det');
   document.getElementById('player').style.display='none';
+  document.getElementById('detector-layer').style.display = '';
   document.getElementById('detector-layer').classList.add('active');
   document.getElementById('detector-overlay').classList.add('active');
   document.getElementById('mode-msg').textContent = 'ガス識別モード -反応箇所に当てて識別-';
