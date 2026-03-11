@@ -6507,6 +6507,11 @@ if(state.x < 0) {
   else if(state.room===8) { changeRoom(7, 95); moved=true; }
   else if(state.room===9) { changeRoom(5, 95); moved=true; }
   else if(state.room===10) { changeRoom(9, 90); moved=true; }
+  else if(state.room===1) {
+    // 工場ありの場合は工場前へ
+    if(typeof activeScenario!=='undefined' && activeScenario && activeScenario.factory==='あり'){ changeRoom(20, 90); moved=true; }
+    else { state.x = 0; }
+  }
   else { state.x = 0; }
 }
 else if(state.x > 100) {
@@ -7626,20 +7631,25 @@ var _ROOM_NAME_TO_ID = {
   '浴室(A)':8,'浴室(B)':8,
   '台所(A)':9,'台所(B)':9,
   '寝室(A)':10,'寝室(B)':10,
-  '階段':11,'地下街':12,'焼き鳥屋':13,'ラーメン屋':14
+  '階段':11,'地下街':12,'焼き鳥屋':13,'ラーメン屋':14,
+  '工場前':20,'工場敷地':21,'工場内食堂':22,'事務室':23,'工場ライン':24,'ボイラー室':25
 };
 var _ROOM_ID_TO_NAME = {
   0:'駐車場',1:'前面道路',2:'エントランス',
   3:'1F共用廊下',4:'2F共用廊下',5:'号室廊下',
   6:'トイレ',7:'脱衣所',8:'浴室',
   9:'台所',10:'寝室',11:'階段',12:'地下街',
-  13:'焼き鳥屋',14:'ラーメン屋'
+  13:'焼き鳥屋',14:'ラーメン屋',
+  20:'工場前',21:'工場敷地',22:'工場内食堂',23:'事務室',24:'工場ライン',25:'ボイラー室'
 };
 var _ROOM_ID_TO_ELEMENT = {
   0:'room-parking',1:'room-street',2:'room-entrance',
   3:'room-corridor1',4:'room-corridor2',
   11:'room-stairs',12:'room-basement',
-  13:'room-yakitori',14:'room-ramen-shop'
+  13:'room-yakitori',14:'room-ramen-shop',
+  20:'room-factory-front',21:'room-factory-grounds',
+  22:'room-factory-cafeteria',23:'room-factory-office',
+  24:'room-factory-line',25:'room-factory-boiler'
 };
 
 function _parseConditionTrigger(condition) {
@@ -8213,6 +8223,7 @@ function openScenarioEdit(idx){
   try{ document.getElementById('sc-safety-norma').value = (s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100; }catch(e){}
   try{ document.getElementById('sc-fire-event').value = s.fireEvent?String(s.fireEvent):'なし'; }catch(e){}
   try{ document.getElementById('sc-cassette-bombe').value = s.cassetteBombe?String(s.cassetteBombe):'なし'; }catch(e){}
+  try{ document.getElementById('sc-factory').value = s.factory?String(s.factory):'なし'; }catch(e){}
 
   // ステージ構成セレクトを動的に更新
   try{
@@ -8344,7 +8355,8 @@ function saveScenario(){
     safetyNorma: (function(){ try{ var el=document.getElementById('sc-safety-norma'); var v=parseInt(el&&el.value); return (isNaN(v)||v<1)?100:v; }catch(e){ return 100; } })(),
     stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     fireEvent: (function(){ try{ var el=document.getElementById('sc-fire-event'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
-    cassetteBombe: (function(){ try{ var el=document.getElementById('sc-cassette-bombe'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
+    cassetteBombe: (function(){ try{ var el=document.getElementById('sc-cassette-bombe'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
+    factory: (function(){ try{ var el=document.getElementById('sc-factory'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
   };
   renderScenarioList();
   try{ refreshStartScenarioOptions(); }catch(e){}
@@ -12134,7 +12146,10 @@ function _collectScenarioFromForm(){
     gasCause: (function(){ try{ var el=document.getElementById('sc-gas-cause'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     description: (function(){ try{ var el=document.getElementById('sc-description'); return (el&&el.value!=null)?String(el.value):''; }catch(e){ return ''; } })(),
     safetyNorma: (function(){ try{ var el=document.getElementById('sc-safety-norma'); var v=parseInt(el&&el.value,10); return (isNaN(v)||v<1)?100:v; }catch(e){ return 100; } })(),
-    stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })()
+    stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
+    fireEvent: (function(){ try{ var el=document.getElementById('sc-fire-event'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
+    cassetteBombe: (function(){ try{ var el=document.getElementById('sc-cassette-bombe'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
+    factory: (function(){ try{ var el=document.getElementById('sc-factory'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
   };
 }
 function updateStartScenarioSelectOptions(){
@@ -19626,7 +19641,10 @@ var ROOM_MAP = {
   'room-changing':'脱衣所(A)','room-bath':'浴室(A)','room-kitchen':'台所(A)',
   'room-bedroom':'寝室(A)','room-hallway-b':'102号室 廊下','room-toilet-b':'トイレ(B)',
   'room-changing-b':'脱衣所(B)','room-bath-b':'浴室(B)','room-kitchen-b':'台所(B)',
-  'room-bedroom-b':'寝室(B)','room-yakitori':'焼き鳥屋','room-ramen-shop':'ラーメン屋'
+  'room-bedroom-b':'寝室(B)','room-yakitori':'焼き鳥屋','room-ramen-shop':'ラーメン屋',
+  'room-factory-front':'工場前','room-factory-grounds':'工場敷地',
+  'room-factory-cafeteria':'工場内食堂','room-factory-office':'事務室',
+  'room-factory-line':'工場ライン','room-factory-boiler':'ボイラー室'
 };
 var ROOM_MAP_REV = {};
 Object.keys(ROOM_MAP).forEach(function(k){ ROOM_MAP_REV[ROOM_MAP[k]]=k; });
@@ -24852,42 +24870,9 @@ window.applyWeatherToFactoryOutdoor = function(){
 })();
 
 // =========================================================
-// 5. 前面道路（room 1）から左端→工場前 パッチ
+// 5. 前面道路（room 1）から左端→工場前
+// ※ メインループの else if(state.room===1) で直接対応済み
 // =========================================================
-(function(){
-  // game loop の左端チェックをパッチ
-  // 元のloopで state.room===1 かつ state.x<0 の場合、else { state.x=0; } になっている
-  // ここでは loopId の setInterval をラップし直すのが難しいため、
-  // 定期的に state を監視してパッチする形にする
-  var _lastRoom = -1;
-  var _patchInterval = setInterval(function(){
-    try {
-      if(typeof state === 'undefined') return;
-      if(state.room === 1 && state.x < 0){
-        // 工場ありかチェック
-        var hasFactory = false;
-        try {
-          hasFactory = (typeof activeScenario !== 'undefined' && activeScenario && activeScenario.factory === 'あり');
-        } catch(e) {}
-        if(hasFactory){
-          changeRoom(20, 90);
-          input.l = false;
-        } else {
-          state.x = 0;
-        }
-      }
-    } catch(e) {}
-  }, 20); // 20ms ポーリング（ゲームループと同等の頻度）
-  // ゲーム初期化時にインターバルをリセット
-  try {
-    var _origInitGame = window.initGame;
-    if(typeof _origInitGame === 'function'){
-      window.initGame = function(){
-        _origInitGame.apply(this, arguments);
-      };
-    }
-  } catch(e) {}
-})();
 
 // =========================================================
 // 6. handleAction 拡張（工場前→工場敷地入場）
@@ -24968,97 +24953,9 @@ window.clickFactoryValvePit = function(){
 
 // =========================================================
 // 9. シナリオ設定 sc-factory フィールドの save/load 対応
+// ※ saveScenario / _collectScenarioFromForm / openScenarioEdit に
+//    直接 factory フィールドを追加済みのためパッチ不要
 // =========================================================
-// saveScenario / playScenarioWithoutOverwrite のパッチ
-(function(){
-  function _patchSaveScenario(){
-    var _orig = window.saveScenario;
-    if(typeof _orig !== 'function' || _orig.__factoryPatched) return;
-    window.saveScenario = function(){
-      // sc-factory の値をシナリオに反映するために元の関数を呼ぶ
-      // （元の関数内で saveCurrentScenarioData() が呼ばれており、
-      //    そこで sc-factory を読み取れるよう _patchGetScenarioData をかける）
-      return _orig.apply(this, arguments);
-    };
-    window.saveScenario.__factoryPatched = true;
-  }
-
-  // _getScenarioData をパッチして factory フィールドを追加
-  function _patchGetScenarioData(){
-    // saveCurrentScenarioData または saveScenarioFields の内部で
-    // sc-factory を読み取る処理を追加
-    // この simulator では scenarioData への書き込みは saveScenario が直接行うため
-    // editScenario / loadScenarioToForm のパッチで対応
-  }
-
-  // loadScenarioToForm をパッチ（編集画面で sc-factory を復元）
-  function _patchLoadScenarioToForm(){
-    var _origLoad = window.loadScenarioToForm;
-    if(typeof _origLoad !== 'function' || _origLoad.__factoryPatched) return;
-    window.loadScenarioToForm = function(s){
-      _origLoad.apply(this, arguments);
-      try {
-        var el = document.getElementById('sc-factory');
-        if(el) el.value = (s && s.factory) ? String(s.factory) : 'なし';
-      } catch(e) {}
-    };
-    window.loadScenarioToForm.__factoryPatched = true;
-  }
-
-  // saveCurrentScenarioData / getScenarioFormData 等をパッチして factory を含める
-  // 元コードでは saveScenario → scenarioData[idx] = { ...fields } とデータを作っている
-  // その際、sc-factory の値を含めるため、既存のフォームデータ取得後にパッチする
-  function _patchSaveCurrentScenario(){
-    // saveScenario 関数内で scenarioData[idx] を更新する際に factory を追加
-    var _origSave = window.saveScenario;
-    if(typeof _origSave !== 'function' || _origSave.__factoryDataPatched) return;
-    window.saveScenario = function(){
-      var result = _origSave.apply(this, arguments);
-      // 保存後、直前の scenarioData エントリに factory を追記
-      try {
-        var idx = (typeof currentEditIdx !== 'undefined') ? currentEditIdx : -1;
-        if(idx >= 0 && typeof scenarioData !== 'undefined' && scenarioData[idx]){
-          var el = document.getElementById('sc-factory');
-          scenarioData[idx].factory = (el && el.value) ? el.value : 'なし';
-        }
-      } catch(e) {}
-      return result;
-    };
-    window.saveScenario.__factoryDataPatched = true;
-  }
-
-  // 遅延実行で関数が定義された後にパッチ
-  setTimeout(function(){
-    _patchLoadScenarioToForm();
-    _patchSaveCurrentScenario();
-  }, 500);
-  setTimeout(function(){
-    _patchLoadScenarioToForm();
-    _patchSaveCurrentScenario();
-  }, 2000);
-})();
-
-// playScenarioWithoutOverwrite パッチ（factory をシナリオに含める）
-(function(){
-  function _patch(){
-    var _orig = window.playScenarioWithoutOverwrite;
-    if(typeof _orig !== 'function' || _orig.__factoryPatched) return;
-    window.playScenarioWithoutOverwrite = function(){
-      var result = _orig.apply(this, arguments);
-      // activeScenario に factory 値を注入
-      try {
-        var el = document.getElementById('sc-factory');
-        if(el && typeof activeScenario !== 'undefined' && activeScenario){
-          activeScenario.factory = el.value || 'なし';
-        }
-      } catch(e) {}
-      return result;
-    };
-    window.playScenarioWithoutOverwrite.__factoryPatched = true;
-  }
-  setTimeout(_patch, 500);
-  setTimeout(_patch, 2000);
-})();
 
 // =========================================================
 // 10. ゲーム開始時にバルブ状態をリセット
