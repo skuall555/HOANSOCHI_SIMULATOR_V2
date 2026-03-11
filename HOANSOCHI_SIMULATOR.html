@@ -15381,17 +15381,27 @@ try{
   function createElevatorButtonInControls(){
     var cr = document.querySelector('.controls-r');
     if(!cr) return;
-    if(document.getElementById('elevator-green-btn')) return;
 
-    var btn = document.createElement('div');
-    btn.id = 'elevator-green-btn';
-    btn.className = 'act-btn elevator-green-btn';
-    btn.style.cssText = 'display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;background:radial-gradient(circle,rgba(0,200,80,0.55),rgba(0,120,60,0.85));border:0.3vmin solid #fff;border-radius:50%;box-shadow:0 0.5vmin 1vmin rgba(0,0,0,0.5);';
-    var img = document.createElement('img');
-    img.src = ELEV_IMG;
-    img.style.cssText = 'width:70%;height:70%;object-fit:contain;pointer-events:none;';
-    img.onerror = function(){ btn.textContent='EV'; btn.style.fontSize='1.8vmin'; btn.style.color='#fff'; btn.style.fontWeight='bold'; };
-    btn.appendChild(img);
+    var btn = document.getElementById('elevator-green-btn');
+    if(!btn){
+      btn = document.createElement('div');
+      btn.id = 'elevator-green-btn';
+      btn.className = 'act-btn elevator-green-btn';
+      btn.style.cssText = 'display:none;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;background:radial-gradient(circle,rgba(0,200,80,0.55),rgba(0,120,60,0.85));border:0.3vmin solid #fff;border-radius:50%;box-shadow:0 0.5vmin 1vmin rgba(0,0,0,0.5);';
+      var img = document.createElement('img');
+      img.src = ELEV_IMG;
+      img.style.cssText = 'width:70%;height:70%;object-fit:contain;pointer-events:none;';
+      img.onerror = function(){ btn.textContent='EV'; btn.style.fontSize='1.8vmin'; btn.style.color='#fff'; btn.style.fontWeight='bold'; };
+      btn.appendChild(img);
+      // action-btn（青ボタン）の直前に挿入
+      var actionBtn = document.getElementById('action-btn');
+      if(actionBtn) cr.insertBefore(btn, actionBtn);
+      else cr.appendChild(btn);
+    }
+
+    // 既にイベントリスナーがバインド済みの場合はスキップ
+    if(btn.dataset.elevBound) return;
+    btn.dataset.elevBound = '1';
 
     // エレベーター緑ボタンのアクション（mousedown/touchstart/clickで発火）
     function onGreenBtnAction(ev){
@@ -15445,11 +15455,6 @@ try{
     btn.addEventListener('click', function(ev){
       ev.stopPropagation(); ev.stopImmediatePropagation();
     }, true);
-
-    // action-btn（青ボタン）の直前に挿入
-    var actionBtn = document.getElementById('action-btn');
-    if(actionBtn) cr.insertBefore(btn, actionBtn);
-    else cr.appendChild(btn);
   }
 
   function updateElevatorButtonVisibility(){
@@ -16353,7 +16358,12 @@ function renderStats(stats){
   // チュートリアル欄を常に先頭に表示
   var tutDefs = [
     { no: -1, name: 'チュートリアル1：アイテムの持ち出し方法と移動方法' },
-    { no: -2, name: 'チュートリアル2：アイテムの使用方法と扉の開放' }
+    { no: -2, name: 'チュートリアル2：アイテムの使用方法と扉の開放' },
+    { no: -3, name: 'チュートリアル3：ガスメーターからの漏洩検査' },
+    { no: -4, name: 'チュートリアル4：通報者との会話方法' },
+    { no: -5, name: 'チュートリアル5：危険度メーターと保安措置' },
+    { no: -6, name: 'チュートリアル6：問診と検知器調査' },
+    { no: -7, name: 'チュートリアル7：安全率メーターとクリア条件' }
   ];
   for(var ti=0; ti<tutDefs.length; ti++){
     var td = tutDefs[ti];
@@ -16363,12 +16373,15 @@ function renderStats(stats){
     var tRowBorder = '0.2vmin solid rgba(255,152,0,' + (tIsUnplayed?'0.2':'0.4') + ')';
     var tBadge = '<span class="tut-hist-badge" style="margin-right:0.3vmin;flex-shrink:0;">T</span>';
     var tNoLabel = 'チュートリアル' + Math.abs(td.no);
+    // チュートリアルは常にC級として表示
+    var tCGradeHtml = '<span style="display:inline-flex;align-items:center;justify-content:center;width:3vmin;height:3vmin;border-radius:50%;background:' + gradeColor('C') + ';color:#fff;font-weight:900;font-size:1.8vmin;margin-left:0.5vmin;">C</span>';
     var tRight = '';
     if(tIsUnplayed){
-      tRight = '<span style="color:#ef5350;font-size:1.8vmin;font-weight:bold;">未クリア</span>';
+      tRight = '<span style="font-size:1.7vmin;color:#b0bec5;">未クリア</span>'
+        + '<span style="margin-left:1vmin;font-size:1.5vmin;color:#90caf9;">クリア時</span>' + tCGradeHtml;
     } else {
-      var tBestGradeHtml = tst.bestGrade ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:3vmin;height:3vmin;border-radius:50%;background:' + gradeColor(tst.bestGrade) + ';color:#fff;font-weight:900;font-size:1.8vmin;margin-left:0.5vmin;">' + _esc(tst.bestGrade) + '</span>' : '';
-      tRight = '<span style="font-size:1.7vmin;color:#b0bec5;">クリア <b style="color:#fff;">' + tst.attempts + '回</b></span>' + (tBestGradeHtml ? '<span style="margin-left:1vmin;font-size:1.5vmin;color:#90caf9;">最高</span>' + tBestGradeHtml : '');
+      tRight = '<span style="font-size:1.7vmin;color:#b0bec5;">クリア <b style="color:#fff;">' + tst.attempts + '回</b></span>'
+        + '<span style="margin-left:1vmin;font-size:1.5vmin;color:#90caf9;">最高</span>' + tCGradeHtml;
     }
     h += '<div onclick="openScenarioHistory(' + td.no + ')" style="padding:1.2vmin 1.5vmin;margin-bottom:1vmin;background:' + tRowBg + ';border:' + tRowBorder + ';border-radius:1vmin;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(255,152,0,0.15)\'" onmouseout="this.style.background=\'' + tRowBg + '\'">'
       + '<div style="display:flex;align-items:center;gap:1vmin;margin-bottom:0.6vmin;flex-wrap:wrap;">'
