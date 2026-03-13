@@ -16355,26 +16355,31 @@ function renderStats(stats){
 
   var h = '';
 
-  // チュートリアル欄を常に先頭に表示
+  // チュートリアル欄を常に先頭に表示（grade: チュートリアルの難易度級、将来8以降は変更可）
   var tutDefs = [
-    { no: -1, name: 'チュートリアル1：アイテムの持ち出し方法と移動方法' },
-    { no: -2, name: 'チュートリアル2：アイテムの使用方法と扉の開放' },
-    { no: -3, name: 'チュートリアル3：ガスメーターからの漏洩検査' },
-    { no: -4, name: 'チュートリアル4：通報者との会話方法' },
-    { no: -5, name: 'チュートリアル5：危険度メーターと保安措置' },
-    { no: -6, name: 'チュートリアル6：問診と検知器調査' },
-    { no: -7, name: 'チュートリアル7：安全率メーターとクリア条件' }
+    { no: -1, name: 'チュートリアル1：アイテムの持ち出し方法と移動方法', grade: 'C級' },
+    { no: -2, name: 'チュートリアル2：アイテムの使用方法と扉の開放',       grade: 'C級' },
+    { no: -3, name: 'チュートリアル3：ガスメーターからの漏洩検査',         grade: 'C級' },
+    { no: -4, name: 'チュートリアル4：通報者との会話方法',                 grade: 'C級' },
+    { no: -5, name: 'チュートリアル5：危険度メーターと保安措置',           grade: 'C級' },
+    { no: -6, name: 'チュートリアル6：問診と検知器調査',                   grade: 'C級' },
+    { no: -7, name: 'チュートリアル7：安全率メーターとクリア条件',         grade: 'C級' }
   ];
-  for(var ti=0; ti<tutDefs.length; ti++){
-    var td = tutDefs[ti];
+  // フィルターに合致するチュートリアルのみ表示（'all' またはグレード一致）
+  var filteredTutDefs = tutDefs.filter(function(td){
+    return diff === 'all' || td.grade === diff;
+  });
+  for(var ti=0; ti<filteredTutDefs.length; ti++){
+    var td = filteredTutDefs[ti];
     var tst = statsMap[td.no] || null;
     var tIsUnplayed = !tst;
     var tRowBg = tIsUnplayed ? 'rgba(255,152,0,0.04)' : 'rgba(255,152,0,0.08)';
     var tRowBorder = '0.2vmin solid rgba(255,152,0,' + (tIsUnplayed?'0.2':'0.4') + ')';
     var tBadge = '<span class="tut-hist-badge" style="margin-right:0.3vmin;flex-shrink:0;">T</span>';
     var tNoLabel = 'チュートリアル' + Math.abs(td.no);
-    // チュートリアルは常にC級として表示
-    var tCGradeHtml = '<span style="display:inline-flex;align-items:center;justify-content:center;width:3vmin;height:3vmin;border-radius:50%;background:' + gradeColor('C') + ';color:#fff;font-weight:900;font-size:1.8vmin;margin-left:0.5vmin;">C</span>';
+    // チュートリアルは各自のグレードで表示
+    var tGradeLetter = td.grade ? td.grade.replace('級','') : 'C';
+    var tCGradeHtml = '<span style="display:inline-flex;align-items:center;justify-content:center;width:3vmin;height:3vmin;border-radius:50%;background:' + gradeColor(tGradeLetter) + ';color:#fff;font-weight:900;font-size:1.8vmin;margin-left:0.5vmin;">' + tGradeLetter + '</span>';
     var tRight = '';
     if(tIsUnplayed){
       tRight = '<span style="font-size:1.7vmin;color:#b0bec5;">未クリア</span>'
@@ -16396,8 +16401,8 @@ function renderStats(stats){
       + '</div>'
       + '</div>';
   }
-  // 区切り
-  if(allScenarios.length > 0){
+  // 区切り（チュートリアルとシナリオ両方が表示される場合のみ）
+  if(filteredTutDefs.length > 0 && allScenarios.length > 0){
     h += '<div style="border-top:0.2vmin solid rgba(100,181,246,0.25);margin:1vmin 0 1.5vmin;"></div>';
   }
 
