@@ -25001,104 +25001,21 @@ window.clickFactoryValvePit = function(){
 </script>
 
 <!-- ===== キャラクター返信設定画面 ===== -->
-<style>
-#scene-char-settings {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  background: rgba(20,20,30,0.97);
-  overflow-y: auto;
-  z-index: 999998 !important;
-  display: none !important;
-  align-items: flex-start !important;
-}
-#scene-char-settings.active {
-  display: block !important;
-  opacity: 1;
-}
-#scene-char-settings .cset-block {
-  background: rgba(255,255,255,0.07);
-  border: 1px solid #444;
-  border-radius: 1vmin;
-  padding: 2vmin;
-  margin-bottom: 2.5vmin;
-}
-#scene-char-settings .cset-char-label {
-  margin: 0 0 1.5vmin 0;
-  font-size: 2.5vmin;
-  color: #80cbc4;
-  font-family: 'MS Gothic','Meiryo',sans-serif;
-}
-#scene-char-settings .cset-field-label {
-  font-size: 1.8vmin;
-  color: #aaa;
-  display: block;
-  margin-bottom: 0.5vmin;
-}
-#scene-char-settings .cset-greeting {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.8vmin;
-  border: 1px solid #555;
-  border-radius: 0.5vmin;
-  background: #333;
-  color: #fff;
-  font-size: 2vmin;
-  resize: vertical;
-  min-height: 5vmin;
-  font-family: 'MS Gothic','Meiryo',sans-serif;
-}
-#scene-char-settings .cset-reply-row {
-  display: flex;
-  gap: 1vmin;
-  margin-bottom: 1vmin;
-  align-items: center;
-}
-#scene-char-settings .cset-kw,
-#scene-char-settings .cset-rp {
-  padding: 0.8vmin;
-  border: 1px solid #555;
-  border-radius: 0.5vmin;
-  background: #333;
-  color: #fff;
-  font-size: 2vmin;
-  font-family: 'MS Gothic','Meiryo',sans-serif;
-}
-#scene-char-settings .cset-kw { flex: 1; }
-#scene-char-settings .cset-rp { flex: 2; }
-</style>
-
-<div id="scene-char-settings" class="overlay-screen">
-  <div style="max-width:700px;margin:0 auto;padding:3vmin;box-sizing:border-box;min-height:100%;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2vmin;">
-      <h2 style="margin:0;font-size:3vmin;color:#fff;font-family:'MS Gothic','Meiryo',sans-serif;">⚙ キャラクター返信設定</h2>
-      <button onclick="closeCharSettings()" style="background:#555;color:#fff;border:none;border-radius:1vmin;padding:1vmin 2vmin;font-size:2.5vmin;cursor:pointer;">✕ 閉じる</button>
-    </div>
-    <p style="color:#ccc;font-size:1.9vmin;margin-bottom:2.5vmin;line-height:1.6;">各キャラクターの<b style="color:#80cbc4;">初期挨拶文</b>と<b style="color:#80cbc4;">キーワード別返信</b>を書き換えられます。<br>
-    キーワードが送信テキストに含まれている場合、カスタム返信が優先されます。空欄の場合はデフォルト返信を使用します。</p>
-    <div id="char-settings-body"></div>
-    <div style="display:flex;gap:2vmin;margin-top:2vmin;position:sticky;bottom:0;background:rgba(20,20,30,0.97);padding:1.5vmin 0;">
-      <button onclick="saveCharSettings()" style="flex:1;background:#2e7d32;color:#fff;border:none;border-radius:1vmin;padding:1.5vmin;font-size:2.5vmin;font-weight:bold;cursor:pointer;">💾 保存して閉じる</button>
-      <button onclick="resetCharSettings()" style="background:#c62828;color:#fff;border:none;border-radius:1vmin;padding:1.5vmin 2vmin;font-size:2.5vmin;cursor:pointer;">🗑 リセット</button>
-    </div>
-  </div>
-</div>
+<div id="scene-char-settings" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999999;background:rgba(20,20,30,0.97);overflow-y:auto;box-sizing:border-box;"></div>
 
 <script>
+// ===== キャラクター返信設定 =====
 (function(){
   var CHAR_DEFS = [
-    { key: 'reporter',       label: '通報者' },
-    { key: 'alarmB',         label: '居住者B（警報器鳴動宅）' },
-    { key: 'manager',        label: '管理人' },
-    { key: 'tantou',         label: '通信担当者' },
-    { key: 'kanrisha',       label: '管理会社' },
-    { key: 'yakitoriMaster', label: '焼き鳥屋店主' },
-    { key: 'ramenMaster',    label: 'ラーメン屋店主' },
-    { key: 'fireCommander',  label: '消防大隊長' }
+    { key:'reporter',       label:'通報者' },
+    { key:'alarmB',         label:'居住者B（警報器鳴動宅）' },
+    { key:'manager',        label:'管理人' },
+    { key:'tantou',         label:'通信担当者' },
+    { key:'kanrisha',       label:'管理会社' },
+    { key:'yakitoriMaster', label:'焼き鳥屋店主' },
+    { key:'ramenMaster',    label:'ラーメン屋店主' },
+    { key:'fireCommander',  label:'消防大隊長' }
   ];
-
   var DEFAULT_GREETINGS = {
     reporter:       '来てくださってありがとうございます。',
     alarmB:         '警報器が鳴って困っています…。',
@@ -25109,214 +25026,192 @@ window.clickFactoryValvePit = function(){
     ramenMaster:    'はい、何でしょうか？',
     fireCommander:  '現場の状況を報告してください。'
   };
-
   var STORAGE_KEY = 'hoansochi_charSettings_v1';
 
-  function loadFromStorage(){
+  function loadData(){
     try{ var s=localStorage.getItem(STORAGE_KEY); if(s) return JSON.parse(s); }catch(e){}
-    return { greetings:{}, replies:{} };
+    return {greetings:{}, replies:{}};
   }
-  function saveToStorage(data){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){}
+  function saveData(d){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }catch(e){}
   }
 
-  window._charSettingsData = loadFromStorage();
+  window._charSettingsData = loadData();
 
-  // ===== 設定画面を開く =====
+  function getEl(id){ return document.getElementById(id); }
+
+  // ===== 画面を開く =====
   window.openCharSettings = function(){
-    _csRender();
-    var sc = document.getElementById('scene-char-settings');
-    if(sc){ sc.classList.add('active'); sc.scrollTop = 0; }
+    var sc = getEl('scene-char-settings');
+    if(!sc){ return; }
+    sc.style.display = 'block';
+    sc.scrollTop = 0;
+    try{ buildUI(sc); }catch(e){ console.error('[CharSettings]', e); }
     try{ isPaused = true; }catch(e){}
   };
 
-  // ===== 設定画面を閉じる =====
+  // ===== 画面を閉じる =====
   window.closeCharSettings = function(){
-    var sc = document.getElementById('scene-char-settings');
-    if(sc) sc.classList.remove('active');
+    var sc = getEl('scene-char-settings');
+    if(sc) sc.style.display = 'none';
     try{ isPaused = false; if(typeof loop==='function') loop(); }catch(e){}
   };
 
   // ===== 保存して閉じる =====
   window.saveCharSettings = function(){
-    var data = { greetings:{}, replies:{} };
+    var data = {greetings:{}, replies:{}};
     CHAR_DEFS.forEach(function(ch){
-      var gEl = document.getElementById('cset-greeting-'+ch.key);
-      if(gEl) data.greetings[ch.key] = gEl.value;
-      var rows = document.querySelectorAll('.cset-reply-row[data-charkey="'+ch.key+'"]');
+      var gEl = getEl('cset-g-'+ch.key);
+      data.greetings[ch.key] = gEl ? gEl.value : '';
       data.replies[ch.key] = [];
+      var rows = document.querySelectorAll('[data-cset-key="'+ch.key+'"]');
       rows.forEach(function(row){
         var kw = row.querySelector('.cset-kw');
         var rp = row.querySelector('.cset-rp');
-        if(kw && rp){
-          var kwv = kw.value.trim();
-          var rpv = rp.value.trim();
-          if(kwv || rpv) data.replies[ch.key].push({keyword:kwv, reply:rpv});
-        }
+        var k = kw ? kw.value.trim() : '';
+        var r = rp ? rp.value.trim() : '';
+        if(k || r) data.replies[ch.key].push({keyword:k, reply:r});
       });
     });
     window._charSettingsData = data;
-    saveToStorage(data);
+    saveData(data);
     window.closeCharSettings();
-    try{ if(typeof showSystemMsg==='function') showSystemMsg('キャラクター返信設定を保存しました。'); }catch(e){}
+    try{ if(typeof showSystemMsg==='function') showSystemMsg('設定を保存しました。'); }catch(e){}
   };
 
   // ===== リセット =====
   window.resetCharSettings = function(){
-    if(!confirm('全てのカスタム設定をリセットしますか？')) return;
-    window._charSettingsData = { greetings:{}, replies:{} };
-    saveToStorage(window._charSettingsData);
-    _csRender();
+    if(!confirm('全ての設定をリセットしますか？')) return;
+    window._charSettingsData = {greetings:{}, replies:{}};
+    saveData(window._charSettingsData);
+    var sc = getEl('scene-char-settings');
+    if(sc) buildUI(sc);
   };
 
-  // ===== キーワード行追加 =====
-  window._csAddReplyRow = function(key, keyword, reply){
-    var container = document.getElementById('cset-replies-'+key);
-    if(!container) return;
+  // ===== キーワード行を追加 =====
+  window._csAddRow = function(key, kw, rp){
+    var cont = getEl('cset-r-'+key);
+    if(!cont) return;
     var row = document.createElement('div');
-    row.className = 'cset-reply-row';
-    row.dataset.charkey = key;
-    var kwInput = document.createElement('input');
-    kwInput.type = 'text';
-    kwInput.className = 'cset-kw';
-    kwInput.placeholder = 'キーワード（例：ガス）';
-    kwInput.value = keyword || '';
-    var rpInput = document.createElement('input');
-    rpInput.type = 'text';
-    rpInput.className = 'cset-rp';
-    rpInput.placeholder = '返信内容';
-    rpInput.value = reply || '';
-    var delBtn = document.createElement('button');
-    delBtn.textContent = '✕';
-    delBtn.style.cssText = 'background:#b71c1c;color:#fff;border:none;border-radius:0.5vmin;padding:0.8vmin 1.2vmin;font-size:2vmin;cursor:pointer;flex-shrink:0;';
-    delBtn.onclick = function(){ row.parentNode.removeChild(row); };
-    row.appendChild(kwInput);
-    row.appendChild(rpInput);
-    row.appendChild(delBtn);
-    container.appendChild(row);
+    row.setAttribute('data-cset-key', key);
+    row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
+    var kwIn = document.createElement('input');
+    kwIn.type='text'; kwIn.className='cset-kw';
+    kwIn.placeholder='キーワード（例：ガス）';
+    kwIn.value = kw||'';
+    kwIn.style.cssText = 'flex:1;padding:6px;background:#333;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;min-width:0;';
+    var rpIn = document.createElement('input');
+    rpIn.type='text'; rpIn.className='cset-rp';
+    rpIn.placeholder='返信内容';
+    rpIn.value = rp||'';
+    rpIn.style.cssText = 'flex:2;padding:6px;background:#333;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;min-width:0;';
+    var del = document.createElement('button');
+    del.textContent='✕';
+    del.style.cssText = 'background:#b71c1c;color:#fff;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;flex-shrink:0;font-size:13px;';
+    del.onclick = function(){ cont.removeChild(row); };
+    row.appendChild(kwIn); row.appendChild(rpIn); row.appendChild(del);
+    cont.appendChild(row);
   };
 
-  // ===== 設定画面レンダリング =====
-  function _csRender(){
-    var body = document.getElementById('char-settings-body');
-    if(!body) return;
-    body.innerHTML = '';
-    var data = window._charSettingsData || { greetings:{}, replies:{} };
+  // ===== UIビルド =====
+  function buildUI(sc){
+    var data = window._charSettingsData || {greetings:{}, replies:{}};
+    var html = '<div style="max-width:680px;margin:0 auto;padding:20px;box-sizing:border-box;">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">';
+    html += '<h2 style="margin:0;color:#fff;font-size:20px;font-family:sans-serif;">⚙ キャラクター返信設定</h2>';
+    html += '<button onclick="closeCharSettings()" style="background:#555;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:14px;cursor:pointer;">✕ 閉じる</button>';
+    html += '</div>';
+    html += '<p style="color:#bbb;font-size:13px;margin-bottom:20px;line-height:1.6;">初期挨拶文とキーワード別返信を設定できます。キーワードが含まれる場合、カスタム返信が優先されます。</p>';
+
     CHAR_DEFS.forEach(function(ch){
-      var greeting = (data.greetings && data.greetings[ch.key] != null) ? data.greetings[ch.key] : '';
-      var replies = (data.replies && data.replies[ch.key]) ? data.replies[ch.key] : [];
+      var greeting = (data.greetings && data.greetings[ch.key]!=null) ? data.greetings[ch.key] : '';
+      html += '<div style="background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;padding:16px;margin-bottom:16px;">';
+      html += '<h3 style="margin:0 0 12px 0;color:#80cbc4;font-size:16px;font-family:sans-serif;">'+ch.label+'</h3>';
+      html += '<label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">初期挨拶文</label>';
+      html += '<textarea id="cset-g-'+ch.key+'" placeholder="'+_esc(DEFAULT_GREETINGS[ch.key]||'')+'" style="width:100%;box-sizing:border-box;padding:8px;background:#333;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;resize:vertical;min-height:54px;">'+_esc(greeting)+'</textarea>';
+      html += '<label style="color:#aaa;font-size:12px;display:block;margin:12px 0 4px 0;">キーワード別返信 <span style="color:#666;">（キーワードが含まれる時に優先）</span></label>';
+      html += '<div id="cset-r-'+ch.key+'"></div>';
+      html += '<button onclick="window._csAddRow(&quot;'+ch.key+'&quot;)" style="background:#1565c0;color:#fff;border:none;border-radius:4px;padding:6px 12px;font-size:13px;cursor:pointer;margin-top:4px;">＋ キーワード追加</button>';
+      html += '</div>';
+    });
 
-      var block = document.createElement('div');
-      block.className = 'cset-block';
+    html += '<div style="display:flex;gap:12px;margin-top:12px;">';
+    html += '<button onclick="saveCharSettings()" style="flex:1;background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:12px;font-size:16px;font-weight:bold;cursor:pointer;">💾 保存して閉じる</button>';
+    html += '<button onclick="resetCharSettings()" style="background:#c62828;color:#fff;border:none;border-radius:6px;padding:12px 16px;font-size:16px;cursor:pointer;">🗑 リセット</button>';
+    html += '</div></div>';
 
-      var label = document.createElement('h3');
-      label.className = 'cset-char-label';
-      label.textContent = ch.label;
-      block.appendChild(label);
+    sc.innerHTML = html;
 
-      var glabel = document.createElement('label');
-      glabel.className = 'cset-field-label';
-      glabel.textContent = '初期挨拶文';
-      block.appendChild(glabel);
-
-      var garea = document.createElement('textarea');
-      garea.id = 'cset-greeting-'+ch.key;
-      garea.className = 'cset-greeting';
-      garea.placeholder = DEFAULT_GREETINGS[ch.key] || '';
-      garea.value = greeting;
-      block.appendChild(garea);
-
-      var rlabel = document.createElement('label');
-      rlabel.className = 'cset-field-label';
-      rlabel.style.marginTop = '1.5vmin';
-      rlabel.innerHTML = 'キーワード別返信 <span style="font-size:1.5vmin;color:#888;">（キーワードが含まれる時に優先）</span>';
-      block.appendChild(rlabel);
-
-      var rcontainer = document.createElement('div');
-      rcontainer.id = 'cset-replies-'+ch.key;
-      block.appendChild(rcontainer);
-
-      var addBtn = document.createElement('button');
-      addBtn.textContent = '＋ キーワード追加';
-      addBtn.style.cssText = 'background:#1565c0;color:#fff;border:none;border-radius:0.5vmin;padding:0.8vmin 1.5vmin;font-size:2vmin;cursor:pointer;margin-top:0.5vmin;';
-      (function(k){ addBtn.onclick = function(){ window._csAddReplyRow(k); }; })(ch.key);
-      block.appendChild(addBtn);
-
-      body.appendChild(block);
-
-      replies.forEach(function(pair){
-        window._csAddReplyRow(ch.key, pair.keyword, pair.reply);
-      });
+    // キーワード行を注入
+    CHAR_DEFS.forEach(function(ch){
+      var pairs = (data.replies && data.replies[ch.key]) ? data.replies[ch.key] : [];
+      pairs.forEach(function(p){ window._csAddRow(ch.key, p.keyword, p.reply); });
     });
   }
 
-  // ===== sendComm フック：カスタム返信を優先 =====
-  function _lookupCustomReply(text, partner){
+  function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // ===== sendComm フック =====
+  function _lookupCustom(text, partner){
     try{
-      var data = window._charSettingsData;
-      if(!data || !data.replies || !data.replies[partner]) return null;
-      var pairs = data.replies[partner];
+      var d = window._charSettingsData;
+      if(!d||!d.replies||!d.replies[partner]) return null;
       var t = String(text||'').replace(/\s+/g,'');
-      for(var i=0; i<pairs.length; i++){
-        var kw = String(pairs[i].keyword||'').trim();
-        if(kw && t.indexOf(kw)!==-1) return String(pairs[i].reply||'');
+      for(var i=0;i<d.replies[partner].length;i++){
+        var kw = String(d.replies[partner][i].keyword||'').trim();
+        if(kw && t.indexOf(kw)!==-1) return String(d.replies[partner][i].reply||'');
       }
     }catch(e){}
     return null;
   }
 
-  function _hookSendComm(){
-    if(typeof window.sendComm!=='function' || window.sendComm.__charSettingsHooked) return;
-    var _orig = window.sendComm;
+  function hookSendComm(){
+    if(typeof window.sendComm!=='function'||window.sendComm.__csHooked) return;
+    var orig = window.sendComm;
     window.sendComm = function(){
       try{
         var inp = document.getElementById('comm-input');
-        var text = inp ? String(inp.value||'').trim() : '';
-        if(text){
+        var txt = inp ? String(inp.value||'').trim() : '';
+        if(txt){
           var partner = (typeof _commPartnerKey==='function') ? _commPartnerKey() : 'reporter';
-          var customReply = _lookupCustomReply(text, partner);
-          if(customReply !== null){
-            inp.value = '';
-            try{ if(typeof addUserMsg==='function') addUserMsg(text); }catch(e){}
-            try{ if(typeof window._thoughtCheckInput==='function') window._thoughtCheckInput(text); }catch(e){}
-            setTimeout(function(){
-              try{ if(typeof addReporterMsg==='function') addReporterMsg(customReply); }catch(e){}
-            }, 200);
+          var cr = _lookupCustom(txt, partner);
+          if(cr!==null){
+            inp.value='';
+            try{ addUserMsg(txt); }catch(e){}
+            try{ window._thoughtCheckInput(txt); }catch(e){}
+            setTimeout(function(){ try{ addReporterMsg(cr); }catch(e){}; }, 200);
             return;
           }
         }
       }catch(er){}
-      return _orig.apply(this, arguments);
+      return orig.apply(this, arguments);
     };
-    window.sendComm.__charSettingsHooked = true;
+    window.sendComm.__csHooked = true;
   }
-  [500, 1500, 3000].forEach(function(t){ setTimeout(_hookSendComm, t); });
+  [500,1500,3000].forEach(function(t){ setTimeout(hookSendComm,t); });
 
-  // ===== openCommWindow フック：カスタム挨拶を適用 =====
-  function _hookOpenCommWindow(){
-    if(typeof window.openCommWindow!=='function' || window.openCommWindow.__charGreetingHooked) return;
-    var _orig = window.openCommWindow;
+  // ===== openCommWindow フック（挨拶） =====
+  function hookOpenCommWindow(){
+    if(typeof window.openCommWindow!=='function'||window.openCommWindow.__csGreetHooked) return;
+    var orig = window.openCommWindow;
     window.openCommWindow = function(mode, partner){
-      _orig.apply(this, arguments);
+      orig.apply(this, arguments);
       try{
         var key = (typeof _commPartnerKey==='function') ? _commPartnerKey() : 'reporter';
-        var data = window._charSettingsData;
-        if(!data || !data.greetings) return;
-        var customGreeting = (data.greetings[key]!=null && data.greetings[key]!=='') ? data.greetings[key] : null;
-        if(!customGreeting) return;
-        if(typeof commLogs!=='undefined' && commLogs[key]){
-          var logs = commLogs[key];
-          if(logs.length===1 && logs[0].who==='other'){
-            logs[0].text = customGreeting;
-            if(typeof renderCommHistory==='function') renderCommHistory();
-          }
+        var d = window._charSettingsData;
+        if(!d||!d.greetings) return;
+        var g = (d.greetings[key]!=null && d.greetings[key]!=='') ? d.greetings[key] : null;
+        if(!g) return;
+        if(typeof commLogs!=='undefined' && commLogs[key] && commLogs[key].length===1 && commLogs[key][0].who==='other'){
+          commLogs[key][0].text = g;
+          if(typeof renderCommHistory==='function') renderCommHistory();
         }
       }catch(e){}
     };
-    window.openCommWindow.__charGreetingHooked = true;
-    window.openCommWindow.__btWrapped = (_orig.__btWrapped || false);
+    window.openCommWindow.__csGreetHooked = true;
+    window.openCommWindow.__btWrapped = (orig.__btWrapped||false);
   }
-  [1000, 2500, 4000].forEach(function(t){ setTimeout(_hookOpenCommWindow, t); });
+  [1000,2500,4000].forEach(function(t){ setTimeout(hookOpenCommWindow,t); });
 
 })();
 </script>
