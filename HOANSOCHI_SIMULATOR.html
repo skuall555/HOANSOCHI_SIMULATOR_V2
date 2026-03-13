@@ -3659,7 +3659,8 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
     <p class="scenario-help">No.1〜No.100 のシナリオ名と編集画面を管理します。</p>
     <div style="margin-bottom: 2vmin;">
       <button class="menu-btn" style="background:#0056b3; margin-right: 1vmin;" onclick="loadScenariosFromFile()">📂 シナリオ読み込み</button>
-      <span style="font-size: 70%; color:#666;">※別のHTMLファイルからシナリオを読み込みます</span>
+      <button class="menu-btn save" style="margin-right: 1vmin;" onclick="saveSettingsFile()">💾 設定を保存</button>
+      <span style="font-size: 70%; color:#666;">※設定を保存して別端末でも使えます</span>
     </div>
     <div style="margin-bottom: 2vmin; display:flex; align-items:center; gap:1vmin;">
       <label style="font-weight:bold; color:#003366;">難易度フィルター：</label>
@@ -8400,7 +8401,10 @@ function saveScenario(){
   try{ refreshStartScenarioOptions(); }catch(e){}
   document.getElementById('scene-scenario-edit').classList.remove('active');
   document.getElementById('scene-scenario').classList.remove('active');
-  saveAndDownload();
+  // 全HTMLダウンロードはしない（「💾 設定を保存」ボタンから行う）
+  try{ var _sn=document.getElementById('saved-scenarios'); if(_sn) _sn.textContent=JSON.stringify(scenarioData); }catch(e){}
+  try{ localStorage.setItem('hoansochi_scenarios_v1', JSON.stringify(scenarioData)); }catch(e){}
+  try{ if(typeof showSystemMsg==='function') showSystemMsg('シナリオを保存しました。'); }catch(e){}
 }
 
 // ===== 開始設定（依頼３） =====
@@ -24974,8 +24978,19 @@ window.clickFactoryValvePit = function(){
   var SCEN_PSEL_KEY = 'hoansochi_scenPresets_v1';
 
   // ---------- ストレージ ----------
+  function savePresets(d){
+    try{ localStorage.setItem(PRESETS_KEY, JSON.stringify(d)); }catch(e){}
+    try{ var node=document.getElementById('saved-char-presets'); if(node) node.textContent=JSON.stringify(d); }catch(e){}
+  }
+  function saveScenPsel(d){
+    try{ localStorage.setItem(SCEN_PSEL_KEY, JSON.stringify(d)); }catch(e){}
+    try{ var node=document.getElementById('saved-scen-presets'); if(node) node.textContent=JSON.stringify(d); }catch(e){}
+  }
+  // loadScenariosFromFile等から呼び出せるようwindowに公開
+  window._cpSavePresets  = savePresets;
+  window._cpSaveScenPsel = saveScenPsel;
+
   function loadPresets(){
-    // HTMLに埋め込まれたデータを優先、なければlocalStorage
     try{
       var node = document.getElementById('saved-char-presets');
       if(node && node.textContent && node.textContent.trim() && node.textContent.trim()!=='{}'){
@@ -24983,12 +24998,11 @@ window.clickFactoryValvePit = function(){
         if(d && d.presets) return d;
       }
     }catch(e){}
-    try{ var s=localStorage.getItem(PRESETS_KEY); if(s){ var d2=JSON.parse(s); if(d2&&d2.presets) return d2; } }catch(e){}
+    try{
+      var s = localStorage.getItem(PRESETS_KEY);
+      if(s){ var d2 = JSON.parse(s); if(d2 && d2.presets) return d2; }
+    }catch(e){}
     return { presets:{} };
-  }
-  function savePresets(d){
-    try{ localStorage.setItem(PRESETS_KEY, JSON.stringify(d)); }catch(e){}
-    try{ var node=document.getElementById('saved-char-presets'); if(node) node.textContent=JSON.stringify(d); }catch(e){}
   }
   function loadScenPsel(){
     try{
@@ -24998,12 +25012,11 @@ window.clickFactoryValvePit = function(){
         if(d && typeof d==='object') return d;
       }
     }catch(e){}
-    try{ var s=localStorage.getItem(SCEN_PSEL_KEY); if(s) return JSON.parse(s); }catch(e){}
+    try{
+      var s = localStorage.getItem(SCEN_PSEL_KEY);
+      if(s) return JSON.parse(s);
+    }catch(e){}
     return {};
-  }
-  function saveScenPsel(d){
-    try{ localStorage.setItem(SCEN_PSEL_KEY, JSON.stringify(d)); }catch(e){}
-    try{ var node=document.getElementById('saved-scen-presets'); if(node) node.textContent=JSON.stringify(d); }catch(e){}
   }
 
   window._charPresetsData = loadPresets();
@@ -25129,7 +25142,8 @@ window.clickFactoryValvePit = function(){
     var rowCont = document.getElementById('cp-rows-'+pid);
     if(!btn || !rowCont) return;
     var count = rowCont.querySelectorAll('.cp-row').length;
-    var isOpen = rowCont.parentNode && rowCont.parentNode.style.display !== 'none';
+    var kwBody = rowCont.parentNode;
+    var isOpen = kwBody && kwBody.style.display !== 'none';
     btn.textContent = (isOpen ? '▼' : '▶') + ' キーワード別返信（'+count+'件）';
   }
 
@@ -25149,13 +25163,12 @@ window.clickFactoryValvePit = function(){
     nameIn.style.cssText='flex:1;min-width:120px;padding:6px;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;';
     var dupBtn = document.createElement('button');
     dupBtn.textContent='複製';
-    dupBtn.style.cssText='background:#5c4a00;color:#ffd;border:none;border-radius:4px;padding:6px 10px;font-size:12px;cursor:pointer;white-space:nowrap;';
+    dupBtn.style.cssText='background:#4a3800;color:#ffd;border:1px solid #7a6000;border-radius:4px;padding:6px 10px;font-size:12px;cursor:pointer;white-space:nowrap;';
     dupBtn.onclick=(function(d,k){ return function(){
       var data = collectPresetData(d);
       var cont = document.getElementById('cp-presets-'+k);
       if(!cont) return;
-      var np = buildPresetDiv(k, uid(), (data.name||'')+' コピー', data.greeting, data.replies);
-      cont.appendChild(np);
+      cont.appendChild(buildPresetDiv(k, uid(), (data.name||'')+' コピー', data.greeting, data.replies));
     }; })(div, chKey);
     var delBtn = document.createElement('button');
     delBtn.textContent='削除';
@@ -25176,10 +25189,10 @@ window.clickFactoryValvePit = function(){
     var collapseBtn = document.createElement('button');
     collapseBtn.id = 'cp-collapse-btn-'+pid;
     var initCount = replies ? replies.length : 0;
-    collapseBtn.textContent = '▶ キーワード別返信（'+initCount+'件）';
+    collapseBtn.textContent = (initCount>0 ? '▼' : '▶') + ' キーワード別返信（'+initCount+'件）';
     collapseBtn.style.cssText='background:transparent;color:#80cbc4;border:1px solid #444;border-radius:4px;cursor:pointer;font-size:12px;padding:4px 10px;margin-top:8px;display:block;width:100%;text-align:left;';
     var kwBody = document.createElement('div');
-    kwBody.style.display = 'none';
+    kwBody.style.display = initCount>0 ? 'block' : 'none';
     collapseBtn.onclick=function(){
       var isOpen = kwBody.style.display !== 'none';
       kwBody.style.display = isOpen ? 'none' : 'block';
@@ -25194,13 +25207,12 @@ window.clickFactoryValvePit = function(){
     addRowBtn.style.cssText='background:#1565c0;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:12px;cursor:pointer;margin-top:4px;';
     addRowBtn.onclick=(function(p){ return function(){
       window._cpAddRow(p,'','');
-      // 自動展開
       kwBody.style.display='block';
       updateCollapseLabel(p);
     }; })(pid);
     var hint = document.createElement('p');
-    hint.textContent='キーワードは「、」で区切ると複数指定できます（例：たばこ、煙草、火気）';
-    hint.style.cssText='color:#777;font-size:11px;margin:4px 0 0 0;';
+    hint.textContent='「、」で区切ると複数キーワードを一括指定できます（例：たばこ、煙草、火気）';
+    hint.style.cssText='color:#666;font-size:11px;margin:4px 0 0 0;';
 
     kwBody.appendChild(rowCont);
     kwBody.appendChild(addRowBtn);
@@ -25210,14 +25222,9 @@ window.clickFactoryValvePit = function(){
     div.appendChild(greetLabel); div.appendChild(greetIn);
     div.appendChild(collapseBtn); div.appendChild(kwBody);
 
-    // 既存のキーワード行
     if(replies && replies.length > 0){
       replies.forEach(function(r){ appendRow(rowCont, pid, r.keyword, r.reply); });
-      // 行があれば展開
-      kwBody.style.display = 'block';
-      collapseBtn.textContent = '▼ キーワード別返信（'+replies.length+'件）';
     }
-
     return div;
   }
 
@@ -25240,7 +25247,7 @@ window.clickFactoryValvePit = function(){
     hdr.appendChild(title); hdr.appendChild(closeBtn);
 
     var desc = document.createElement('p');
-    desc.textContent='キャラごとに複数のプリセットを作れます。初期挨拶文・キーワード返信を設定し、シナリオ設定でプリセットを選択してください。「デフォルト」はキーワードなし＝既存の自動返信をそのまま使います。';
+    desc.textContent='キャラごとにプリセットを複数作れます。初期挨拶文・キーワード返信を設定後、シナリオ設定でプリセットを選択してください。「設定を保存」でシナリオデータと一緒に書き出せます。';
     desc.style.cssText='color:#bbb;font-size:13px;margin-bottom:20px;line-height:1.6;';
 
     wrap.appendChild(hdr);
@@ -25284,16 +25291,19 @@ window.clickFactoryValvePit = function(){
   }
 
   // ---------- アクティブシナリオのプリセットを取得 ----------
-  // gameplay中は selectedScenarioIdx を使う
   function getActivePreset(partnerKey){
     try{
-      var idx = (typeof selectedScenarioIdx!=='undefined' && selectedScenarioIdx!==null) ? selectedScenarioIdx
-              : (typeof currentScenarioIndex!=='undefined' ? currentScenarioIndex : null);
-      if(idx===null||idx===undefined) return null;
+      // ゲームプレイ中は selectedScenarioIdx、編集中は currentScenarioIndex
+      var idx = null;
+      if(typeof selectedScenarioIdx!=='undefined' && selectedScenarioIdx!==null) idx = selectedScenarioIdx;
+      else if(typeof currentScenarioIndex!=='undefined' && currentScenarioIndex!==null) idx = currentScenarioIndex;
+      if(idx===null) return null;
+
       var cp = (window._scenPresetsData||{})[String(idx)];
       if(!cp) return null;
       var pid = cp[partnerKey];
       if(!pid) return null;
+
       var d = window._charPresetsData;
       if(!d||!d.presets||!d.presets[partnerKey]) return null;
       for(var i=0;i<d.presets[partnerKey].length;i++){
@@ -25312,7 +25322,6 @@ window.clickFactoryValvePit = function(){
       for(var i=0;i<preset.replies.length;i++){
         var kwRaw = String(preset.replies[i].keyword||'').trim();
         if(!kwRaw) continue;
-        // 「、」で複数キーワード
         var keywords = kwRaw.split('、').map(function(k){ return k.trim(); }).filter(Boolean);
         for(var j=0;j<keywords.length;j++){
           if(t.indexOf(keywords[j])!==-1) return String(preset.replies[i].reply||'');
@@ -25346,7 +25355,7 @@ window.clickFactoryValvePit = function(){
     };
     window.sendComm.__cpHooked = true;
   }
-  [500,1500,3000].forEach(function(t){ setTimeout(hookSendComm,t); });
+  [0,500,1500,3000].forEach(function(t){ setTimeout(hookSendComm,t); });
 
   // ---------- openCommWindow フック（挨拶） ----------
   function hookOpenCommWindow(){
@@ -25366,14 +25375,13 @@ window.clickFactoryValvePit = function(){
     };
     window.openCommWindow.__cpGreetHooked = true;
   }
-  [1000,2500,4000].forEach(function(t){ setTimeout(hookOpenCommWindow,t); });
+  [0,1000,2500,4000].forEach(function(t){ setTimeout(hookOpenCommWindow,t); });
 
   // ---------- saveAndDownload フック（HTML保存時にデータ埋め込み） ----------
   function hookSaveAndDownload(){
     if(typeof window.saveAndDownload!=='function'||window.saveAndDownload.__cpHooked) return;
     var orig = window.saveAndDownload;
     window.saveAndDownload = function(){
-      // HTMLダウンロード前にデータ要素を更新
       try{
         var cpNode = document.getElementById('saved-char-presets');
         if(cpNode) cpNode.textContent = JSON.stringify(window._charPresetsData||{presets:{}});
@@ -25384,7 +25392,7 @@ window.clickFactoryValvePit = function(){
     };
     window.saveAndDownload.__cpHooked = true;
   }
-  setTimeout(hookSaveAndDownload, 500);
+  [0,500].forEach(function(t){ setTimeout(hookSaveAndDownload,t); });
 
   // ---------- シナリオ設定のセレクトを更新 ----------
   window.refreshPresetSelects = function(){
@@ -25407,9 +25415,11 @@ window.clickFactoryValvePit = function(){
 
   // ---------- saveScenario / editScenario フック ----------
   function hookScenarioFunctions(){
+    // saveScenario wrap
     if(typeof window.saveScenario==='function' && !window.saveScenario.__cpHooked){
       var origSave = window.saveScenario;
       window.saveScenario = function(){
+        // プリセット選択を保存（saveScenario実行前に確保）
         try{
           var idx = (typeof currentScenarioIndex!=='undefined') ? currentScenarioIndex : null;
           if(idx!==null && idx!==undefined){
@@ -25417,7 +25427,7 @@ window.clickFactoryValvePit = function(){
             var cp = {};
             CHAR_DEFS.forEach(function(ch){
               var sel = document.getElementById('sc-cpsel-'+ch.key);
-              if(sel) cp[ch.key] = sel.value || '';
+              cp[ch.key] = sel ? (sel.value||'') : '';
             });
             window._scenPresetsData[String(idx)] = cp;
             saveScenPsel(window._scenPresetsData);
@@ -25428,24 +25438,31 @@ window.clickFactoryValvePit = function(){
       window.saveScenario.__cpHooked = true;
     }
 
+    // editScenario wrap
     if(typeof window.editScenario==='function' && !window.editScenario.__cpHooked){
       var origEdit = window.editScenario;
       window.editScenario = function(idx){
         origEdit.apply(this, arguments);
-        try{
-          window.refreshPresetSelects();
-          var cp = (window._scenPresetsData||{})[String(idx)];
-          if(!cp) return;
-          CHAR_DEFS.forEach(function(ch){
-            var sel = document.getElementById('sc-cpsel-'+ch.key);
-            if(sel) sel.value = cp[ch.key]||'';
-          });
-        }catch(e){}
+        // フォームが表示された後にセレクトを更新・復元
+        setTimeout(function(){
+          try{
+            window.refreshPresetSelects();
+            var cp = (window._scenPresetsData||{})[String(idx)];
+            if(!cp) return;
+            CHAR_DEFS.forEach(function(ch){
+              var sel = document.getElementById('sc-cpsel-'+ch.key);
+              if(sel) sel.value = cp[ch.key]||'';
+            });
+          }catch(e){}
+        }, 50);
       };
       window.editScenario.__cpHooked = true;
     }
   }
-  setTimeout(hookScenarioFunctions, 200);
+  // 即時 + 遅延の両方で実行（タイミング問題を回避）
+  hookScenarioFunctions();
+  setTimeout(hookScenarioFunctions, 100);
+  setTimeout(hookScenarioFunctions, 500);
 
   // ---------- カテゴリーヘッダーの背景色 ----------
   var CAT_COLORS = {
