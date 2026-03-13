@@ -8122,6 +8122,8 @@ function normalizeScenarioData(arr){
     }
     if(d.scenPresets && typeof d.scenPresets==='object'){
       window._scenPresetsData = d.scenPresets;
+      // settings IIFEより先に実行されるため、直接localStorageに保存
+      try{ localStorage.setItem('hoansochi_scenPresets_v1', JSON.stringify(d.scenPresets)); }catch(e){}
       try{ window._cpSaveScenPsel(d.scenPresets); }catch(e){}
     }
     // 画面ロード後にリストを更新してメッセージ表示
@@ -25551,10 +25553,10 @@ window.clickFactoryValvePit = function(){
       window.saveScenario.__cpHooked = true;
     }
 
-    // editScenario wrap
-    if(typeof window.editScenario==='function' && !window.editScenario.__cpHooked){
-      var origEdit = window.editScenario;
-      window.editScenario = function(idx){
+    // openScenarioEdit wrap
+    if(typeof window.openScenarioEdit==='function' && !window.openScenarioEdit.__cpHooked){
+      var origEdit = window.openScenarioEdit;
+      window.openScenarioEdit = function(idx){
         origEdit.apply(this, arguments);
         // フォームが表示された後にセレクトを更新・復元
         setTimeout(function(){
@@ -25569,7 +25571,7 @@ window.clickFactoryValvePit = function(){
           }catch(e){}
         }, 50);
       };
-      window.editScenario.__cpHooked = true;
+      window.openScenarioEdit.__cpHooked = true;
     }
   }
   // 即時 + 遅延の両方で実行（タイミング問題を回避）
