@@ -3266,6 +3266,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <button class="menu-btn sec" onclick="openHistory()">📈 履歴/統計</button>
 <button class="menu-btn sec" onclick="openSaveDataManager()">💾 セーブデータ管理</button>
 <button class="menu-btn sec" onclick="showStageEditor()">🗺 ステージ作成・編集</button>
+<button class="menu-btn sec" onclick="openCharSettings()">⚙ キャラクター返信設定</button>
 <button class="menu-btn sec" onclick="hideMenu()">ゲームに戻る</button>
 </div>
 </div>
@@ -3856,8 +3857,43 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="ヒント">ヒント</span></label>
         <textarea id="sc-hint" placeholder="ヒントを入力（使用するとクリア扱いにならない）" style="height: 120px;"></textarea>
       </div>
-      
-      
+
+      <div class="scenario-category-header" id="sc-charpresets-header">＜キャラクタープリセット＞</div>
+      <div id="sc-charpresets-body">
+        <div class="scenario-field" style="border:none;padding:0.4vmin 0;">
+          <label style="min-width:45%;">通報者プリセット</label>
+          <select id="sc-cpsel-reporter"><option value="">(プリセットなし)</option></select>
+        </div>
+        <div class="scenario-field" style="border:none;padding:0.4vmin 0;">
+          <label style="min-width:45%;">居住者B（警報器鳴動宅）プリセット</label>
+          <select id="sc-cpsel-alarmB"><option value="">(プリセットなし)</option></select>
+        </div>
+        <div class="scenario-field" style="border:none;padding:0.4vmin 0;">
+          <label style="min-width:45%;">管理人プリセット</label>
+          <select id="sc-cpsel-manager"><option value="">(プリセットなし)</option></select>
+        </div>
+        <div class="scenario-field" style="border:none;padding:0.4vmin 0;">
+          <label style="min-width:45%;">通信担当者プリセット</label>
+          <select id="sc-cpsel-tantou"><option value="">(プリセットなし)</option></select>
+        </div>
+        <div class="scenario-field" style="border:none;padding:0.4vmin 0;">
+          <label style="min-width:45%;">管理会社プリセット</label>
+          <select id="sc-cpsel-kanrisha"><option value="">(プリセットなし)</option></select>
+        </div>
+        <div class="scenario-field" style="border:none;padding:0.4vmin 0;">
+          <label style="min-width:45%;">焼き鳥屋店主プリセット</label>
+          <select id="sc-cpsel-yakitoriMaster"><option value="">(プリセットなし)</option></select>
+        </div>
+        <div class="scenario-field" style="border:none;padding:0.4vmin 0;">
+          <label style="min-width:45%;">ラーメン屋店主プリセット</label>
+          <select id="sc-cpsel-ramenMaster"><option value="">(プリセットなし)</option></select>
+        </div>
+        <div class="scenario-field" style="border:none;padding:0.4vmin 0;">
+          <label style="min-width:45%;">消防大隊長プリセット</label>
+          <select id="sc-cpsel-fireCommander"><option value="">(プリセットなし)</option></select>
+        </div>
+      </div>
+
     </div>
 
 <div class="scenario-field" style="margin-top:2vmin; text-align:left; border:none;">
@@ -6479,6 +6515,8 @@ window.addEventListener('touchend', ()=>{ clearInterval(detInterval); detInterva
 
 function loop() {
 if(isPaused) return;
+// 状況突破画面が開いている間はゲームロジックをスキップ（ループ自体は継続）
+if(window._btPaused){ loopId = requestAnimationFrame(loop); return; }
 
 if(!transitionCooldown && !isDetectorMode && !isPlacementMode && !isVentMode) { if(input.l) state.x -= SPEED; if(input.r) state.x += SPEED; }
 
@@ -14167,7 +14205,7 @@ try{
   }
 
   function openBreakthrough(contextId){
-    try{ if(typeof window.isPaused!=='undefined'){ window.isPaused = true; } }catch(e){}
+    try{ window._btPaused = true; }catch(e){}
 
     const ctx = CONTEXTS[contextId];
     if(!ctx) return;
@@ -14212,8 +14250,8 @@ try{
   function closeBreakthroughUI(){
     try{ var sc=document.getElementById('scene-breakthrough'); if(sc) sc.classList.remove('bt-dragging'); }catch(e){}
     try{ closeOverlay('scene-breakthrough'); }catch(e2){}
-    try{ if(typeof window.isPaused!=='undefined'){ window.isPaused = false; } }catch(e3){}
-    try{ if(typeof window.loopId!=='undefined'){ cancelAnimationFrame(window.loopId); } if(typeof window.loop==='function'){ window.loop(); } }catch(e4){}
+    // _btPaused を false に戻すだけでループは自動再開（ループは停止していない）
+    try{ window._btPaused = false; }catch(e3){}
   }
   window.closeBreakthroughUI = closeBreakthroughUI;
 
@@ -24995,6 +25033,411 @@ window.clickFactoryValvePit = function(){
 })();
 
 })(); /* end patch-factory-map IIFE */
+</script>
+
+<!-- ===== キャラクター返信設定・プリセット管理 ===== -->
+<script>
+(function(){
+  var CHAR_DEFS = [
+    { key:'reporter',       label:'通報者' },
+    { key:'alarmB',         label:'居住者B（警報器鳴動宅）' },
+    { key:'manager',        label:'管理人' },
+    { key:'tantou',         label:'通信担当者' },
+    { key:'kanrisha',       label:'管理会社' },
+    { key:'yakitoriMaster', label:'焼き鳥屋店主' },
+    { key:'ramenMaster',    label:'ラーメン屋店主' },
+    { key:'fireCommander',  label:'消防大隊長' }
+  ];
+  var DEFAULT_GREETINGS = {
+    reporter:       '来てくださってありがとうございます。',
+    alarmB:         '警報器が鳴って困っています…。',
+    manager:        'はい、どちらさまでしょうか？',
+    tantou:         'こちら通信担当です。状況を教えてください。',
+    kanrisha:       'お電話ありがとうございます。○○管理会社です。どのようなご用件でしょうか？',
+    yakitoriMaster: 'なんの用だ。急いで言え。',
+    ramenMaster:    'はい、何でしょうか？',
+    fireCommander:  '現場の状況を報告してください。'
+  };
+  var PRESETS_KEY   = 'hoansochi_charPresets_v2';
+  var SCEN_PSEL_KEY = 'hoansochi_scenPresets_v1';
+
+  // ---------- ストレージ ----------
+  function loadPresets(){
+    try{ var s=localStorage.getItem(PRESETS_KEY); if(s) return JSON.parse(s); }catch(e){}
+    return { presets:{} };
+  }
+  function savePresets(d){
+    try{ localStorage.setItem(PRESETS_KEY, JSON.stringify(d)); }catch(e){}
+  }
+  function loadScenPsel(){
+    try{ var s=localStorage.getItem(SCEN_PSEL_KEY); if(s) return JSON.parse(s); }catch(e){}
+    return {};
+  }
+  function saveScenPsel(d){
+    try{ localStorage.setItem(SCEN_PSEL_KEY, JSON.stringify(d)); }catch(e){}
+  }
+
+  window._charPresetsData = loadPresets();
+  window._scenPresetsData = loadScenPsel();
+
+  function uid(){
+    return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  }
+
+  // ---------- 設定画面を開く（動的モーダル作成） ----------
+  window.openCharSettings = function(){
+    var old = document.getElementById('scene-char-settings-modal');
+    if(old){ old.parentNode.removeChild(old); }
+    var modal = document.createElement('div');
+    modal.id = 'scene-char-settings-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999999;background:rgba(20,20,30,0.97);overflow-y:auto;box-sizing:border-box;';
+    document.body.appendChild(modal);
+    buildSettingsUI(modal);
+    try{ isPaused = true; }catch(e){}
+  };
+
+  window.closeCharSettings = function(){
+    var modal = document.getElementById('scene-char-settings-modal');
+    if(modal){ modal.parentNode.removeChild(modal); }
+    try{ isPaused = false; }catch(e){}
+  };
+
+  window.saveCharSettings = function(){
+    collectFromUI();
+    savePresets(window._charPresetsData);
+    window.closeCharSettings();
+    try{ window.refreshPresetSelects(); }catch(e){}
+    try{ if(typeof showSystemMsg==='function') showSystemMsg('キャラクタープリセットを保存しました。'); }catch(e){}
+  };
+
+  // ---------- UIからデータを収集 ----------
+  function collectFromUI(){
+    var data = { presets:{} };
+    CHAR_DEFS.forEach(function(ch){
+      data.presets[ch.key] = [];
+      var pDivs = document.querySelectorAll('[data-cpkey="'+ch.key+'"]');
+      pDivs.forEach(function(pDiv){
+        var pid   = pDiv.getAttribute('data-cpid');
+        var nameEl  = pDiv.querySelector('.cp-name');
+        var greetEl = pDiv.querySelector('.cp-greeting');
+        var name    = nameEl  ? nameEl.value.trim()  : '';
+        var greeting= greetEl ? greetEl.value         : '';
+        if(!name) return;
+        var replies = [];
+        pDiv.querySelectorAll('.cp-row').forEach(function(row){
+          var kw = row.querySelector('.cp-kw');
+          var rp = row.querySelector('.cp-rp');
+          var k = kw ? kw.value.trim() : '';
+          var r = rp ? rp.value.trim() : '';
+          if(k || r) replies.push({ keyword:k, reply:r });
+        });
+        data.presets[ch.key].push({ id:pid||uid(), name:name, greeting:greeting, replies:replies });
+      });
+    });
+    window._charPresetsData = data;
+  }
+
+  // ---------- プリセットDiv作成 ----------
+  window._cpAddPreset = function(chKey){
+    var cont = document.getElementById('cp-presets-'+chKey);
+    if(!cont) return;
+    cont.appendChild(buildPresetDiv(chKey, uid(), '', '', []));
+  };
+
+  window._cpAddRow = function(chKey, pid, kw, rp){
+    var rowCont = document.getElementById('cp-rows-'+pid);
+    if(!rowCont) return;
+    var row = document.createElement('div');
+    row.className = 'cp-row';
+    row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
+    var kwIn = document.createElement('input');
+    kwIn.type='text'; kwIn.className='cp-kw';
+    kwIn.placeholder='キーワード（例：ガス）'; kwIn.value=kw||'';
+    kwIn.style.cssText='flex:1;padding:6px;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;min-width:0;';
+    var rpIn = document.createElement('input');
+    rpIn.type='text'; rpIn.className='cp-rp';
+    rpIn.placeholder='返信内容'; rpIn.value=rp||'';
+    rpIn.style.cssText='flex:2;padding:6px;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;min-width:0;';
+    var del = document.createElement('button');
+    del.textContent='✕';
+    del.style.cssText='background:#b71c1c;color:#fff;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;flex-shrink:0;font-size:13px;';
+    del.onclick=function(){ row.parentNode.removeChild(row); };
+    row.appendChild(kwIn); row.appendChild(rpIn); row.appendChild(del);
+    rowCont.appendChild(row);
+  };
+
+  function buildPresetDiv(chKey, pid, name, greeting, replies){
+    var div = document.createElement('div');
+    div.setAttribute('data-cpkey', chKey);
+    div.setAttribute('data-cpid',  pid);
+    div.style.cssText='background:rgba(255,255,255,0.05);border:1px solid #444;border-radius:6px;padding:12px;margin-bottom:8px;';
+
+    var row1 = document.createElement('div');
+    row1.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+    var nameIn = document.createElement('input');
+    nameIn.type='text'; nameIn.className='cp-name';
+    nameIn.placeholder='プリセット名（例：臭気通報）'; nameIn.value=name||'';
+    nameIn.style.cssText='flex:1;padding:6px;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;';
+    var delBtn = document.createElement('button');
+    delBtn.textContent='このプリセットを削除';
+    delBtn.style.cssText='background:#b71c1c;color:#fff;border:none;border-radius:4px;padding:6px 10px;font-size:12px;cursor:pointer;white-space:nowrap;';
+    delBtn.onclick=function(){ div.parentNode.removeChild(div); };
+    row1.appendChild(nameIn); row1.appendChild(delBtn);
+
+    var greetLabel = document.createElement('label');
+    greetLabel.textContent='初期挨拶文';
+    greetLabel.style.cssText='color:#aaa;font-size:12px;display:block;margin-bottom:4px;';
+    var greetIn = document.createElement('textarea');
+    greetIn.className='cp-greeting'; greetIn.value=greeting||'';
+    greetIn.placeholder=DEFAULT_GREETINGS[chKey]||'（挨拶文を入力）';
+    greetIn.style.cssText='width:100%;box-sizing:border-box;padding:6px;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;resize:vertical;min-height:48px;';
+
+    var kwLabel = document.createElement('label');
+    kwLabel.textContent='キーワード別返信';
+    kwLabel.style.cssText='color:#aaa;font-size:12px;display:block;margin:8px 0 4px 0;';
+    var rowCont = document.createElement('div');
+    rowCont.id='cp-rows-'+pid;
+    var addRowBtn = document.createElement('button');
+    addRowBtn.textContent='＋ キーワード追加';
+    addRowBtn.style.cssText='background:#1565c0;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:12px;cursor:pointer;margin-top:4px;';
+    addRowBtn.onclick=(function(k,p){ return function(){ window._cpAddRow(k,p,'',''); }; })(chKey,pid);
+
+    div.appendChild(row1);
+    div.appendChild(greetLabel); div.appendChild(greetIn);
+    div.appendChild(kwLabel); div.appendChild(rowCont); div.appendChild(addRowBtn);
+
+    replies.forEach(function(r){ window._cpAddRow(chKey, pid, r.keyword, r.reply); });
+    return div;
+  }
+
+  // ---------- UIビルド ----------
+  function buildSettingsUI(modal){
+    var data = window._charPresetsData || { presets:{} };
+    modal.innerHTML = '';
+    var wrap = document.createElement('div');
+    wrap.style.cssText='max-width:740px;margin:0 auto;padding:20px;box-sizing:border-box;';
+
+    var hdr = document.createElement('div');
+    hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;';
+    var title = document.createElement('h2');
+    title.textContent='⚙ キャラクター返信設定';
+    title.style.cssText='margin:0;color:#fff;font-size:20px;font-family:sans-serif;';
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent='✕ 閉じる';
+    closeBtn.style.cssText='background:#555;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:14px;cursor:pointer;';
+    closeBtn.onclick=function(){ window.closeCharSettings(); };
+    hdr.appendChild(title); hdr.appendChild(closeBtn);
+
+    var desc = document.createElement('p');
+    desc.textContent='キャラごとに複数のプリセットを作れます。プリセット名を入力し、挨拶文とキーワード別返信を設定してください。シナリオ設定画面でプリセットを選ぶと、そのシナリオ中のキャラ返信が切り替わります。';
+    desc.style.cssText='color:#bbb;font-size:13px;margin-bottom:20px;line-height:1.6;';
+
+    wrap.appendChild(hdr);
+    wrap.appendChild(desc);
+
+    CHAR_DEFS.forEach(function(ch){
+      var charDiv = document.createElement('div');
+      charDiv.style.cssText='background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;padding:16px;margin-bottom:16px;';
+
+      var charHdr = document.createElement('div');
+      charHdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;';
+      var charTitle = document.createElement('h3');
+      charTitle.textContent=ch.label;
+      charTitle.style.cssText='margin:0;color:#80cbc4;font-size:16px;font-family:sans-serif;';
+      var addBtn = document.createElement('button');
+      addBtn.textContent='＋ プリセット追加';
+      addBtn.style.cssText='background:#2e7d32;color:#fff;border:none;border-radius:4px;padding:6px 12px;font-size:13px;cursor:pointer;';
+      addBtn.onclick=(function(k){ return function(){ window._cpAddPreset(k); }; })(ch.key);
+      charHdr.appendChild(charTitle); charHdr.appendChild(addBtn);
+
+      var presetCont = document.createElement('div');
+      presetCont.id='cp-presets-'+ch.key;
+
+      var presets = (data.presets && data.presets[ch.key]) ? data.presets[ch.key] : [];
+      presets.forEach(function(p){
+        presetCont.appendChild(buildPresetDiv(ch.key, p.id||uid(), p.name||'', p.greeting||'', p.replies||[]));
+      });
+
+      charDiv.appendChild(charHdr);
+      charDiv.appendChild(presetCont);
+      wrap.appendChild(charDiv);
+    });
+
+    var footer = document.createElement('div');
+    footer.style.cssText='display:flex;gap:12px;margin-top:12px;padding-bottom:40px;';
+    var saveBtn = document.createElement('button');
+    saveBtn.textContent='💾 保存して閉じる';
+    saveBtn.style.cssText='flex:1;background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:12px;font-size:16px;font-weight:bold;cursor:pointer;';
+    saveBtn.onclick=function(){ window.saveCharSettings(); };
+    footer.appendChild(saveBtn);
+    wrap.appendChild(footer);
+    modal.appendChild(wrap);
+  }
+
+  // ---------- アクティブシナリオのプリセットを取得 ----------
+  function getActivePreset(partnerKey){
+    try{
+      var idx = (typeof currentScenarioIndex!=='undefined') ? currentScenarioIndex : null;
+      if(idx===null||idx===undefined) return null;
+      var cp = (window._scenPresetsData||{})[String(idx)];
+      if(!cp) return null;
+      var pid = cp[partnerKey];
+      if(!pid) return null;
+      var d = window._charPresetsData;
+      if(!d||!d.presets||!d.presets[partnerKey]) return null;
+      for(var i=0;i<d.presets[partnerKey].length;i++){
+        if(d.presets[partnerKey][i].id===pid) return d.presets[partnerKey][i];
+      }
+    }catch(e){}
+    return null;
+  }
+
+  // ---------- キーワード検索 ----------
+  function _lookupCustom(text, partnerKey){
+    try{
+      var preset = getActivePreset(partnerKey);
+      if(!preset||!preset.replies) return null;
+      var t = String(text||'').replace(/\s+/g,'');
+      for(var i=0;i<preset.replies.length;i++){
+        var kw = String(preset.replies[i].keyword||'').trim();
+        if(kw && t.indexOf(kw)!==-1) return String(preset.replies[i].reply||'');
+      }
+    }catch(e){}
+    return null;
+  }
+
+  // ---------- sendComm フック ----------
+  function hookSendComm(){
+    if(typeof window.sendComm!=='function'||window.sendComm.__cpHooked) return;
+    var orig = window.sendComm;
+    window.sendComm = function(){
+      try{
+        var inp = document.getElementById('comm-input');
+        var txt = inp ? String(inp.value||'').trim() : '';
+        if(txt){
+          var partner = (typeof _commPartnerKey==='function') ? _commPartnerKey() : 'reporter';
+          var cr = _lookupCustom(txt, partner);
+          if(cr!==null){
+            inp.value='';
+            try{ addUserMsg(txt); }catch(e){}
+            try{ window._thoughtCheckInput(txt); }catch(e){}
+            setTimeout(function(){ try{ addReporterMsg(cr); }catch(e){}; }, 200);
+            return;
+          }
+        }
+      }catch(er){}
+      return orig.apply(this, arguments);
+    };
+    window.sendComm.__cpHooked = true;
+  }
+  [500,1500,3000].forEach(function(t){ setTimeout(hookSendComm,t); });
+
+  // ---------- openCommWindow フック（挨拶） ----------
+  function hookOpenCommWindow(){
+    if(typeof window.openCommWindow!=='function'||window.openCommWindow.__cpGreetHooked) return;
+    var orig = window.openCommWindow;
+    window.openCommWindow = function(mode, partner){
+      orig.apply(this, arguments);
+      try{
+        var key = (typeof _commPartnerKey==='function') ? _commPartnerKey() : 'reporter';
+        var preset = getActivePreset(key);
+        if(!preset||!preset.greeting) return;
+        if(typeof commLogs!=='undefined' && commLogs[key] && commLogs[key].length===1 && commLogs[key][0].who==='other'){
+          commLogs[key][0].text = preset.greeting;
+          if(typeof renderCommHistory==='function') renderCommHistory();
+        }
+      }catch(e){}
+    };
+    window.openCommWindow.__cpGreetHooked = true;
+  }
+  [1000,2500,4000].forEach(function(t){ setTimeout(hookOpenCommWindow,t); });
+
+  // ---------- シナリオ設定のセレクトを更新 ----------
+  window.refreshPresetSelects = function(){
+    var data = window._charPresetsData || { presets:{} };
+    CHAR_DEFS.forEach(function(ch){
+      var sel = document.getElementById('sc-cpsel-'+ch.key);
+      if(!sel) return;
+      var cur = sel.value;
+      sel.innerHTML = '<option value="">(プリセットなし)</option>';
+      var presets = (data.presets && data.presets[ch.key]) ? data.presets[ch.key] : [];
+      presets.forEach(function(p){
+        var opt = document.createElement('option');
+        opt.value = p.id; opt.textContent = p.name||p.id;
+        sel.appendChild(opt);
+      });
+      sel.value = cur;
+    });
+  };
+  setTimeout(window.refreshPresetSelects, 300);
+
+  // ---------- saveScenario / editScenario にプリセット情報を追加 ----------
+  function hookScenarioFunctions(){
+    if(typeof window.saveScenario==='function' && !window.saveScenario.__cpHooked){
+      var origSave = window.saveScenario;
+      window.saveScenario = function(){
+        try{
+          var idx = (typeof currentScenarioIndex!=='undefined') ? currentScenarioIndex : null;
+          if(idx!==null && idx!==undefined){
+            if(!window._scenPresetsData) window._scenPresetsData = {};
+            var cp = {};
+            CHAR_DEFS.forEach(function(ch){
+              var sel = document.getElementById('sc-cpsel-'+ch.key);
+              if(sel) cp[ch.key] = sel.value || '';
+            });
+            window._scenPresetsData[String(idx)] = cp;
+            saveScenPsel(window._scenPresetsData);
+          }
+        }catch(e){}
+        origSave.apply(this, arguments);
+      };
+      window.saveScenario.__cpHooked = true;
+    }
+
+    if(typeof window.editScenario==='function' && !window.editScenario.__cpHooked){
+      var origEdit = window.editScenario;
+      window.editScenario = function(idx){
+        origEdit.apply(this, arguments);
+        try{
+          window.refreshPresetSelects();
+          var cp = (window._scenPresetsData||{})[String(idx)];
+          if(!cp) return;
+          CHAR_DEFS.forEach(function(ch){
+            var sel = document.getElementById('sc-cpsel-'+ch.key);
+            if(sel) sel.value = cp[ch.key]||'';
+          });
+        }catch(e){}
+      };
+      window.editScenario.__cpHooked = true;
+    }
+  }
+  setTimeout(hookScenarioFunctions, 200);
+
+  // ---------- カテゴリーヘッダーの背景色 ----------
+  var CAT_COLORS = {
+    '集合住宅':         { bg:'#1a3a5c', color:'#e3f2fd' },
+    '工場':             { bg:'#3e2600', color:'#ffe0b2' },
+    'キャラクタープリセット': { bg:'#1a3a1a', color:'#e8f5e9' }
+  };
+  function applyHeaderColors(){
+    document.querySelectorAll('.scenario-category-header').forEach(function(h){
+      var txt = h.textContent||'';
+      for(var cat in CAT_COLORS){
+        if(txt.indexOf(cat)!==-1){
+          h.style.background = CAT_COLORS[cat].bg;
+          h.style.color = CAT_COLORS[cat].color;
+          break;
+        }
+      }
+    });
+  }
+  if(document.readyState==='complete'||document.readyState==='interactive'){
+    setTimeout(applyHeaderColors, 150);
+  } else {
+    document.addEventListener('DOMContentLoaded', applyHeaderColors);
+  }
+
+})();
 </script>
 
 <!-- チュートリアルオーバーレイ -->
