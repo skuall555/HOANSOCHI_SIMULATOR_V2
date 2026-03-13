@@ -3906,7 +3906,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   <div style="font-size:70%; color:#555; margin-top:0.5vmin;">※選択したNo.の設定をこの編集画面に読み込みます（まだ保存されません）。</div>
 </div>
 <div style="display:flex; gap:1vmin; margin-top:1.5vmin;">
-  <button class="menu-btn" style="flex:1; background:#2e7d32;" onclick="playScenarioWithoutOverwrite()">この設定で遊ぶ（上書きなし）</button>
+  <button class="menu-btn" style="flex:1; background:#2e7d32;" onclick="playScenarioWithoutOverwrite()">シナリオをテストプレイする</button>
 </div>
 
 <button class="menu-btn save" onclick="saveScenario()">保存</button>
@@ -8110,6 +8110,29 @@ function normalizeScenarioData(arr){
   }catch(e){}
 })();
 
+// テストプレイ後のシナリオ復元
+(function restoreTestplayData(){
+  try{
+    var raw = localStorage.getItem('hoansochi_testplay_restore');
+    if(!raw) return;
+    localStorage.removeItem('hoansochi_testplay_restore');
+    var d = JSON.parse(raw);
+    if(d.scenarios && Array.isArray(d.scenarios)){
+      scenarioData = normalizeScenarioData(d.scenarios);
+    }
+    if(d.scenPresets && typeof d.scenPresets==='object'){
+      window._scenPresetsData = d.scenPresets;
+      try{ window._cpSaveScenPsel(d.scenPresets); }catch(e){}
+    }
+    // 画面ロード後にリストを更新してメッセージ表示
+    setTimeout(function(){
+      try{ renderScenarioList(); }catch(e){}
+      try{ refreshStartScenarioOptions(); }catch(e){}
+      try{ if(typeof showSystemMsg==='function') showSystemMsg('テストプレイ前のシナリオ設定を復元しました。'); }catch(e){}
+    }, 800);
+  }catch(e){}
+})();
+
 function ensureLeakOptions(){
   var opts=['脱衣所','浴室','廊下','1F共用部','2F共用部','台所','寝室','前面道路'];
   var s1=document.getElementById('sc-leak1');
@@ -8139,6 +8162,38 @@ function loadScenariosFromFile(){
         var htmlContent = ev.target.result;
         var parser = new DOMParser();
         var doc = parser.parseFromString(htmlContent, 'text/html');
+
+        // 新形式（saveSettingsFileで作成した設定ファイル）を優先
+        var settingsEl = doc.getElementById('hoansochi-settings');
+        if(settingsEl && settingsEl.textContent && settingsEl.textContent.trim()){
+          var payload = JSON.parse(settingsEl.textContent);
+          var ok = false;
+          if(payload.scenarios && Array.isArray(payload.scenarios)){
+            scenarioData = normalizeScenarioData(payload.scenarios);
+            try{ var sn=document.getElementById('saved-scenarios'); if(sn) sn.textContent=JSON.stringify(scenarioData); }catch(e){}
+            try{ localStorage.setItem('hoansochi_scenarios_v1', JSON.stringify(scenarioData)); }catch(e){}
+            renderScenarioList();
+            try{ refreshStartScenarioOptions(); }catch(e){}
+            ok = true;
+          }
+          if(payload.charPresets && payload.charPresets.presets){
+            window._charPresetsData = payload.charPresets;
+            try{ window._cpSavePresets(payload.charPresets); }catch(e){}
+            try{ window.refreshPresetSelects(); }catch(e){}
+          }
+          if(payload.scenPresets && typeof payload.scenPresets==='object'){
+            window._scenPresetsData = payload.scenPresets;
+            try{ window._cpSaveScenPsel(payload.scenPresets); }catch(e){}
+          }
+          if(ok){
+            try{ if(typeof showSystemMsg==='function') showSystemMsg('設定データを読み込みました（'+(payload.savedAt||'日時不明')+'）'); }catch(e){}
+          } else {
+            alert('設定データが見つかりませんでした。');
+          }
+          return;
+        }
+
+        // 旧形式（saved-scenarios 要素）フォールバック
         var savedNode = doc.getElementById('saved-scenarios');
         if(!savedNode || !savedNode.textContent){
           alert('このHTMLファイルにはシナリオデータが見つかりませんでした。');
@@ -8150,17 +8205,69 @@ function loadScenariosFromFile(){
           return;
         }
         scenarioData = normalizeScenarioData(loadedScenarios);
+        try{ var sn2=document.getElementById('saved-scenarios'); if(sn2) sn2.textContent=JSON.stringify(scenarioData); }catch(e){}
         renderScenarioList();
         try{ refreshStartScenarioOptions(); }catch(e){}
-        alert('シナリオを読み込みました。「保存してHTMLを更新」ボタンを押すと反映されます。');
+        try{
+          var cpEl=doc.getElementById('saved-char-presets');
+          if(cpEl && cpEl.textContent && cpEl.textContent.trim()!=='{}'){
+            var cpData=JSON.parse(cpEl.textContent);
+            if(cpData && cpData.presets){ window._charPresetsData=cpData; try{window._cpSavePresets(cpData);}catch(e){} }
+          }
+          var spEl=doc.getElementById('saved-scen-presets');
+          if(spEl && spEl.textContent && spEl.textContent.trim()!=='{}'){
+            var spData=JSON.parse(spEl.textContent);
+            if(spData){ window._scenPresetsData=spData; try{window._cpSaveScenPsel(spData);}catch(e){} }
+          }
+        }catch(e2){}
+        try{ window.refreshPresetSelects(); }catch(e){}
+        try{ if(typeof showSystemMsg==='function') showSystemMsg('シナリオを読み込みました。'); }catch(e){}
       }catch(err){
-        alert('シナリオの読み込みに失敗しました: ' + err.message);
+        alert('読み込みに失敗しました: ' + err.message);
       }
     };
-    reader.readAsText(file);
+    reader.readAsText(file, 'UTF-8');
   };
   input.click();
 }
+
+// ===== 設定ファイルを保存（コンパクトなHTMLファイルに書き出し） =====
+window.saveSettingsFile = function(){
+  var now = new Date();
+  var Y  = now.getFullYear();
+  var Mo = ('0'+(now.getMonth()+1)).slice(-2);
+  var D  = ('0'+now.getDate()).slice(-2);
+  var h  = ('0'+now.getHours()).slice(-2);
+  var m  = ('0'+now.getMinutes()).slice(-2);
+  var dateStr  = Y + '年' + Mo + '月' + D + '日' + h + '時' + m + '分';
+  var filename = dateStr + '_シナリオデータ.html';
+
+  var payload = {
+    version:    1,
+    savedAt:    dateStr,
+    scenarios:  (typeof scenarioData!=='undefined') ? scenarioData : [],
+    charPresets: window._charPresetsData || {presets:{}},
+    scenPresets: window._scenPresetsData || {}
+  };
+
+  var jsonStr = JSON.stringify(payload);
+  var html = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>\u30b7\u30ca\u30ea\u30aa\u30c7\u30fc\u30bf</title>'
+    + '<style>body{margin:0;font-family:sans-serif;background:#1a1a2e;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;}'
+    + '.msg{text-align:center;max-width:520px;padding:36px 44px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18);border-radius:18px;}'
+    + '.msg h2{margin:0 0 18px;font-size:1.5em;}.msg p{line-height:1.7;color:#ccc;}.msg .date{font-size:0.78em;color:#888;margin-top:18px;}</style></head><body>'
+    + '<div class="msg"><h2>&#128196; \u30b7\u30ca\u30ea\u30aa\u30c7\u30fc\u30bf</h2>'
+    + '<p>\u3053\u308c\u306f\u30b7\u30ca\u30ea\u30aa\u30c7\u30fc\u30bf\u3067\u3059\u3002<br>\u672c\u4f53\u30b2\u30fc\u30e0\u306e\u300c&#128193; \u30b7\u30ca\u30ea\u30aa\u8aad\u307f\u8fbc\u307f\u300d\u304b\u3089<br>\u8aad\u307f\u8fbc\u3093\u3067\u4f7f\u7528\u3057\u3066\u304f\u3060\u3055\u3044\u3002</p>'
+    + '<p class="date">\u4fdd\u5b58\u65e5\u6642\uff1a' + dateStr + '</p></div>'
+    + '<script id="hoansochi-settings" type="application\/json">' + jsonStr + '<\/script>'
+    + '</body></html>';
+
+  var blob = new Blob([html], {type:'text/html'});
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  try{ if(typeof showSystemMsg==='function') showSystemMsg('設定を保存しました：' + filename); }catch(e){}
+};
 
 function renderScenarioList(){
   var body=document.getElementById('scenario-list-body');
@@ -12221,13 +12328,19 @@ function playScenarioWithoutOverwrite(){
   try{
     if(currentScenarioIndex===null) return;
     scenarioData[currentScenarioIndex]=_collectScenarioFromForm();
+    // テストプレイ終了後にシナリオデータを復元できるよう保存
+    try{ localStorage.setItem('hoansochi_testplay_restore', JSON.stringify({
+      scenarios: scenarioData,
+      currentIdx: currentScenarioIndex,
+      scenPresets: window._scenPresetsData || {}
+    })); }catch(e2){}
     try{ renderScenarioList(); }catch(e1){}
     try{ updateStartScenarioSelectOptions(); }catch(e2){}
     document.getElementById('scene-scenario-edit').classList.remove('active');
     document.getElementById('scene-startsetup').classList.add('active');
     var scSel=document.getElementById('start-scenario');
     if(scSel){ scSel.value=String(currentScenarioIndex); }
-    showSystemMsg('この設定で開始できます（保存＝HTML上書きは不要）');
+    showSystemMsg('テストプレイを開始します。メニューに戻ってもシナリオ設定は保持されます。');
   }catch(e){}
 }
 
