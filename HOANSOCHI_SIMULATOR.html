@@ -14240,19 +14240,16 @@ try{
         finishDragOnZone(dragState.cardId);
       }
 
-      // ドロップ処理: 漏洩系統ゾーン
+      // ドロップ処理: 漏洩系統ゾーン（ポインター座標で判定 — カードはすでに元位置に戻っているため）
       try{
         const lkZone = $('lk-dropzone');
         if(lkZone && lkZone.offsetParent !== null){
           const lkR = lkZone.getBoundingClientRect();
-          const cardRect2 = card.getBoundingClientRect();
-          const cx2 = cardRect2.left + cardRect2.width/2;
-          const cy2 = cardRect2.top + cardRect2.height/2;
-          if(cx2>=lkR.left && cx2<=lkR.right && cy2>=lkR.top && cy2<=lkR.bottom){
+          if(e.clientX>=lkR.left && e.clientX<=lkR.right && e.clientY>=lkR.top && e.clientY<=lkR.bottom){
             if(typeof window.__lkFinishDrop === 'function') window.__lkFinishDrop(dragState.cardId);
           }
         }
-      }catch(e){}
+      }catch(e2){}
 
       // リセット
       dragState.active = false;
