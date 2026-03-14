@@ -6467,7 +6467,7 @@ function checkDoorGasAtPos(e) {
         // ② 滞留ガス確認（開閉度30%以上、1回まで）
         var ratio = (typeof getDoorOpenRatio2 === 'function') ? getDoorOpenRatio2(door) : 0;
         var k2 = 'scan2_' + dk;
-        if(ratio >= 0.30 && !window._doorScanDone.has(k2)){
+        if(ratio >= 0.01 && !window._doorScanDone.has(k2)){
             window._doorScanDone.add(k2);
             door.dataset.gasCleared = "true";
             door.dataset.isDangerous = "false";
