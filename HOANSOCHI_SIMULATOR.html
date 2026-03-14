@@ -5030,6 +5030,12 @@ else dangerRate = 1.0;
 safetyValue = 0;
 window._noGasBonusDoors = new Set();
 window._doorScanDone = new Set(); // 廻り検知・滞留ガス確認の実施済み管理
+// 圧力オーバーレイリセット
+try{
+  if(typeof _pressureOk!=='undefined'){ _pressureOk=[false,false,false,false,false]; }
+  if(typeof _pressureNg!=='undefined'){ _pressureNg=[false,false,false,false,false]; }
+  document.querySelectorAll('.pressure-overlay').forEach(function(ov){ ov.style.display='none'; });
+}catch(e){}
 safetyMeasures = {
   windows: {
     'A-bath': false,
@@ -10870,7 +10876,7 @@ var commContext = { mode:'normal', doorId:null, awaitingId:false, partner:'repor
 // 会話ログを相手ごとに分離（通報者/居住者B/管理人/通信担当者/管理会社/店主）
 var commLogs = { reporter: [], alarmB: [], manager: [], tantou: [], kanrisha: [], yakitoriMaster: [], ramenMaster: [], fireCommander: [] };
 
-function _commPartnerKey(){ return (commContext && commContext.partner==='alarmB') ? 'alarmB' : ((commContext && commContext.partner==='manager') ? 'manager' : ((commContext && commContext.partner==='tantou') ? 'tantou' : ((commContext && commContext.partner==='kanrisha') ? 'kanrisha' : ((commContext && commContext.partner==='yakitoriMaster') ? 'yakitoriMaster' : ((commContext && commContext.partner==='ramenMaster') ? 'ramenMaster' : ((commContext && commContext.partner==='fireCommander') ? 'fireCommander' : 'reporter')))))); }
+function _commPartnerKey(){ return (commContext && commContext.partner==='alarmB') ? 'alarmB' : ((commContext && commContext.partner==='manager') ? 'manager' : ((commContext && commContext.partner==='tantou') ? 'tantou' : ((commContext && commContext.partner==='kanrisha') ? 'kanrisha' : ((commContext && commContext.partner==='yakitoriMaster') ? 'yakitoriMaster' : ((commContext && commContext.partner==='ramenMaster') ? 'ramenMaster' : ((commContext && commContext.partner==='fireCommander') ? 'fireCommander' : ((commContext && commContext.partner==='shobo') ? 'shobo' : 'reporter'))))))); }
 function resetCommHistoryFor(partnerKey){ try{ if(commLogs[partnerKey]) commLogs[partnerKey]=[]; }catch(e){} }
 function resetCommHistory(){ try{ resetCommHistoryFor('reporter'); resetCommHistoryFor('alarmB'); resetCommHistoryFor('manager'); resetCommHistoryFor('tantou'); resetCommHistoryFor('kanrisha'); resetCommHistoryFor('yakitoriMaster'); resetCommHistoryFor('ramenMaster'); resetCommHistoryFor('fireCommander'); _mgmtCompanyResolved=false; _mgmtPhoneCode=String(Math.floor(1000+Math.random()*9000)); _yakitoriGasOk=false; _ramenGasOk=false; _shopGasPenalty=0; }catch(e){} }
 
@@ -11144,12 +11150,12 @@ function openCommWindow(mode, partner){
     if(b) b.src=imgSrc;
     if(a) a.src=imgSrc;
     if(c) c.src=imgSrc;
-    var whoName = (key==='alarmB') ? '居住者B' : ((key==='manager') ? '管理人' : ((key==='tantou') ? '通信担当者' : ((key==='kanrisha') ? '管理会社' : ((key==='yakitoriMaster') ? '焼き鳥屋店主' : ((key==='ramenMaster') ? 'ラーメン屋店主' : ((key==='fireCommander') ? '消防大隊長' : '通報者'))))));
+    var whoName = (key==='alarmB') ? '居住者B' : ((key==='manager') ? '管理人' : ((key==='tantou') ? '通信担当者' : ((key==='kanrisha') ? '管理会社' : ((key==='yakitoriMaster') ? '焼き鳥屋店主' : ((key==='ramenMaster') ? 'ラーメン屋店主' : ((key==='fireCommander') ? '消防大隊長' : ((key==='shobo') ? '消防' : '通報者'))))))));
     try{ if(a) a.alt = whoName; }catch(ea){}
     try{ if(b) b.alt = whoName; }catch(eb){}
     try{ if(c) c.alt = whoName; }catch(ec){}
     var hint=document.querySelector('#comm-window .comm-hint');
-    if(hint){ hint.textContent = (key==='alarmB') ? '居住者Bと会話できます。' : ((key==='manager') ? '管理人と会話できます。' : ((key==='tantou') ? '通信担当者と会話できます。' : ((key==='kanrisha') ? '管理会社と会話できます。' : ((key==='yakitoriMaster') ? '焼き鳥屋店主と会話できます。' : ((key==='ramenMaster') ? 'ラーメン屋店主と会話できます。' : ((key==='fireCommander') ? '消防大隊長と会話できます。' : '通報者と会話できます。')))))); }
+    if(hint){ hint.textContent = (key==='alarmB') ? '居住者Bと会話できます。' : ((key==='manager') ? '管理人と会話できます。' : ((key==='tantou') ? '通信担当者と会話できます。' : ((key==='kanrisha') ? '管理会社と会話できます。' : ((key==='yakitoriMaster') ? '焼き鳥屋店主と会話できます。' : ((key==='ramenMaster') ? 'ラーメン屋店主と会話できます。' : ((key==='fireCommander') ? '消防大隊長と会話できます。' : ((key==='shobo') ? '消防と会話できます。' : '通報者と会話できます。'))))))); }
     try{ _tantouUpdateReportPanel(); }catch(e){}
     try{ if(typeof _fcmdUpdatePanel==='function') _fcmdUpdatePanel(); }catch(e){}
   }catch(e){}
@@ -11163,7 +11169,7 @@ function openCommWindow(mode, partner){
       if(commContext.mode==='knock'){
         addReporterMsg('どちら様ですか？');
       } else {
-        if(commContext.partner==='manager') addReporterMsg('はい、どちらさまでしょうか？'); else if(commContext.partner==='alarmB') addReporterMsg('警報器が鳴って困っています…。'); else if(commContext.partner==='tantou') addReporterMsg('こちら通信担当です。状況を教えてください。'); else if(commContext.partner==='kanrisha') addReporterMsg('お電話ありがとうございます。○○管理会社です。どのようなご用件でしょうか？'); else if(commContext.partner==='yakitoriMaster') addReporterMsg('なんの用だ。急いで言え。'); else if(commContext.partner==='ramenMaster') addReporterMsg('はい、何でしょうか？'); else if(commContext.partner==='fireCommander') addReporterMsg('現場の状況を報告してください。'); else addReporterMsg('来てくださってありがとうございます。');
+        if(commContext.partner==='manager') addReporterMsg('はい、どちらさまでしょうか？'); else if(commContext.partner==='alarmB') addReporterMsg('警報器が鳴って困っています…。'); else if(commContext.partner==='tantou') addReporterMsg('こちら通信担当です。状況を教えてください。'); else if(commContext.partner==='kanrisha') addReporterMsg('お電話ありがとうございます。○○管理会社です。どのようなご用件でしょうか？'); else if(commContext.partner==='yakitoriMaster') addReporterMsg('なんの用だ。急いで言え。'); else if(commContext.partner==='ramenMaster') addReporterMsg('はい、何でしょうか？'); else if(commContext.partner==='fireCommander') addReporterMsg('現場の状況を報告してください。'); else if(commContext.partner==='shobo') addReporterMsg('消防です。現場の状況を教えてください。'); else addReporterMsg('来てくださってありがとうございます。');
       }
     }
 
@@ -17963,8 +17969,8 @@ window._tantouGenerateReply = function(rawText){
     window._tantouGenerateReply = function(rawText){
       var t = rawText.replace(/\s+/g,'');
       if(t.indexOf('消防') !== -1){
-        setTimeout(function(){ try{ window.openBreakthrough('shobo'); }catch(e){} }, 300);
-        return '消防への要請を受け付けます。状況証拠をご提示ください。';
+        setTimeout(function(){ try{ closeCommWindow(); setTimeout(function(){ openCommWindow('normal','shobo'); },200); }catch(e){} }, 300);
+        return '消防への通報ウィンドウを開きます。';
       }
       if(t.indexOf('警察') !== -1){
         setTimeout(function(){ try{ window.openBreakthrough('keisatsu'); }catch(e){} }, 300);
@@ -22952,13 +22958,14 @@ function _handleCardDrop(cardId){
 }
 
 function _buildReply(droppedId){
-  var lines=['「'+droppedId+'」の報告を受けました。'];
-  if(!_has(_reported,'カード_臭気情報'))    lines.push('通報者から臭気情報は聞き出せましたか？');
-  else if(!_has(_reported,'カード_検知器反応')) lines.push('検知器反応は見つかりましたか？');
-  else if(!_has(_reported,'カード_広範囲'))    lines.push('見つかった検知器反応は１箇所だけですか？');
-  else if(!_has(_reported,'カード_滞留ガス'))  lines.push('現場で変わったことは起きていませんか？');
-  else lines.push('必要な場合は消防、警察、社内応援を要請してください。');
-  return lines.join('\n');
+  var replies={
+    'カード_反応箇所': 'ガスの反応を確認しましたね。近くに、ポケット警報器や火気厳禁表示シートを設置して、安全確保を行いましょう。',
+    'カード_広範囲':   '広範囲のガス流入が想定されますね。反応箇所のガス種は判明していますか？まだの場合は、一度反応箇所の濃度を、高濃度ガス識別検知器で改めて確認してみましょう。',
+    'カード_13A':      '都市ガスが起因の可能性が高いですね。危険性が高い状況です。',
+    'カード_滞留ガス':  '大変危険な状況です。警報器が鳴っている部屋に居住者はいましたか？いない場合は、管理人室に声掛けしてください。管理人がいない場合は、消防を要請しましょう。'
+  };
+  var body = replies[droppedId] || '報告ありがとうございます。';
+  return body;
 }
 
 /* ================================================================
@@ -22966,7 +22973,10 @@ function _buildReply(droppedId){
    ================================================================ */
 window._tmPressShobo = function(){
   if(!_shoboOk()) return;
-  try{ openBreakthrough('shobo'); }catch(e){}
+  try{
+    closeCommWindow();
+    setTimeout(function(){ openCommWindow('normal','shobo'); }, 200);
+  }catch(e){}
 };
 window._tmPressKeisatsu = function(){
   if(!_shoboOk()) return;
@@ -23197,6 +23207,331 @@ function _showModeOverlay(onCard,onText){
 })();
 
 })(); /* end IIFE */
+</script>
+
+<script id="patch-shobo-commwindow">
+/* ===== 消防 カード/テキストモード コミュニケーションウィンドウ ===== */
+(function(){
+'use strict';
+
+var _sbMode      = null;   // 'card' | 'text' | null
+var _sbModeShown = false;
+var _sbReported  = [];
+var _sbChatLog   = [];
+var _sbHandCache = [];
+var _sbDrag      = {active:false,el:null,cardId:null,ox:0,oy:0};
+var _sbKeyAwarded = false; // カード_鍵 授与済み
+
+function _owned(){ try{ return window.__getOwnedCardIds ? window.__getOwnedCardIds() : []; }catch(e){ return []; } }
+function _has(arr,v){ return arr.indexOf(v)>=0; }
+function _cardImg(id){
+  try{
+    if(window.__CARD_DEFS){ var d=window.__CARD_DEFS; for(var i=0;i<d.length;i++) if(d[i].id===id) return d[i].img; }
+    if(typeof getCardImg==='function') return getCardImg(id);
+  }catch(e){}
+  return '';
+}
+
+/* ---- アドバイス返信 ---- */
+function _sbAdvice(){
+  return 'まずは、ガス屋さんの出動状況（台数、人数など）を報告して下さい。また、現場の状況（ガスの反応やガス種、避難状況など）を報告していただけると助かります。もし、施錠されている部屋で危険がある場合は、報告いただければ消防で鍵の手配を行います。';
+}
+
+/* ---- カードドロップ返信 ---- */
+function _sbReply(cardId){
+  var replies={
+    'カード_反応箇所':      'ガスの反応がある状況ですね。',
+    'カード_広範囲':        '広範囲のガス流入が想定されますね。',
+    'カード_13A':           '都市ガスが起因の可能性が高いですね。',
+    'カード_滞留ガス':      '大変危険な状況であることが分かりました。ガス屋さんは排風の準備をお願いします。',
+    'カード_現場広報活動':  '消防にて近隣住民への広報活動を実施しております。',
+    'カード_要救助者の介護':'要救助者がいる可能性があります。救急隊を準備させます。',
+    'カード_避難指示':      '消防にて残りの住民の避難誘導を行います。'
+  };
+  return replies[cardId] || '報告ありがとうございます。';
+}
+
+/* ---- カード_鍵 授与チェック ---- */
+function _checkKeyAward(){
+  if(_sbKeyAwarded) return;
+  if(_has(_sbReported,'カード_滞留ガス') && _has(_sbReported,'カード_要救助者の介護')){
+    _sbKeyAwarded = true;
+    try{
+      if(typeof award==='function') award('カード_鍵');
+    }catch(e){}
+  }
+}
+
+/* ---- メッセージ追加 ---- */
+function _sbAddMsg(text, who){
+  var entry={text:text, who:who||'消防'};
+  _sbChatLog.push(entry);
+  var log=document.getElementById('_sb-chat-log');
+  if(log){
+    var d=document.createElement('div'); d.className='_tm-msg';
+    var w=document.createElement('div'); w.className='_tm-msg-who'; w.textContent=entry.who; d.appendChild(w);
+    var t=document.createElement('div'); t.textContent=text; d.appendChild(t);
+    log.appendChild(d);
+    log.scrollTop=log.scrollHeight;
+  }
+}
+
+/* ---- 報告済みカード表示更新 ---- */
+function _sbRenderReported(){
+  var row  = document.getElementById('_sb-rep-row');
+  var hint = document.getElementById('_sb-dz-hint');
+  if(!row) return;
+  row.innerHTML='';
+  if(_sbReported.length===0){ if(hint) hint.style.display=''; return; }
+  if(hint) hint.style.display='none';
+  _sbReported.forEach(function(id){
+    var imgUrl=_cardImg(id); var el;
+    if(imgUrl){
+      el=document.createElement('img');
+      el.className='_tm-rep-card'; el.src=imgUrl; el.alt=id; el.title=id;
+    } else {
+      el=document.createElement('div');
+      el.style.cssText='height:5.8vmin;padding:0.4vmin 1vmin;background:#fde8d8;border-radius:0.7vmin;font-size:1.2vmin;display:flex;align-items:center;';
+      el.textContent=id;
+    }
+    row.appendChild(el);
+  });
+}
+
+/* ---- ドラッグ添付 ---- */
+function _sbAttachDrag(el){
+  el.addEventListener('pointerdown',function(ev){
+    ev.preventDefault(); ev.stopPropagation();
+    var r=el.getBoundingClientRect();
+    _sbDrag.active=true; _sbDrag.el=el; _sbDrag.cardId=el.dataset.cardId;
+    _sbDrag.ox=ev.clientX-r.left; _sbDrag.oy=ev.clientY-r.top;
+    el.style.position='fixed';
+    el.style.left=r.left+'px'; el.style.top=r.top+'px';
+    el.style.width=r.width+'px'; el.style.height=r.height+'px';
+    el.style.zIndex='320000'; el.style.opacity='0.8';
+    el.style.pointerEvents='none'; el.style.transition='none';
+    var dz=document.getElementById('_sb-dz');
+    if(dz) dz.classList.add('drag-over');
+  },{passive:false});
+}
+
+if(!window.__sbDragInstalled){
+  window.__sbDragInstalled=true;
+  document.addEventListener('pointermove',function(e){
+    if(!_sbDrag.active||!_sbDrag.el) return;
+    e.preventDefault();
+    _sbDrag.el.style.left=(e.clientX-_sbDrag.ox)+'px';
+    _sbDrag.el.style.top=(e.clientY-_sbDrag.oy)+'px';
+  },{passive:false});
+  document.addEventListener('pointerup',function(e){
+    if(!_sbDrag.active||!_sbDrag.el) return;
+    var el=_sbDrag.el, cardId=_sbDrag.cardId;
+    var cx=e.clientX, cy=e.clientY;
+    var dz=document.getElementById('_sb-dz');
+    var dropped=false;
+    if(dz){
+      var dr=dz.getBoundingClientRect();
+      dropped=(cx>=dr.left&&cx<=dr.right&&cy>=dr.top&&cy<=dr.bottom);
+      dz.classList.remove('drag-over');
+    }
+    el.style.position=el.style.left=el.style.top=el.style.width=
+      el.style.height=el.style.zIndex=el.style.opacity=
+      el.style.pointerEvents=el.style.transition='';
+    _sbDrag.active=false; _sbDrag.el=null; _sbDrag.cardId=null;
+    if(dropped) _sbHandleCardDrop(cardId);
+  });
+  document.addEventListener('pointercancel',function(){
+    if(!_sbDrag.active||!_sbDrag.el) return;
+    var el=_sbDrag.el;
+    el.style.position=el.style.left=el.style.top=el.style.width=
+      el.style.height=el.style.zIndex=el.style.opacity=
+      el.style.pointerEvents=el.style.transition='';
+    var dz=document.getElementById('_sb-dz');
+    if(dz) dz.classList.remove('drag-over');
+    _sbDrag.active=false; _sbDrag.el=null; _sbDrag.cardId=null;
+  });
+}
+
+/* ---- カードドロップ処理 ---- */
+function _sbHandleCardDrop(cardId){
+  if(!cardId||_has(_sbReported,cardId)) return;
+  _sbReported.push(cardId);
+  window._sbCloseDrawer();
+  _sbRenderReported();
+  setTimeout(function(){ _sbAddMsg(_sbReply(cardId)); _checkKeyAward(); }, 400);
+}
+
+/* ---- ドロワー ---- */
+function _sbEnsureDrawer(){
+  if(document.getElementById('_sb-drawer')) return;
+  var panel=document.createElement('div');
+  panel.id='_sb-drawer';
+  panel.style.cssText='position:fixed;bottom:0;left:0;right:0;background:rgba(80,20,10,0.97);border-top:2px solid rgba(255,200,150,0.3);box-shadow:0 -6px 28px rgba(0,0,0,0.7);z-index:320000;display:none;flex-direction:column;padding:1.5vmin 2vmin;';
+  panel.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-bottom:0.5vmin;">'
+      +'<span style="font-size:2vmin;font-weight:bold;color:#fff;">所持カード一覧 — カードをドラッグしてください</span>'
+      +'<button style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;font-size:2.5vmin;cursor:pointer;color:#fff;padding:0.2vmin 0.8vmin;line-height:1;" onclick="window._sbCloseDrawer()">×</button>'
+    +'</div>'
+    +'<div id="_sb-drawer-row" style="display:flex;gap:2vmin;overflow-x:auto;flex:1;align-items:center;padding:1.5vmin 0.5vmin;min-height:calc(var(--bt-card-w,14vmin)*4/3 + 2vmin);"></div>';
+  document.body.appendChild(panel);
+}
+
+window._sbOpenDrawer = function(){
+  _sbEnsureDrawer();
+  var row=document.getElementById('_sb-drawer-row');
+  if(!row) return;
+  row.innerHTML='';
+  var ids=_owned();
+  if(ids.length===0){
+    var m=document.createElement('div');
+    m.style.cssText='font-size:1.8vmin;color:#aaa;padding:1vmin;';
+    m.textContent='（まだカードがありません）';
+    row.appendChild(m);
+  } else {
+    ids.forEach(function(id){
+      var card=document.createElement('div');
+      card.className='bt-card'; card.dataset.cardId=id;
+      var imgUrl=_cardImg(id);
+      if(imgUrl){
+        var img=document.createElement('img');
+        img.src=imgUrl; img.alt=id;
+        img.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;';
+        card.appendChild(img);
+      } else {
+        var lbl=document.createElement('div');
+        lbl.textContent=id;
+        lbl.style.cssText='font-size:1.2vmin;text-align:center;padding:0.5vmin;color:#fff;pointer-events:none;word-break:break-all;';
+        card.appendChild(lbl);
+      }
+      _sbAttachDrag(card);
+      row.appendChild(card);
+    });
+  }
+  var panel=document.getElementById('_sb-drawer');
+  if(panel){ panel.style.display='flex'; }
+};
+
+window._sbCloseDrawer = function(){
+  var panel=document.getElementById('_sb-drawer');
+  if(panel) panel.style.display='none';
+};
+
+/* ---- カードモードUI構築 ---- */
+function _sbBuildCardUI(){
+  var hist=document.getElementById('comm-history');
+  if(!hist) return;
+  hist.innerHTML='';
+  hist.style.overflow='hidden';
+  hist.style.padding='0.8vmin';
+
+  var ui=document.createElement('div');
+  ui.id='_sb-card-ui';
+  ui.style.cssText='display:flex;flex-direction:column;gap:0.8vmin;height:100%;box-sizing:border-box;overflow:hidden;';
+  ui.innerHTML=
+    '<div style="background:#fde8d8;border:1px solid #e9967a;border-radius:1vmin;padding:1vmin 1.5vmin;font-size:1.7vmin;color:#7a2000;font-weight:bold;flex-shrink:0;">「所持カード」ボタンを押してカードをドラッグしてください。</div>'
+   +'<div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-top:0.3vmin;">'
+     +'<span style="font-size:1.45vmin;color:#666;font-weight:bold;">報告済みのカード一覧</span>'
+     +'<button style="background:#c0392b;color:#fff;border:none;border-radius:0.8vmin;font-size:1.5vmin;font-weight:bold;cursor:pointer;padding:0.8vmin 1.4vmin;white-space:nowrap;" onclick="window._sbOpenDrawer()">所持カード ▲</button>'
+   +'</div>'
+   +'<div id="_sb-dz" style="border:0.35vmin dashed #e9967a;border-radius:1.2vmin;padding:0.7vmin;background:#fff8f5;flex-shrink:0;min-height:8vmin;">'
+     +'<div id="_sb-dz-hint" style="color:#e9967a;font-size:1.5vmin;text-align:center;padding:0.8vmin;">カードをここにドラッグ</div>'
+     +'<div id="_sb-rep-row" style="display:flex;gap:0.8vmin;overflow-x:auto;min-height:6vmin;align-items:center;"></div>'
+   +'</div>'
+   +'<div style="display:flex;gap:0.6vmin;flex-shrink:0;">'
+     +'<button style="flex:1;padding:1.1vmin 0.3vmin;border:none;border-radius:0.9vmin;font-size:1.5vmin;cursor:pointer;font-weight:bold;background:#c0392b;color:#fff;" onclick="window._sbPressAdvice()">アドバイスをもらう</button>'
+   +'</div>'
+   +'<div id="_sb-chat-log" style="flex:1;overflow-y:auto;border:1px solid #e0e0e0;border-radius:1vmin;padding:1vmin;background:#fff;display:flex;flex-direction:column;gap:0.8vmin;min-height:0;"></div>';
+
+  hist.appendChild(ui);
+
+  // フッター入力欄を無効化
+  var inp=document.getElementById('comm-input');
+  if(inp){ inp.disabled=true; inp.placeholder='カードモードでは入力できません'; inp.style.opacity='0.5'; }
+  var btn=document.querySelector('#comm-window .comm-send');
+  if(btn){ btn.disabled=true; btn.style.opacity='0.5'; }
+
+  // チャットログ再描画
+  var log=document.getElementById('_sb-chat-log');
+  if(log){
+    _sbChatLog.forEach(function(e){
+      var d=document.createElement('div'); d.className='_tm-msg';
+      var w=document.createElement('div'); w.className='_tm-msg-who'; w.textContent=e.who; d.appendChild(w);
+      var t=document.createElement('div'); t.textContent=e.text; d.appendChild(t);
+      log.appendChild(d);
+    });
+    log.scrollTop=log.scrollHeight;
+  }
+
+  if(_sbChatLog.length===0){
+    setTimeout(function(){ _sbAddMsg('「所持カード」ボタンを押してカードをドラッグしてください。'); }, 400);
+  }
+}
+
+window._sbPressAdvice = function(){
+  _sbAddMsg(_sbAdvice());
+};
+
+/* ---- モード選択オーバーレイ ---- */
+function _sbShowModeOverlay(onCard, onText){
+  var ov=document.createElement('div');
+  ov.id='_sb-overlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:310000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2.5vmin;';
+  ov.innerHTML=
+    '<div style="color:#fff;font-size:3vmin;font-weight:bold;text-shadow:0 2px 8px rgba(0,0,0,0.8);margin-bottom:1vmin;">消防への報告方法を選択してください</div>'
+   +'<button id="_sb-btn-card" style="background:#c0392b;color:#fff;border:none;border-radius:1.8vmin;padding:2.5vmin 4.5vmin;font-size:2.4vmin;cursor:pointer;font-weight:bold;box-shadow:0 4px 16px rgba(0,0,0,0.4);min-width:52vmin;text-align:center;line-height:1.7;">カードを使用して報告する<br><span style="font-size:70%;font-weight:normal;">（難易度：低）</span></button>'
+   +'<button id="_sb-btn-text" style="background:#455a64;color:#fff;border:none;border-radius:1.8vmin;padding:2.5vmin 4.5vmin;font-size:2.4vmin;cursor:pointer;font-weight:bold;box-shadow:0 4px 16px rgba(0,0,0,0.4);min-width:52vmin;text-align:center;line-height:1.7;">文章を入力して報告する<br><span style="font-size:70%;font-weight:normal;">（難易度：高）</span></button>';
+  document.body.appendChild(ov);
+  document.getElementById('_sb-btn-card').onclick=function(){ ov.remove(); onCard(); };
+  document.getElementById('_sb-btn-text').onclick=function(){ ov.remove(); onText(); };
+}
+
+/* ---- openCommWindow フック ---- */
+(function(){
+  var orig=window.openCommWindow;
+  if(typeof orig!=='function'||orig.__sbHooked) return;
+  window.openCommWindow=function(mode,partner){
+    orig.apply(this,arguments);
+    if(partner==='shobo'){
+      if(!_sbModeShown){
+        _sbModeShown=true;
+        setTimeout(function(){
+          _sbShowModeOverlay(
+            function(){ _sbMode='card'; _sbBuildCardUI(); },
+            function(){ _sbMode='text'; }
+          );
+        },150);
+      } else if(_sbMode==='card'){
+        _sbHandCache=[];
+        _sbBuildCardUI();
+      }
+    }
+  };
+  window.openCommWindow.__sbHooked=true;
+  if(orig.__tmHooked) window.openCommWindow.__tmHooked=true;
+  if(orig.__btWrapped) window.openCommWindow.__btWrapped=true;
+  if(orig.__hbHook) window.openCommWindow.__hbHook=true;
+})();
+
+/* ---- initGame フック: ゲーム開始時にリセット ---- */
+(function(){
+  var orig=window.initGame;
+  if(typeof orig!=='function'||orig.__sbResetHooked) return;
+  window.initGame=function(){
+    _sbMode=null; _sbModeShown=false; _sbReported=[]; _sbChatLog=[]; _sbHandCache=[];
+    _sbKeyAwarded=false;
+    try{ window._sbCloseDrawer(); }catch(e){}
+    var inp=document.getElementById('comm-input');
+    if(inp){ inp.disabled=false; inp.placeholder='聞きたいことを入力...'; inp.style.opacity=''; }
+    var btn=document.querySelector('#comm-window .comm-send');
+    if(btn){ btn.disabled=false; btn.style.opacity=''; }
+    var hist=document.getElementById('comm-history');
+    if(hist){ hist.innerHTML=''; hist.style.overflow=''; hist.style.padding=''; }
+    return orig.apply(this,arguments);
+  };
+  window.initGame.__sbResetHooked=true;
+})();
+
+})(); /* end shobo IIFE */
 </script>
 
 <script>
@@ -25989,6 +26324,9 @@ function closeClearStep1(){
                 var yk=document.getElementById('room-yakitori'); if(!yk) return;
                 if(getOtherEvidence()==='下水工事'){
                   yk.querySelectorAll('.talk-btn,.fan-switch-toggle').forEach(function(b){ b.style.display='none'; });
+                  // HUDの通話ボタンも非表示
+                  var hudTalkBtn=document.getElementById('talk-btn');
+                  if(hudTalkBtn) hudTalkBtn.style.display='none';
                 }
               }catch(e){}
             },100);
