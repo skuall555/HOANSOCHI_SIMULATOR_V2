@@ -3812,9 +3812,9 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       </div><div class="scenario-field" draggable="true" data-field="leak2">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="漏れ箇所２">反応箇所２箇所目<br>※１を見つけた後に出現する。</span></label>
         <select id="sc-leak2"><option value="なし">なし</option><option value="脱衣所">脱衣所</option><option value="浴室">浴室</option><option value="廊下">廊下</option><option value="1F共用部">1F共用部</option><option value="2F共用部">2F共用部</option><option value="台所">台所</option><option value="寝室">寝室</option><option value="前面道路">前面道路</option><option value="B1F共用部">B1F共用部</option><option value="焼き鳥屋天井">焼き鳥屋天井</option><option value="焼き鳥屋">焼き鳥屋</option><option value="ラーメン屋天井">ラーメン屋天井</option><option value="ラーメン屋">ラーメン屋</option></select>
-      </div><div class="scenario-field" draggable="true" data-field="alarm">
-        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="警報器鳴動時間">警報器鳴動までの時間<br>※１を見つけた後からカウント<br>※ただし、２の濃度測定後はこれに関係せず鳴動</span></label>
-        <select id="sc-alarm"><option value="なし">なし</option><option value="100">100</option><option value="200">200</option><option value="300">300</option><option value="400">400</option><option value="500">500</option><option value="600">600</option></select>
+      </div><div class="scenario-field" draggable="true" data-field="alarmTrigger">
+        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="警報器の鳴動条件">警報器の鳴動条件</span></label>
+        <select id="sc-alarm-trigger"><option value="鳴動しない">鳴動しない</option><option value="1箇所目の反応を見つける">１箇所目の反応を見つける</option><option value="2箇所目の反応を見つける">２箇所目の反応を見つける</option><option value="開始時点で鳴っている">開始時点で鳴っている</option><option value="開始から100秒経過">開始から１００秒経過</option><option value="開始から200秒経過">開始から２００秒経過</option></select>
       </div><div class="scenario-field" draggable="true" data-field="line1">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="通報者セリフ１">＜通報内容＞<br>通報者セリフ１<br>‐なぜ通報したか</span></label>
         <textarea id="sc-line1" placeholder="テキスト入力" style="height: 266px;"></textarea>
@@ -5631,11 +5631,11 @@ var el = document.getElementById('meter-art-'+id);
 if(!el){ const meters = document.querySelectorAll('.gas-meter-art'); el = meters[id-1]; }
 if(!el) return;
 if(meterStatus[id]) {
-if(customData['meter_closed']) el.innerHTML = `<img src="${customData['meter_closed']}" style="width:100%; height:100%; object-fit:contain;">`;
-else el.innerHTML = '<svg viewBox="0 0 100 100"><rect x="20" y="30" width="60" height="50" fill="#999" stroke="#333"/><path d="M20,30 L80,80 M80,30 L20,80" stroke="red" stroke-width="5"/></svg>';
+var _mcu=customData['meter_closed']||'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AC%E3%82%B9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%BC%E9%96%89%E6%AD%A2.png';
+el.innerHTML = '<img src="'+_mcu+'" style="width:100%; height:100%; object-fit:contain;">';
 } else {
-if(customData['meter']) el.innerHTML = `<img src="${customData['meter']}" style="width:100%; height:100%; object-fit:contain;">`;
-else el.innerHTML = '<svg viewBox="0 0 100 100"><rect x="20" y="30" width="60" height="50" fill="#eee" stroke="#333"/><circle cx="50" cy="45" r="10" fill="#fff" stroke="#333"/><rect x="40" y="60" width="20" height="10" fill="#fff" stroke="#333"/><path d="M50,30 L50,10 L20,10 L20,90" fill="none" stroke="#555" stroke-width="5"/></svg>';
+var _mou=customData['meter']||'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AC%E3%82%B9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%BC.png';
+el.innerHTML = '<img src="'+_mou+'" style="width:100%; height:100%; object-fit:contain;">';
 }
 
   try{ if(typeof _pressureOk!=='undefined' && _pressureOk[id]){ _showPressureOK(id); } else if(typeof _pressureNg!=='undefined' && _pressureNg[id]){ _showPressureNG(id); } }catch(e){}
@@ -7151,10 +7151,10 @@ function updateHUD(){
 function spawnNPC(){
 document.querySelectorAll('.npc').forEach(e => e.remove());
 let el = document.createElement('div'); el.className='npc';
-el.innerHTML = '<div class="npc-visual">🚶</div>';
+var _npcUrl = customData['npc'] || 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%AD%A9%E8%A1%8C%E8%80%85_2.gif';
+el.innerHTML = '<div class="npc-visual"><img src="'+_npcUrl+'" style="width:100%;height:100%;object-fit:contain;"></div>';
 document.getElementById('room-street').appendChild(el);
 state.npcs = [{el:el, x:120}];
-if(customData['npc']) el.querySelector('.npc-visual').innerHTML = `<img src="${customData['npc']}" style="width:100%; height:100%; object-fit:contain;">`;
 function _npcClickHandler(){
   try{
     var g=document.getElementById('scene-game');
@@ -8406,7 +8406,7 @@ function openScenarioEdit(idx){
   try{ var gk=document.getElementById('sc-gas-kind'); if(gk) gk.value = s.gasKind?String(s.gasKind):'13A'; }catch(e){}
   document.getElementById('sc-leak1').value=s.leak1?String(s.leak1):'脱衣所';
   document.getElementById('sc-leak2').value=s.leak2?String(s.leak2):'脱衣所';
-  document.getElementById('sc-alarm').value=s.alarm?String(s.alarm):'なし';
+  try{ document.getElementById('sc-alarm-trigger').value=s.alarmTrigger?String(s.alarmTrigger):'鳴動しない'; }catch(e){}
   try{ document.getElementById('sc-alarm-entry').value=s.alarmEntry?String(s.alarmEntry):'なし'; }catch(e){}
 
   try{ document.getElementById('sc-reporter-room').value = s.reporterRoomNo?String(s.reporterRoomNo): (s.reporterRoom?String(s.reporterRoom):'101'); }catch(e){}
@@ -8540,7 +8540,7 @@ function saveScenario(){
     weatherAfter: (function(){ try{ var el=document.getElementById('sc-weather-after'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     leak1: document.getElementById('sc-leak1').value || '脱衣所',
     leak2: document.getElementById('sc-leak2').value || '脱衣所',
-    alarm: document.getElementById('sc-alarm').value || 'なし',
+    alarmTrigger: document.getElementById('sc-alarm-trigger')?.value || '鳴動しない',
     alarmEntry: (function(){ try{ return document.getElementById('sc-alarm-entry').value || 'なし'; }catch(e){ return 'なし'; } })(),
     reporterRoomNo: (function(){ try{ var el=document.getElementById('sc-reporter-room'); return (el&&el.value)?el.value:'101'; }catch(e){ return '101'; } })(),
     residentBRoomNo: (function(){ try{ var el=document.getElementById('sc-b-room'); return (el&&el.value)?el.value:'102'; }catch(e){ return '102'; } })(),
@@ -8993,8 +8993,14 @@ function initScenarioGameplay(){
   hotspot2=null;
     try{ if(_cityGasAlarmTimerId) clearTimeout(_cityGasAlarmTimerId); }catch(e){}
   try{
-    var sec=_getScenarioAlarmSeconds();
-    if(sec){ _cityGasAlarmTimerId=setTimeout(function(){ startCityGasAlarm('time'); }, sec*1000); }
+    var _at = activeScenario ? String(activeScenario.alarmTrigger||'鳴動しない') : '鳴動しない';
+    if(_at==='開始時点で鳴っている'){
+      setTimeout(function(){ startCityGasAlarm('start'); }, 500);
+    } else if(_at==='開始から100秒経過'){
+      _cityGasAlarmTimerId=setTimeout(function(){ startCityGasAlarm('time100'); }, 100000);
+    } else if(_at==='開始から200秒経過'){
+      _cityGasAlarmTimerId=setTimeout(function(){ startCityGasAlarm('time200'); }, 200000);
+    }
   }catch(e2){}
 
 }
@@ -10252,8 +10258,6 @@ try{ document.getElementById('detector-tool').style.display='block'; }catch(e){}
           // クリック時のみメッセージを表示（ホバー時は表示しない）
           if(canBeep){ showGasResultBox(msg, (gas.indexOf('13A')!==-1)); }
 
-                    try{ if(hit===2){ var _alm=(typeof activeScenario!=='undefined'&&activeScenario)?String(activeScenario.alarm||'なし'):'なし'; if(_alm!=='なし') startCityGasAlarm('hs2'); } }catch(e){}
-
           if(canBeep){
             var now=Date.now();
             // 識別モードは共通のビープ間隔でOK
@@ -10279,6 +10283,11 @@ try{ document.getElementById('detector-tool').style.display='block'; }catch(e){}
             if(!hs1Discovered){
               hs1Discovered=true;
               hs1FoundAt=Date.now();
+              // 警報器の鳴動条件：１箇所目の反応を見つける
+              try{
+                var _at1 = activeScenario ? String(activeScenario.alarmTrigger||'鳴動しない') : '鳴動しない';
+                if(_at1==='1箇所目の反応を見つける') startCityGasAlarm('hs1');
+              }catch(e_at1){}
               // hs2生成（初回のみ）
               try{ if(activeScenario && activeScenario.leak2 && String(activeScenario.leak2)!=='なし'){ hotspot2=buildHotspot2(activeScenario.leak2,2); } else { hotspot2=null; } ensureHotspotDiv('hs2'); }catch(e2){}
               // 時間経過後の天候変化（反応箇所１発見時にトリガー）
@@ -10315,6 +10324,11 @@ try{ document.getElementById('detector-tool').style.display='block'; }catch(e){}
               hs2FoundAt=Date.now();
               // ★要望：反応箇所2は常に高い → 発見時点で1より1%高く
               hs2BaseAtFound = Math.min(30, getLel1() + 1);
+              // 警報器の鳴動条件：２箇所目の反応を見つける
+              try{
+                var _at2 = activeScenario ? String(activeScenario.alarmTrigger||'鳴動しない') : '鳴動しない';
+                if(_at2==='2箇所目の反応を見つける') startCityGasAlarm('hs2');
+              }catch(e_at2){}
             }
             if(canBeep){
               var now2=Date.now();
@@ -12294,7 +12308,7 @@ function _applyScenarioToForm(s){
   try{ var wa=document.getElementById('sc-weather-after'); if(wa) wa.value = s.weatherAfter?String(s.weatherAfter):'なし'; }catch(e){}
   document.getElementById('sc-leak1').value=s.leak1?String(s.leak1):'脱衣所';
   document.getElementById('sc-leak2').value=s.leak2?String(s.leak2):'浴室';
-  document.getElementById('sc-alarm').value=s.alarm?String(s.alarm):'なし';
+  try{ document.getElementById('sc-alarm-trigger').value=s.alarmTrigger?String(s.alarmTrigger):'鳴動しない'; }catch(e){}
   try{ document.getElementById('sc-alarm-entry').value=s.alarmEntry?String(s.alarmEntry):'なし'; }catch(e){}
 
   try{ document.getElementById('sc-reporter-room').value = s.reporterRoomNo?String(s.reporterRoomNo): (s.reporterRoom?String(s.reporterRoom):'101'); }catch(e){}
@@ -12336,7 +12350,7 @@ function _collectScenarioFromForm(){
     weatherAfter: (function(){ try{ var el=document.getElementById('sc-weather-after'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     leak1: document.getElementById('sc-leak1')?.value || '脱衣所',
     leak2: document.getElementById('sc-leak2')?.value || '脱衣所',
-    alarm: document.getElementById('sc-alarm')?.value || 'なし',
+    alarmTrigger: document.getElementById('sc-alarm-trigger')?.value || '鳴動しない',
     alarmEntry: (function(){ try{ return document.getElementById('sc-alarm-entry')?.value || 'なし'; }catch(e){ return 'なし'; } })(),
     reporterRoomNo: (function(){ try{ var el=document.getElementById('sc-reporter-room'); return (el&&el.value)?el.value:'101'; }catch(e){ return '101'; } })(),
     residentBRoomNo: (function(){ try{ var el=document.getElementById('sc-b-room'); return (el&&el.value)?el.value:'102'; }catch(e){ return '102'; } })(),
