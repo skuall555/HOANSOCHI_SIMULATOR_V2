@@ -14,8 +14,8 @@
 <style>
 
 body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; display: flex; align-items: center; justify-content: center; font-family: 'MS Gothic', 'Meiryo', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; }
-#app-container { position: relative; aspect-ratio: 16 / 9; width: 100vw; height: auto; max-width: 177.78vh; max-height: 100vh; background: #333; overflow: hidden; box-shadow: 0 0 0 2px #111; font-size: 2vw; }
-@media (min-aspect-ratio: 16/9) { #app-container { font-size: 3.55vh; } }
+#app-container { position: relative; aspect-ratio: 16 / 9; width: 100vw; height: auto; max-width: min(177.78vh, 1280px); max-height: min(100vh, 720px); background: #333; overflow: hidden; box-shadow: 0 0 0 2px #111; font-size: min(2vw, 25.6px); }
+@media (min-aspect-ratio: 16/9) { #app-container { font-size: min(3.55vh, 25.56px); } }
 
 /* ===== スマホ縦画面対応 =====
    縦持ち時はゲームを90度回転してランドスケープ表示 */
@@ -321,101 +321,90 @@ border: none; border-radius: 1vmin; font-size: 2.5vmin; cursor: pointer;
 @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -2px); } 100% { transform: translate(1px, 2px); } }
 
 /* Title & Menu */
-#scene-title { 
-    background: linear-gradient(to bottom, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
-    background-image: 
-        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.05) 2px, rgba(0,0,0,.05) 4px),
-        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.05) 2px, rgba(0,0,0,.05) 4px),
-        linear-gradient(to bottom, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+#scene-title {
+    background: linear-gradient(160deg, #060d1a 0%, #0b1a30 50%, #071220 100%);
 }
-.title-text { 
-    position: absolute; 
-    top: 15%; 
-    width: 100%; 
-    text-align: center; 
-    font-size: 200%; 
-    font-weight: 900; 
-    color: #fff; 
-    text-shadow: 
-        3px 3px 0px #000,
-        -1px -1px 0px #5a5a5a,
-        2px 2px 0px rgba(0,0,0,0.8);
-    font-family: 'Press Start 2P', 'MS Gothic', 'Meiryo', sans-serif;
-    letter-spacing: 0.1em;
+.title-text {
+    position: absolute;
+    top: 16%;
+    width: 100%;
+    text-align: center;
+    font-size: 4.8vmin;
+    font-weight: 900;
+    color: #e8f4ff;
+    text-shadow: 0 0 4vmin rgba(56,189,248,0.45), 0 0.15vmin 0.6vmin rgba(0,0,0,0.9);
+    font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+    letter-spacing: 0.18em;
+    animation: title-glow 3s ease-in-out infinite alternate;
+}
+@keyframes title-glow {
+    0%   { text-shadow: 0 0 3vmin rgba(56,189,248,0.3), 0 0.15vmin 0.6vmin rgba(0,0,0,0.9); }
+    100% { text-shadow: 0 0 5vmin rgba(56,189,248,0.6), 0 0.15vmin 0.6vmin rgba(0,0,0,0.9); }
 }
 .tap-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 50; }
-.tap-msg { 
-    font-size: 100%; 
-    color: #ffff00; 
-    font-weight: bold; 
-    animation: minecraft-pulse 1s infinite alternate; 
-    background: rgba(0,0,0,0.7); 
-    padding: 1.5vmin 5vmin; 
-    border-radius: 0.5vmin; 
-    border: 0.3vmin solid #555;
-    box-shadow: inset 0 -0.3vmin 0 rgba(0,0,0,0.5), 0 0.3vmin 0 rgba(255,255,255,0.2);
+.tap-msg {
+    font-size: 2vmin;
+    color: #93c5fd;
+    font-weight: 700;
+    animation: tap-fade 1.8s ease-in-out infinite;
+    background: rgba(14,30,60,0.75);
+    padding: 1.5vmin 6vmin;
+    border-radius: 4vmin;
+    border: 0.15vmin solid rgba(147,197,253,0.35);
+    box-shadow: 0 0 2.5vmin rgba(56,189,248,0.18), inset 0 0 1.5vmin rgba(56,189,248,0.06);
     pointer-events: none;
-    font-family: 'Press Start 2P', 'MS Gothic', 'Meiryo', sans-serif;
+    font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
 }
-@keyframes minecraft-pulse {
-    0% { transform: scale(1); opacity: 0.8; }
-    100% { transform: scale(1.05); opacity: 1; }
+@keyframes tap-fade {
+    0%, 100% { opacity: 0.55; }
+    50%       { opacity: 1; }
 }
 .title-ui { position: absolute; bottom: 5%; right: 5%; z-index: 60; display: flex; gap: 2vmin; }
 .file-input-hidden { display: none; }
 
-.menu-panel { 
-    width: 50%; 
-    background: #c6c6c6; 
-    background-image: 
-        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px),
-        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
-    padding: 4%; 
-    border-radius: 0.5vmin; 
-    text-align: center; 
-    border: 0.5vmin solid #000; 
-    box-shadow: 
-        inset 0 0.3vmin 0 rgba(255,255,255,0.3),
-        inset 0 -0.3vmin 0 rgba(0,0,0,0.3),
-        0 1vmin 3vmin rgba(0,0,0,0.5); 
-    pointer-events: auto; 
-}
-.menu-btn { 
-    display: block; 
-    width: 100%; 
-    padding: 2vmin; 
-    margin: 1.5vmin 0; 
-    background: linear-gradient(to bottom, #7cb342 0%, #558b2f 50%, #33691e 100%); 
-    color: white; 
-    border: 0.3vmin solid #000; 
-    font-size: 70%; 
-    border-radius: 0.3vmin; 
-    cursor: pointer; 
+.menu-panel {
+    width: 50%;
+    background: rgba(8,18,36,0.88);
+    padding: 4%;
+    border-radius: 1.8vmin;
+    text-align: center;
+    border: 0.12vmin solid rgba(148,215,255,0.2);
+    box-shadow: 0 2vmin 6vmin rgba(0,0,0,0.75), 0 0 4vmin rgba(56,189,248,0.08);
     pointer-events: auto;
-    box-shadow: 
-        inset 0 0.2vmin 0 rgba(255,255,255,0.3),
-        inset 0 -0.2vmin 0 rgba(0,0,0,0.5),
-        0 0.3vmin 0 rgba(0,0,0,0.5);
-    font-family: 'MS Gothic', 'Meiryo', sans-serif;
-    font-weight: bold;
-    text-shadow: 2px 2px 0px rgba(0,0,0,0.5);
-    transition: all 0.1s;
+}
+.menu-btn {
+    display: block;
+    width: 100%;
+    padding: 1.8vmin 2vmin;
+    margin: 1.2vmin 0;
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    color: #e8f4ff;
+    border: 0.12vmin solid rgba(148,215,255,0.25);
+    font-size: 2vmin;
+    border-radius: 0.9vmin;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 0.3vmin 1.2vmin rgba(0,0,0,0.45), inset 0 0.1vmin 0 rgba(255,255,255,0.1);
+    font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
 }
 .menu-btn:hover {
-    background: linear-gradient(to bottom, #8bc34a 0%, #689f38 50%, #43a047 100%);
-    transform: translateY(-0.1vmin);
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    box-shadow: 0 0.4vmin 2vmin rgba(56,189,248,0.28), inset 0 0.1vmin 0 rgba(255,255,255,0.12);
+    transform: translateY(-0.15vmin);
 }
 .menu-btn:active {
-    background: linear-gradient(to bottom, #6a9c33 0%, #4a7a21 50%, #2a5a0e 100%);
-    transform: translateY(0.2vmin);
-    box-shadow: 
-        inset 0 0.2vmin 0 rgba(0,0,0,0.5),
-        inset 0 -0.2vmin 0 rgba(255,255,255,0.1),
-        0 0.1vmin 0 rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e3a8a 100%);
+    transform: translateY(0.1vmin);
+    box-shadow: 0 0.1vmin 0.5vmin rgba(0,0,0,0.4);
 }
-.menu-btn.sec { background: linear-gradient(to bottom, #757575 0%, #616161 50%, #424242 100%); } 
-.menu-btn.sec:hover { background: linear-gradient(to bottom, #858585 0%, #717171 50%, #525252 100%); }
-.menu-btn.sec:active { background: linear-gradient(to bottom, #656565 0%, #515151 50%, #323232 100%); }
+.menu-btn.sec { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-color: rgba(148,215,255,0.15); }
+.menu-btn.sec:hover { background: linear-gradient(135deg, #263348 0%, #1a2540 100%); box-shadow: 0 0.3vmin 1.2vmin rgba(0,0,0,0.4); transform: translateY(-0.15vmin); }
+.menu-btn.sec:active { background: linear-gradient(135deg, #0f172a 0%, #060d1a 100%); transform: translateY(0.1vmin); }
 .menu-btn.warn { background: linear-gradient(to bottom, #e53935 0%, #c62828 50%, #b71c1c 100%); } 
 .menu-btn.warn:hover { background: linear-gradient(to bottom, #ef5350 0%, #d32f2f 50%, #c62828 100%); }
 .menu-btn.warn:active { background: linear-gradient(to bottom, #d32f2f 0%, #b71c1c 50%, #a00000 100%); }
@@ -3193,6 +3182,46 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 </style>
 
 <script>
+// === 720p固定ウィンドウで起動 ===
+(function() {
+  var GAME_W = 1280, GAME_H = 720;
+  var POPUP_NAME = 'hoansochi_game_window';
+  // すでにポップアップウィンドウ内なら何もしない
+  if (window.name === POPUP_NAME) return;
+  // ポップアップを開く
+  var popup = window.open(
+    window.location.href,
+    POPUP_NAME,
+    'width=' + GAME_W + ',height=' + GAME_H +
+    ',left=100,top=100,toolbar=no,menubar=no,scrollbars=no,resizable=yes,location=no,status=no'
+  );
+  if (popup) {
+    // 元のタブ/ウィンドウは案内画面に差し替え
+    document.open();
+    document.write([
+      '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">',
+      '<title>HOANSOCHI SIMULATOR</title>',
+      '<style>',
+      'body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;',
+      'height:100vh;font-family:sans-serif;color:#fff;text-align:center;}',
+      '.box{padding:2em;}h1{font-size:1.4em;margin-bottom:1em;}',
+      'button{padding:.7em 2em;font-size:1em;background:#225;color:#fff;border:1px solid #88f;',
+      'border-radius:6px;cursor:pointer;}button:hover{background:#448;}',
+      '</style></head><body><div class="box">',
+      '<h1>&#x1F3AE; ゲームを新しいウィンドウで開きました</h1>',
+      '<p>ポップアップウィンドウでプレイしてください。</p>',
+      '<button onclick="var p=window.open(\''+window.location.href+'\',\''+POPUP_NAME+'\',',
+      '\'width='+GAME_W+',height='+GAME_H+',left=100,top=100,toolbar=no,menubar=no,scrollbars=no,resizable=yes,location=no,status=no\');',
+      'if(p){p.focus();}">再度開く / 前面に出す</button>',
+      '</div></body></html>'
+    ].join(''));
+    document.close();
+  }
+  // popup が null = ブロックされた場合はそのまま表示（通常モードでプレイ可能）
+})();
+</script>
+
+<script>
 // === BOOTSTRAP: 読み込み途中でも先に押されて未定義エラーにならないように
 (function(){
   window.__appReady = false;
@@ -3245,11 +3274,13 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div id="app-container">
 
 <div id="scene-title" class="screen active">
-<img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E8%A1%A8%E7%B4%99.gif" alt="" style="position:absolute;top:50%;left:0;width:100%;transform:translateY(-50%);pointer-events:none;display:block;z-index:0;">
-<button id="btn-fullscreen" class="hud-btn fs-btn" onclick="toggleFullscreen(event)">⛶ 全画面</button>
-<button id="debug-toggle" onclick="toggleDebugMode(event)">🔧 DEBUG</button>
-<div class="title-text">保安措置シミュレーター</div>
-<div class="tap-area" onclick="startApp()"><div class="tap-msg">TAP TO START</div></div>
+<img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E8%A1%A8%E7%B4%99.gif" alt="" style="position:absolute;top:50%;left:0;width:100%;transform:translateY(-50%);pointer-events:none;display:block;z-index:0;opacity:0.55;">
+<div style="position:absolute;inset:0;background:linear-gradient(160deg,rgba(6,13,26,0.55) 0%,rgba(11,26,48,0.45) 100%);z-index:1;pointer-events:none;"></div>
+<button id="btn-fullscreen" class="hud-btn fs-btn" onclick="toggleFullscreen(event)" style="z-index:10;">⛶ 全画面</button>
+<button id="debug-toggle" onclick="toggleDebugMode(event)" style="z-index:10;">🔧 DEBUG</button>
+<div class="title-text" style="z-index:5;">保安措置シミュレーター</div>
+<div style="position:absolute;top:28%;width:100%;text-align:center;font-size:1.7vmin;color:rgba(147,197,253,0.7);letter-spacing:0.3em;font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;text-transform:uppercase;z-index:5;pointer-events:none;">Gas Network Safety Simulation</div>
+<div class="tap-area" onclick="startApp()" style="z-index:50;"><div class="tap-msg">PRESS START</div></div>
 <div class="title-ui">
 <input type="file" id="import-file" class="file-input-hidden" accept=".html" onchange="handleImport(this)">
 <button class="hud-btn" style="background:#2e7d32; font-weight:bold; font-size:60%; padding:2%;" onclick="event.stopPropagation(); showScenarioList();">📝 シナリオ設定</button>
@@ -3259,9 +3290,12 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 
 <div id="scene-menu" class="overlay-screen">
 <div class="menu-panel">
-<h2 style="color:#000; margin:0 0 5% 0; font-family: 'Press Start 2P', 'MS Gothic', 'Meiryo', sans-serif; text-shadow: 2px 2px 0px rgba(255,255,255,0.3);">メニュー</h2>
-<button class="menu-btn" onclick="startGame()">シミュレーション</button>
-<button class="menu-btn" style="background:linear-gradient(to bottom,#f57c00 0%,#e65100 100%);margin-top:1.5vmin;" onclick="showTutorialSelect()">🎓 チュートリアル</button>
+<div style="margin:0 0 3.5% 0;padding-bottom:2.5%;border-bottom:0.1vmin solid rgba(148,215,255,0.15);">
+  <div style="font-size:2.8vmin;font-weight:900;color:#e8f4ff;letter-spacing:0.12em;font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;">保安措置シミュレーター</div>
+  <div style="font-size:1.4vmin;color:rgba(147,197,253,0.6);letter-spacing:0.2em;margin-top:0.5vmin;text-transform:uppercase;">Main Menu</div>
+</div>
+<button class="menu-btn" style="background:linear-gradient(135deg,#0369a1 0%,#0ea5e9 100%);font-size:2.2vmin;padding:2.2vmin;box-shadow:0 0.4vmin 2vmin rgba(14,165,233,0.4),inset 0 0.1vmin 0 rgba(255,255,255,0.15);" onclick="startGame()">▶ シミュレーション開始</button>
+<button class="menu-btn" style="background:linear-gradient(135deg,#92400e 0%,#b45309 100%);margin-top:0.5vmin;" onclick="showTutorialSelect()">🎓 チュートリアル</button>
 <button class="menu-btn sec" onclick="showScenarioList()">📝 シナリオ設定</button>
 <button class="menu-btn sec" onclick="openHistory()">📈 履歴/統計</button>
 <button class="menu-btn sec" onclick="openSaveDataManager()">💾 セーブデータ管理</button>
@@ -3389,25 +3423,31 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div id="clear-inner" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
 
   <!-- Step 1: 漏洩系統問題画面 -->
-  <div id="clear-step1" style="background:rgba(0,0,0,0.88);border-radius:2vmin;padding:4vmin;max-width:80vw;width:80vmin;color:#fff;text-align:center;display:block;">
-    <div style="font-size:3.5vmin;font-weight:bold;margin-bottom:3vmin;color:#4fc3f7;">🔍 保安措置が完了しました</div>
-    <div style="font-size:2.5vmin;margin-bottom:3vmin;line-height:1.7;background:rgba(255,255,255,0.08);border-radius:1vmin;padding:2vmin;">
-      Q. 今回の調査の結果、あなたが判断した<br><strong style="color:#ffd54f;">漏洩系統</strong>を選択してください。
+  <div id="clear-step1" style="background:rgba(0,0,0,0.92);border-radius:2vmin;padding:3.5vmin;max-width:92vw;width:96vmin;color:#fff;text-align:center;display:block;position:relative;">
+    <!-- 閉じるボタン（ゲームに戻る） -->
+    <button onclick="closeClearStep1()" title="ゲームに戻る" style="position:absolute;top:0.8vmin;right:0.8vmin;width:4.5vmin;height:4.5vmin;background:#c62828;color:#fff;border:0.3vmin solid #fff;border-radius:0.5vmin;font-size:3vmin;font-weight:bold;cursor:pointer;line-height:1;z-index:10;">×</button>
+
+    <div style="font-size:3.2vmin;font-weight:bold;margin-bottom:1.5vmin;color:#4fc3f7;">🔍 保安措置が完了しました</div>
+    <div style="font-size:2.2vmin;margin-bottom:1.5vmin;line-height:1.7;background:rgba(255,255,255,0.08);border-radius:1vmin;padding:1.5vmin;">
+      Q. 今回の調査の結果、あなたが判断した<br><strong style="color:#ffd54f;">漏洩系統</strong>を選択してください。<br>
+      <span style="font-size:80%;color:#90caf9;">※証拠カードをドロップゾーンへドラッグして選択肢を追加できます。</span>
     </div>
-    <select id="clear-answer-select" style="width:100%;padding:1.5vmin;font-size:2.5vmin;border-radius:1vmin;border:0.3vmin solid #4fc3f7;background:#1a2a3a;color:#fff;margin-bottom:3vmin;box-sizing:border-box;">
+
+    <!-- カードドロップゾーン -->
+    <div id="lk-dropzone" style="border:0.3vmin dashed #4fc3f7;border-radius:1vmin;min-height:7.5vmin;padding:1vmin;margin-bottom:1.2vmin;display:flex;flex-wrap:wrap;gap:1vmin;align-items:center;justify-content:center;color:#90caf9;font-size:2vmin;transition:background 0.2s;">
+      <span id="lk-dropzone-hint">証拠カードをここへドラッグ</span>
+    </div>
+
+    <select id="clear-answer-select" style="width:100%;padding:1.5vmin;font-size:2.5vmin;border-radius:1vmin;border:0.3vmin solid #4fc3f7;background:#1a2a3a;color:#fff;margin-bottom:1.5vmin;box-sizing:border-box;">
       <option value="">-- 選択してください --</option>
-      <option value="101号室灯内内管">101号室灯内内管</option>
-      <option value="102号室灯内内管">102号室灯内内管</option>
-      <option value="201号室灯内内管">201号室灯内内管</option>
-      <option value="202号室灯内内管">202号室灯内内管</option>
-      <option value="ラーメン屋灯内内管">ラーメン屋灯内内管</option>
-      <option value="焼き鳥屋灯内内管">焼き鳥屋灯内内管</option>
-      <option value="集合住宅灯外内管">集合住宅灯外内管</option>
-      <option value="道路上のガス管">道路上のガス管</option>
-      <option value="都市ガス以外">都市ガス以外</option>
-      <option value="異常なし">異常なし</option>
     </select>
-    <button onclick="submitClearAnswer()" style="width:60%;padding:2vmin;background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:1.5vmin;font-size:2.8vmin;font-weight:bold;cursor:pointer;box-shadow:0 0.5vmin 1.5vmin rgba(30,136,229,0.5);">回答する ▶</button>
+    <button onclick="submitClearAnswer()" style="width:60%;padding:2vmin;background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:1.5vmin;font-size:2.8vmin;font-weight:bold;cursor:pointer;box-shadow:0 0.5vmin 1.5vmin rgba(30,136,229,0.5);margin-bottom:1.5vmin;">回答する ▶</button>
+
+    <!-- 所持カード手札 -->
+    <div style="font-size:1.8vmin;color:#90caf9;margin-bottom:0.5vmin;text-align:left;">所持カード（ドラッグして証拠提出）</div>
+    <div id="lk-hand" style="border:0.2vmin solid #2a4a6a;border-radius:1vmin;min-height:8vmin;padding:0.8vmin;overflow-x:auto;display:flex;gap:1vmin;align-items:center;justify-content:flex-start;-webkit-overflow-scrolling:touch;">
+      <div id="lk-hand-inner" style="display:flex;gap:1vmin;align-items:center;min-width:max-content;"></div>
+    </div>
   </div>
 
   <!-- Step 2: 結果・レーダーチャート画面 -->
@@ -3659,7 +3699,8 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
     <p class="scenario-help">No.1〜No.100 のシナリオ名と編集画面を管理します。</p>
     <div style="margin-bottom: 2vmin;">
       <button class="menu-btn" style="background:#0056b3; margin-right: 1vmin;" onclick="loadScenariosFromFile()">📂 シナリオ読み込み</button>
-      <span style="font-size: 70%; color:#666;">※別のHTMLファイルからシナリオを読み込みます</span>
+      <button class="menu-btn save" style="margin-right: 1vmin;" onclick="saveSettingsFile()">💾 設定を保存</button>
+      <span style="font-size: 70%; color:#666;">※設定を保存して別端末でも使えます</span>
     </div>
     <div style="margin-bottom: 2vmin; display:flex; align-items:center; gap:1vmin;">
       <label style="font-weight:bold; color:#003366;">難易度フィルター：</label>
@@ -3834,11 +3875,16 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
           <option value="集合住宅">集合住宅</option>
         </select>
       </div>
-      <div class="scenario-field scenario-field-apt" draggable="true" data-field="cassetteBombe">
-        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="カセットボンベ発見">カセットボンベ発見</span></label>
-        <select id="sc-cassette-bombe">
+      <div class="scenario-field scenario-field-apt" draggable="true" data-field="otherEvidence">
+        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="都市ガス以外の証拠">都市ガス以外の証拠</span></label>
+        <select id="sc-other-evidence">
           <option value="なし">なし</option>
-          <option value="あり">あり</option>
+          <option value="カセットボンベ">カセットボンベ</option>
+          <option value="スプレー缶">スプレー缶</option>
+          <option value="濡れ雑巾">濡れ雑巾</option>
+          <option value="電子機器のおもちゃ">電子機器のおもちゃ</option>
+          <option value="冷蔵庫アラート">冷蔵庫アラート</option>
+          <option value="下水工事">下水工事</option>
         </select>
       </div>
       <div class="scenario-category-header" style="background: rgb(62, 38, 0); color: rgb(255, 224, 178);">＜カテゴリー：工場＞</div>
@@ -3905,7 +3951,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   <div style="font-size:70%; color:#555; margin-top:0.5vmin;">※選択したNo.の設定をこの編集画面に読み込みます（まだ保存されません）。</div>
 </div>
 <div style="display:flex; gap:1vmin; margin-top:1.5vmin;">
-  <button class="menu-btn" style="flex:1; background:#2e7d32;" onclick="playScenarioWithoutOverwrite()">この設定で遊ぶ（上書きなし）</button>
+  <button class="menu-btn" style="flex:1; background:#2e7d32;" onclick="playScenarioWithoutOverwrite()">シナリオをテストプレイする</button>
 </div>
 
 <button class="menu-btn save" onclick="saveScenario()">保存</button>
@@ -4983,6 +5029,13 @@ else dangerRate = 1.0;
 // 安全率の初期化
 safetyValue = 0;
 window._noGasBonusDoors = new Set();
+window._doorScanDone = new Set(); // 廻り検知・滞留ガス確認の実施済み管理
+// 圧力オーバーレイリセット
+try{
+  if(typeof _pressureOk!=='undefined'){ _pressureOk=[false,false,false,false,false]; }
+  if(typeof _pressureNg!=='undefined'){ _pressureNg=[false,false,false,false,false]; }
+  document.querySelectorAll('.pressure-overlay').forEach(function(ov){ ov.style.display='none'; });
+}catch(e){}
 safetyMeasures = {
   windows: {
     'A-bath': false,
@@ -5199,22 +5252,15 @@ function completeSafetyMeasures() {
   }catch(e){}
 }
 
-// 回答選択肢を同期
+// 回答選択肢を同期（カードドロップにより動的に追加）
 function _syncAnswerSelect(){
   try{
     var sel = document.getElementById('clear-answer-select');
     if(!sel) return;
-    // シナリオ設定のgasCauseセレクトと同じ選択肢リストを使用
-    var src = document.getElementById('sc-gas-cause');
-    if(src && src.options && src.options.length > 0){
-      sel.innerHTML = '<option value="">-- 選択してください --</option>';
-      for(var i=0;i<src.options.length;i++){
-        var opt = document.createElement('option');
-        opt.value = src.options[i].value;
-        opt.textContent = src.options[i].textContent;
-        sel.appendChild(opt);
-      }
-    }
+    // 選択肢はカードドロップで追加されるため、ここではリセットのみ
+    sel.innerHTML = '<option value="">-- 選択してください --</option>';
+    // ドロップゾーンもリセット
+    try{ window.__lkReset && window.__lkReset(); }catch(e2){}
   }catch(e){}
 }
 
@@ -6389,50 +6435,60 @@ const handleOverlayClick = (e) => {
 }
 
 // ドラッグ中の扉・点検口ガス滞留チェック（検知器モード専用）
+// 新仕様：①廻り検知（開閉度0以上）②滞留ガス確認（開閉度30%以上）
 function checkDoorGasAtPos(e) {
     if(isPlacementMode || isVentMode) return;
     if(!isDetectorMode && !isGasIdMode) return;
     try{
-        var cx2 = e.clientX, cy2 = e.clientY;
-        if(e.touches && e.touches[0]){ cx2 = e.touches[0].clientX; cy2 = e.touches[0].clientY; }
-        const elems2 = document.elementsFromPoint(cx2, cy2);
-        let doorToClear = null;
-        for (let el of elems2) {
-            if (el.classList.contains('ps-door')) {
-                if(el.dataset.isDangerous === "true" && el.dataset.gasCleared !== "true") { doorToClear = el; break; }
-            }
-            if (el.classList.contains('ps-container') || el.classList.contains('hall-door-wrapper') ||
-                el.classList.contains('shelf-unit') || el.classList.contains('glass-door-wrapper') ||
-                el.classList.contains('kit-bed-door-wrapper') || el.classList.contains('hatch-container') ||
-                el.classList.contains('ent-hatch-box') || el.classList.contains('ent-pit') || el.classList.contains('ent-panel')) {
-                 const d = el.querySelector('.ps-door');
-                 if(d && d.dataset.isDangerous === "true" && d.dataset.gasCleared !== "true") { doorToClear = d; break; }
+        var cx = e.clientX, cy = e.clientY;
+        if(e.touches && e.touches[0]){ cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
+        const elems = document.elementsFromPoint(cx, cy);
+        let door = null;
+        for(let el of elems){
+            if(el.classList.contains('ps-door')){ door = el; break; }
+            if(el.classList.contains('ps-container') || el.classList.contains('hall-door-wrapper') ||
+               el.classList.contains('shelf-unit') || el.classList.contains('glass-door-wrapper') ||
+               el.classList.contains('kit-bed-door-wrapper') || el.classList.contains('hatch-container') ||
+               el.classList.contains('ent-hatch-box') || el.classList.contains('ent-pit') || el.classList.contains('ent-panel')){
+                var pd = el.querySelector('.ps-door');
+                if(pd){ door = pd; break; }
             }
         }
-        if(doorToClear) {
-            doorToClear.dataset.gasCleared = "true";
-            doorToClear.dataset.isDangerous = "false";
-            playAudio('se_ching', SE.ching);
-            dangerValue = Math.floor(dangerValue * 0.95);
-            dangerRate = Math.max(0.1, dangerRate - 0.05);
-            showSystemMsg("ガス滞留なし。危険度低下！");
+        if(!door) return;
+        if(!window._doorScanDone) window._doorScanDone = new Set();
+        var dk = door.id || ((door.className||'') + '_' + (door.dataset.maxSlide||'') + '_' + state.room);
+
+        // ① 廻り検知（開閉度問わず、1回まで）
+        var k1 = 'scan1_' + dk;
+        if(!window._doorScanDone.has(k1)){
+            window._doorScanDone.add(k1);
+            dangerValue = Math.floor(dangerValue * 0.9);
+            dangerRate = Math.max(0.1, dangerRate - 0.1);
+            addSafety(5, "【保安措置】扉・蓋の廻りの検知器調査を実施！安全率+5%！");
+            showSystemMsg("扉・蓋の廻りの検知器調査を実施");
             updateDangerUI();
-            try{
-                if(isDetectorMode){
-                    if(!window._noGasBonusDoors) window._noGasBonusDoors = new Set();
-                    var doorKey = doorToClear.id || (doorToClear.className + '_' + (doorToClear.dataset ? doorToClear.dataset.maxSlide : '') + '_' + state.room);
-                    if(!window._noGasBonusDoors.has(doorKey)){
-                        window._noGasBonusDoors.add(doorKey);
-                        try{ if(window._gameStats) window._gameStats.noGasConfirmed++; }catch(e3){}
-                        addSafety(5, "【保安措置】滞留ガスなし確認！安全率+5%！");
-                    }
-                }
-            }catch(e2){}
+            try{ if(window._gameStats) window._gameStats.noGasConfirmed++; }catch(e2){}
+        }
+
+        // ② 滞留ガス確認（開閉度30%以上、1回まで）
+        var ratio = (typeof getDoorOpenRatio2 === 'function') ? getDoorOpenRatio2(door) : 0;
+        var k2 = 'scan2_' + dk;
+        if(ratio >= 0.01 && !window._doorScanDone.has(k2)){
+            window._doorScanDone.add(k2);
+            door.dataset.gasCleared = "true";
+            door.dataset.isDangerous = "false";
+            dangerValue = Math.floor(dangerValue * 0.9);
+            dangerRate = Math.max(0.1, dangerRate - 0.1);
+            addSafety(5, "【保安措置】滞留ガスの有無を確認！安全率+5%！");
+            showSystemMsg("滞留ガスの有無を確認");
+            updateDangerUI();
+            try{ playAudio('se_ching', SE.ching); }catch(e2){}
         }
     }catch(err){}
 }
 
 /* 初期状態で少し開いている扉・点検口のガス確認（ドラッグ不要） */
+/* 初期状態で少し開いている扉・点検口：ホバーだけで廻り検知を実施（ドラッグ不要） */
 function checkInitialOpenDoorGas(e){
     try{
         var cx = e.clientX, cy = e.clientY;
@@ -6449,27 +6505,20 @@ function checkInitialOpenDoorGas(e){
                 door = el.querySelector('.ps-door');
             }
             if(!door) continue;
-            if(door.dataset.isDangerous !== "true" || door.dataset.gasCleared === "true") continue;
-            /* 扉が初期から少し開いている場合のみ対象 */
+            /* translateX が 3px 以上 = 初期から少し開いている */
             var m = door.style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
             if(!m || Math.abs(parseFloat(m[1])) < 3) continue;
-            /* ガス確認実行 */
-            door.dataset.gasCleared = "true";
-            door.dataset.isDangerous = "false";
-            try{ playAudio('se_ching', SE.ching); }catch(e2){}
-            try{ dangerValue = Math.floor(dangerValue * 0.95); dangerRate = Math.max(0.1, dangerRate - 0.05); }catch(e3){}
-            try{ showSystemMsg("ガス滞留なし。危険度低下！"); updateDangerUI(); }catch(e4){}
-            try{
-                if(isDetectorMode){
-                    if(!window._noGasBonusDoors) window._noGasBonusDoors = new Set();
-                    var dk = door.id || (door.className + '_' + state.room);
-                    if(!window._noGasBonusDoors.has(dk)){
-                        window._noGasBonusDoors.add(dk);
-                        if(window._gameStats) window._gameStats.noGasConfirmed++;
-                        addSafety(5, "【保安措置】滞留ガスなし確認！安全率+5%！");
-                    }
-                }
-            }catch(e5){}
+            if(!window._doorScanDone) window._doorScanDone = new Set();
+            var dk = door.id || ((door.className||'') + '_' + (door.dataset.maxSlide||'') + '_' + state.room);
+            var k1 = 'scan1_' + dk;
+            if(!window._doorScanDone.has(k1)){
+                window._doorScanDone.add(k1);
+                dangerValue = Math.floor(dangerValue * 0.9);
+                dangerRate = Math.max(0.1, dangerRate - 0.1);
+                addSafety(5, "【保安措置】扉・蓋の廻りの検知器調査を実施！安全率+5%！");
+                showSystemMsg("扉・蓋の廻りの検知器調査を実施");
+                updateDangerUI();
+            }
             break;
         }
     }catch(err){}
@@ -6605,15 +6654,15 @@ else if(state.room===14 && state.x < 10) icon="🚪"; // ラーメン屋→地�
 else if(state.room===3) {
 if(state.x<15) icon="🔼"; else if(state.x>85) icon="🔽";
 if(roomOpened && residentRoom <= 2) {
-if(residentRoom===1 && state.x>5 && state.x<30) icon="🚪";
-if(residentRoom===2 && state.x>70 && state.x<95) icon="🚪";
+if(residentRoom===1 && state.x>17 && state.x<36) icon="🚪";
+if(residentRoom===2 && state.x>62 && state.x<80) icon="🚪";
 }
 }
 else if(state.room===4) {
 if(state.x>85) icon="🔽";
 if(roomOpened && residentRoom >= 3) {
-if(residentRoom===3 && state.x>5 && state.x<30) icon="🚪";
-if(residentRoom===4 && state.x>70 && state.x<95) icon="🚪";
+if(residentRoom===3 && state.x>9 && state.x<27) icon="🚪";
+if(residentRoom===4 && state.x>59 && state.x<77) icon="🚪";
 }
 }
 else if(state.room===5) {
@@ -6763,12 +6812,12 @@ else if(state.x > 85) {
   if(_stageMaps && _stageMaps[state.room] && !_stageMaps[11]) { showSystemMsg('この先は進めません。'); return; }
   changeRoom(11, 30); didWarp=true;
 }
-else if(roomOpened && residentRoom <= 2 && ((residentRoom===1 && state.x>5 && state.x<30) || (residentRoom===2 && state.x>70 && state.x<95))) {
+else if(roomOpened && residentRoom <= 2 && ((residentRoom===1 && state.x>17 && state.x<36) || (residentRoom===2 && state.x>62 && state.x<80))) {
 entryFloor = 3;
 currentApartmentOwner='A';
 changeRoom(5, 5); didWarp=true;
 }
-else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom <= 2 && ((alarmResidentRoom===1 && state.x>5 && state.x<30) || (alarmResidentRoom===2 && state.x>70 && state.x<95))) {
+else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom <= 2 && ((alarmResidentRoom===1 && state.x>17 && state.x<36) || (alarmResidentRoom===2 && state.x>62 && state.x<80))) {
   // 排風なしで入室：安全率-5% + 警告メッセージ（爆発ENDは廃止）
   if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive && typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod !== '在宅している' && !alarmBVentilated){
     var _hs1done = typeof window._hs1Vented!=='undefined' && window._hs1Vented;
@@ -6789,12 +6838,12 @@ if(state.x > 85) {
   if(_stageMaps && _stageMaps[state.room] && !_stageMaps[3]) { showSystemMsg('この先は進めません。'); return; }
   changeRoom(3, 10); didWarp=true;
 }
-else if(roomOpened && residentRoom >= 3 && ((residentRoom===3 && state.x>5 && state.x<30) || (residentRoom===4 && state.x>70 && state.x<95))) {
+else if(roomOpened && residentRoom >= 3 && ((residentRoom===3 && state.x>9 && state.x<27) || (residentRoom===4 && state.x>59 && state.x<77))) {
 entryFloor = 4;
 currentApartmentOwner='A';
 changeRoom(5, 5); didWarp=true;
 }
-else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom >= 3 && ((alarmResidentRoom===3 && state.x>5 && state.x<30) || (alarmResidentRoom===4 && state.x>70 && state.x<95))) {
+else if(alarmRoomOpened && alarmResidentRoom && alarmResidentRoom >= 3 && ((alarmResidentRoom===3 && state.x>9 && state.x<27) || (alarmResidentRoom===4 && state.x>59 && state.x<77))) {
   // 排風なしで入室：安全率-5% + 警告メッセージ（爆発ENDは廃止）
   if(typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive && typeof alarmEntryMethod !== 'undefined' && alarmEntryMethod !== '在宅している' && !alarmBVentilated){
     var _hs1done2 = typeof window._hs1Vented!=='undefined' && window._hs1Vented;
@@ -7459,12 +7508,12 @@ if (isWindow) {
         }
     }
 } else {
-    // Danger Check
-    if (ratio >= 0.01 && (!d.dataset.gasCleared || d.dataset.gasCleared === "false")) {
+    // Danger Check（40%以上開いた場合のみ危険判定）
+    if (ratio >= 0.40 && (!d.dataset.gasCleared || d.dataset.gasCleared === "false")) {
         d.dataset.isDangerous = "true";
     }
     // Explosion Check (仕様変更: 反応箇所がこの扉/蓋に被っている場合のみ爆発)
-    if (ratio >= 0.30) {
+    if (ratio >= 0.40) {
         if (!d.dataset.gasCleared || d.dataset.gasCleared === "false") {
             // この扉/蓋のBoundingRectを取得
             var _doorOverlapsReaction = false;
@@ -7496,8 +7545,8 @@ if (isWindow) {
               // 反応箇所が被っていない → 警告のみ（爆発しない）
               d.style.transform = 'translateX(0px)';
               try{
-                showSystemMsg("滞留ガスを確認してから解放しましょう。危険度の上昇率が上がった。");
-                dangerRate += 0.2;
+                showSystemMsg("内部の滞留ガスの有無を確認してから開けましょう。＜危険度上昇：０．２＞");
+                dangerRate += 0.4;
                 updateDangerUI();
                 if(window._gameStats) window._gameStats.safetyAwarenessPenalty = (window._gameStats.safetyAwarenessPenalty||0) + 5;
               }catch(_eWarn){}
@@ -8052,7 +8101,7 @@ function createDefaultScenarioData(){
       reporterRoomNo:'101',
       residentBRoomNo:'102'
     ,indoorLeakRoomNo:'なし',basement:'なし',gasCause:'101号室灯内内管',
-    description:'',hint:'',difficulty:'B級',fireEvent:'なし',cassetteBombe:'なし'});
+    description:'',hint:'',difficulty:'B級',fireEvent:'なし',cassetteBombe:'なし',otherEvidence:'なし'});
   }
   return a;
 }
@@ -8093,7 +8142,8 @@ function normalizeScenarioData(arr){
       safetyNorma:(s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100,
       stageComposition:(s.stageComposition!=null)?String(s.stageComposition):'',
       fireEvent:(s.fireEvent!=null)?String(s.fireEvent):'なし',
-      cassetteBombe:(s.cassetteBombe!=null)?String(s.cassetteBombe):'なし'
+      cassetteBombe:(s.cassetteBombe!=null)?String(s.cassetteBombe):'なし',
+      otherEvidence:(s.otherEvidence!=null)?String(s.otherEvidence):'なし'
     };
   }
   return base;
@@ -8106,6 +8156,31 @@ function normalizeScenarioData(arr){
       var loaded=JSON.parse(node.textContent);
       if(Array.isArray(loaded)) scenarioData=normalizeScenarioData(loaded);
     }
+  }catch(e){}
+})();
+
+// テストプレイ後のシナリオ復元
+(function restoreTestplayData(){
+  try{
+    var raw = localStorage.getItem('hoansochi_testplay_restore');
+    if(!raw) return;
+    localStorage.removeItem('hoansochi_testplay_restore');
+    var d = JSON.parse(raw);
+    if(d.scenarios && Array.isArray(d.scenarios)){
+      scenarioData = normalizeScenarioData(d.scenarios);
+    }
+    if(d.scenPresets && typeof d.scenPresets==='object'){
+      window._scenPresetsData = d.scenPresets;
+      // settings IIFEより先に実行されるため、直接localStorageに保存
+      try{ localStorage.setItem('hoansochi_scenPresets_v1', JSON.stringify(d.scenPresets)); }catch(e){}
+      try{ window._cpSaveScenPsel(d.scenPresets); }catch(e){}
+    }
+    // 画面ロード後にリストを更新してメッセージ表示
+    setTimeout(function(){
+      try{ renderScenarioList(); }catch(e){}
+      try{ refreshStartScenarioOptions(); }catch(e){}
+      try{ if(typeof showSystemMsg==='function') showSystemMsg('テストプレイ前のシナリオ設定を復元しました。'); }catch(e){}
+    }, 800);
   }catch(e){}
 })();
 
@@ -8138,6 +8213,38 @@ function loadScenariosFromFile(){
         var htmlContent = ev.target.result;
         var parser = new DOMParser();
         var doc = parser.parseFromString(htmlContent, 'text/html');
+
+        // 新形式（saveSettingsFileで作成した設定ファイル）を優先
+        var settingsEl = doc.getElementById('hoansochi-settings');
+        if(settingsEl && settingsEl.textContent && settingsEl.textContent.trim()){
+          var payload = JSON.parse(settingsEl.textContent);
+          var ok = false;
+          if(payload.scenarios && Array.isArray(payload.scenarios)){
+            scenarioData = normalizeScenarioData(payload.scenarios);
+            try{ var sn=document.getElementById('saved-scenarios'); if(sn) sn.textContent=JSON.stringify(scenarioData); }catch(e){}
+            try{ localStorage.setItem('hoansochi_scenarios_v1', JSON.stringify(scenarioData)); }catch(e){}
+            renderScenarioList();
+            try{ refreshStartScenarioOptions(); }catch(e){}
+            ok = true;
+          }
+          if(payload.charPresets && payload.charPresets.presets){
+            window._charPresetsData = payload.charPresets;
+            try{ window._cpSavePresets(payload.charPresets); }catch(e){}
+            try{ window.refreshPresetSelects(); }catch(e){}
+          }
+          if(payload.scenPresets && typeof payload.scenPresets==='object'){
+            window._scenPresetsData = payload.scenPresets;
+            try{ window._cpSaveScenPsel(payload.scenPresets); }catch(e){}
+          }
+          if(ok){
+            try{ if(typeof showSystemMsg==='function') showSystemMsg('設定データを読み込みました（'+(payload.savedAt||'日時不明')+'）'); }catch(e){}
+          } else {
+            alert('設定データが見つかりませんでした。');
+          }
+          return;
+        }
+
+        // 旧形式（saved-scenarios 要素）フォールバック
         var savedNode = doc.getElementById('saved-scenarios');
         if(!savedNode || !savedNode.textContent){
           alert('このHTMLファイルにはシナリオデータが見つかりませんでした。');
@@ -8149,17 +8256,69 @@ function loadScenariosFromFile(){
           return;
         }
         scenarioData = normalizeScenarioData(loadedScenarios);
+        try{ var sn2=document.getElementById('saved-scenarios'); if(sn2) sn2.textContent=JSON.stringify(scenarioData); }catch(e){}
         renderScenarioList();
         try{ refreshStartScenarioOptions(); }catch(e){}
-        alert('シナリオを読み込みました。「保存してHTMLを更新」ボタンを押すと反映されます。');
+        try{
+          var cpEl=doc.getElementById('saved-char-presets');
+          if(cpEl && cpEl.textContent && cpEl.textContent.trim()!=='{}'){
+            var cpData=JSON.parse(cpEl.textContent);
+            if(cpData && cpData.presets){ window._charPresetsData=cpData; try{window._cpSavePresets(cpData);}catch(e){} }
+          }
+          var spEl=doc.getElementById('saved-scen-presets');
+          if(spEl && spEl.textContent && spEl.textContent.trim()!=='{}'){
+            var spData=JSON.parse(spEl.textContent);
+            if(spData){ window._scenPresetsData=spData; try{window._cpSaveScenPsel(spData);}catch(e){} }
+          }
+        }catch(e2){}
+        try{ window.refreshPresetSelects(); }catch(e){}
+        try{ if(typeof showSystemMsg==='function') showSystemMsg('シナリオを読み込みました。'); }catch(e){}
       }catch(err){
-        alert('シナリオの読み込みに失敗しました: ' + err.message);
+        alert('読み込みに失敗しました: ' + err.message);
       }
     };
-    reader.readAsText(file);
+    reader.readAsText(file, 'UTF-8');
   };
   input.click();
 }
+
+// ===== 設定ファイルを保存（コンパクトなHTMLファイルに書き出し） =====
+window.saveSettingsFile = function(){
+  var now = new Date();
+  var Y  = now.getFullYear();
+  var Mo = ('0'+(now.getMonth()+1)).slice(-2);
+  var D  = ('0'+now.getDate()).slice(-2);
+  var h  = ('0'+now.getHours()).slice(-2);
+  var m  = ('0'+now.getMinutes()).slice(-2);
+  var dateStr  = Y + '年' + Mo + '月' + D + '日' + h + '時' + m + '分';
+  var filename = dateStr + '_シナリオデータ.html';
+
+  var payload = {
+    version:    1,
+    savedAt:    dateStr,
+    scenarios:  (typeof scenarioData!=='undefined') ? scenarioData : [],
+    charPresets: window._charPresetsData || {presets:{}},
+    scenPresets: window._scenPresetsData || {}
+  };
+
+  var jsonStr = JSON.stringify(payload);
+  var html = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>\u30b7\u30ca\u30ea\u30aa\u30c7\u30fc\u30bf</title>'
+    + '<style>body{margin:0;font-family:sans-serif;background:#1a1a2e;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;}'
+    + '.msg{text-align:center;max-width:520px;padding:36px 44px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18);border-radius:18px;}'
+    + '.msg h2{margin:0 0 18px;font-size:1.5em;}.msg p{line-height:1.7;color:#ccc;}.msg .date{font-size:0.78em;color:#888;margin-top:18px;}</style></head><body>'
+    + '<div class="msg"><h2>&#128196; \u30b7\u30ca\u30ea\u30aa\u30c7\u30fc\u30bf</h2>'
+    + '<p>\u3053\u308c\u306f\u30b7\u30ca\u30ea\u30aa\u30c7\u30fc\u30bf\u3067\u3059\u3002<br>\u672c\u4f53\u30b2\u30fc\u30e0\u306e\u300c&#128193; \u30b7\u30ca\u30ea\u30aa\u8aad\u307f\u8fbc\u307f\u300d\u304b\u3089<br>\u8aad\u307f\u8fbc\u3093\u3067\u4f7f\u7528\u3057\u3066\u304f\u3060\u3055\u3044\u3002</p>'
+    + '<p class="date">\u4fdd\u5b58\u65e5\u6642\uff1a' + dateStr + '</p></div>'
+    + '<script id="hoansochi-settings" type="application\/json">' + jsonStr + '<\/script>'
+    + '</body></html>';
+
+  var blob = new Blob([html], {type:'text/html'});
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  try{ if(typeof showSystemMsg==='function') showSystemMsg('設定を保存しました：' + filename); }catch(e){}
+};
 
 function renderScenarioList(){
   var body=document.getElementById('scenario-list-body');
@@ -8261,6 +8420,7 @@ function openScenarioEdit(idx){
   try{ document.getElementById('sc-safety-norma').value = (s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100; }catch(e){}
   try{ document.getElementById('sc-fire-event').value = s.fireEvent?String(s.fireEvent):'なし'; }catch(e){}
   try{ document.getElementById('sc-cassette-bombe').value = s.cassetteBombe?String(s.cassetteBombe):'なし'; }catch(e){}
+  try{ document.getElementById('sc-other-evidence').value = s.otherEvidence?String(s.otherEvidence):'なし'; }catch(e){}
   try{ document.getElementById('sc-factory').value = s.factory?String(s.factory):'なし'; }catch(e){}
 
   // ステージ構成セレクトを動的に更新
@@ -8394,13 +8554,17 @@ function saveScenario(){
     stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     fireEvent: (function(){ try{ var el=document.getElementById('sc-fire-event'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     cassetteBombe: (function(){ try{ var el=document.getElementById('sc-cassette-bombe'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
+    otherEvidence: (function(){ try{ var el=document.getElementById('sc-other-evidence'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     factory: (function(){ try{ var el=document.getElementById('sc-factory'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
   };
   renderScenarioList();
   try{ refreshStartScenarioOptions(); }catch(e){}
   document.getElementById('scene-scenario-edit').classList.remove('active');
   document.getElementById('scene-scenario').classList.remove('active');
-  saveAndDownload();
+  // 全HTMLダウンロードはしない（「💾 設定を保存」ボタンから行う）
+  try{ var _sn=document.getElementById('saved-scenarios'); if(_sn) _sn.textContent=JSON.stringify(scenarioData); }catch(e){}
+  try{ localStorage.setItem('hoansochi_scenarios_v1', JSON.stringify(scenarioData)); }catch(e){}
+  try{ if(typeof showSystemMsg==='function') showSystemMsg('シナリオを保存しました。'); }catch(e){}
 }
 
 // ===== 開始設定（依頼３） =====
@@ -10712,7 +10876,7 @@ var commContext = { mode:'normal', doorId:null, awaitingId:false, partner:'repor
 // 会話ログを相手ごとに分離（通報者/居住者B/管理人/通信担当者/管理会社/店主）
 var commLogs = { reporter: [], alarmB: [], manager: [], tantou: [], kanrisha: [], yakitoriMaster: [], ramenMaster: [], fireCommander: [] };
 
-function _commPartnerKey(){ return (commContext && commContext.partner==='alarmB') ? 'alarmB' : ((commContext && commContext.partner==='manager') ? 'manager' : ((commContext && commContext.partner==='tantou') ? 'tantou' : ((commContext && commContext.partner==='kanrisha') ? 'kanrisha' : ((commContext && commContext.partner==='yakitoriMaster') ? 'yakitoriMaster' : ((commContext && commContext.partner==='ramenMaster') ? 'ramenMaster' : ((commContext && commContext.partner==='fireCommander') ? 'fireCommander' : 'reporter')))))); }
+function _commPartnerKey(){ return (commContext && commContext.partner==='alarmB') ? 'alarmB' : ((commContext && commContext.partner==='manager') ? 'manager' : ((commContext && commContext.partner==='tantou') ? 'tantou' : ((commContext && commContext.partner==='kanrisha') ? 'kanrisha' : ((commContext && commContext.partner==='yakitoriMaster') ? 'yakitoriMaster' : ((commContext && commContext.partner==='ramenMaster') ? 'ramenMaster' : ((commContext && commContext.partner==='fireCommander') ? 'fireCommander' : ((commContext && commContext.partner==='shobo') ? 'shobo' : 'reporter'))))))); }
 function resetCommHistoryFor(partnerKey){ try{ if(commLogs[partnerKey]) commLogs[partnerKey]=[]; }catch(e){} }
 function resetCommHistory(){ try{ resetCommHistoryFor('reporter'); resetCommHistoryFor('alarmB'); resetCommHistoryFor('manager'); resetCommHistoryFor('tantou'); resetCommHistoryFor('kanrisha'); resetCommHistoryFor('yakitoriMaster'); resetCommHistoryFor('ramenMaster'); resetCommHistoryFor('fireCommander'); _mgmtCompanyResolved=false; _mgmtPhoneCode=String(Math.floor(1000+Math.random()*9000)); _yakitoriGasOk=false; _ramenGasOk=false; _shopGasPenalty=0; }catch(e){} }
 
@@ -10986,12 +11150,12 @@ function openCommWindow(mode, partner){
     if(b) b.src=imgSrc;
     if(a) a.src=imgSrc;
     if(c) c.src=imgSrc;
-    var whoName = (key==='alarmB') ? '居住者B' : ((key==='manager') ? '管理人' : ((key==='tantou') ? '通信担当者' : ((key==='kanrisha') ? '管理会社' : ((key==='yakitoriMaster') ? '焼き鳥屋店主' : ((key==='ramenMaster') ? 'ラーメン屋店主' : ((key==='fireCommander') ? '消防大隊長' : '通報者'))))));
+    var whoName = (key==='alarmB') ? '居住者B' : ((key==='manager') ? '管理人' : ((key==='tantou') ? '通信担当者' : ((key==='kanrisha') ? '管理会社' : ((key==='yakitoriMaster') ? '焼き鳥屋店主' : ((key==='ramenMaster') ? 'ラーメン屋店主' : ((key==='fireCommander') ? '消防大隊長' : ((key==='shobo') ? '消防' : '通報者'))))))));
     try{ if(a) a.alt = whoName; }catch(ea){}
     try{ if(b) b.alt = whoName; }catch(eb){}
     try{ if(c) c.alt = whoName; }catch(ec){}
     var hint=document.querySelector('#comm-window .comm-hint');
-    if(hint){ hint.textContent = (key==='alarmB') ? '居住者Bと会話できます。' : ((key==='manager') ? '管理人と会話できます。' : ((key==='tantou') ? '通信担当者と会話できます。' : ((key==='kanrisha') ? '管理会社と会話できます。' : ((key==='yakitoriMaster') ? '焼き鳥屋店主と会話できます。' : ((key==='ramenMaster') ? 'ラーメン屋店主と会話できます。' : ((key==='fireCommander') ? '消防大隊長と会話できます。' : '通報者と会話できます。')))))); }
+    if(hint){ hint.textContent = (key==='alarmB') ? '居住者Bと会話できます。' : ((key==='manager') ? '管理人と会話できます。' : ((key==='tantou') ? '通信担当者と会話できます。' : ((key==='kanrisha') ? '管理会社と会話できます。' : ((key==='yakitoriMaster') ? '焼き鳥屋店主と会話できます。' : ((key==='ramenMaster') ? 'ラーメン屋店主と会話できます。' : ((key==='fireCommander') ? '消防大隊長と会話できます。' : ((key==='shobo') ? '消防と会話できます。' : '通報者と会話できます。'))))))); }
     try{ _tantouUpdateReportPanel(); }catch(e){}
     try{ if(typeof _fcmdUpdatePanel==='function') _fcmdUpdatePanel(); }catch(e){}
   }catch(e){}
@@ -11005,7 +11169,7 @@ function openCommWindow(mode, partner){
       if(commContext.mode==='knock'){
         addReporterMsg('どちら様ですか？');
       } else {
-        if(commContext.partner==='manager') addReporterMsg('はい、どちらさまでしょうか？'); else if(commContext.partner==='alarmB') addReporterMsg('警報器が鳴って困っています…。'); else if(commContext.partner==='tantou') addReporterMsg('こちら通信担当です。状況を教えてください。'); else if(commContext.partner==='kanrisha') addReporterMsg('お電話ありがとうございます。○○管理会社です。どのようなご用件でしょうか？'); else if(commContext.partner==='yakitoriMaster') addReporterMsg('なんの用だ。急いで言え。'); else if(commContext.partner==='ramenMaster') addReporterMsg('はい、何でしょうか？'); else if(commContext.partner==='fireCommander') addReporterMsg('現場の状況を報告してください。'); else addReporterMsg('来てくださってありがとうございます。');
+        if(commContext.partner==='manager') addReporterMsg('はい、どちらさまでしょうか？'); else if(commContext.partner==='alarmB') addReporterMsg('警報器が鳴って困っています…。'); else if(commContext.partner==='tantou') addReporterMsg('こちら通信担当です。状況を教えてください。'); else if(commContext.partner==='kanrisha') addReporterMsg('お電話ありがとうございます。○○管理会社です。どのようなご用件でしょうか？'); else if(commContext.partner==='yakitoriMaster') addReporterMsg('なんの用だ。急いで言え。'); else if(commContext.partner==='ramenMaster') addReporterMsg('はい、何でしょうか？'); else if(commContext.partner==='fireCommander') addReporterMsg('現場の状況を報告してください。'); else if(commContext.partner==='shobo') addReporterMsg('消防です。現場の状況を教えてください。'); else addReporterMsg('来てくださってありがとうございます。');
       }
     }
 
@@ -12187,6 +12351,7 @@ function _collectScenarioFromForm(){
     stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     fireEvent: (function(){ try{ var el=document.getElementById('sc-fire-event'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     cassetteBombe: (function(){ try{ var el=document.getElementById('sc-cassette-bombe'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
+    otherEvidence: (function(){ try{ var el=document.getElementById('sc-other-evidence'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     factory: (function(){ try{ var el=document.getElementById('sc-factory'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
   };
 }
@@ -12217,13 +12382,19 @@ function playScenarioWithoutOverwrite(){
   try{
     if(currentScenarioIndex===null) return;
     scenarioData[currentScenarioIndex]=_collectScenarioFromForm();
+    // テストプレイ終了後にシナリオデータを復元できるよう保存
+    try{ localStorage.setItem('hoansochi_testplay_restore', JSON.stringify({
+      scenarios: scenarioData,
+      currentIdx: currentScenarioIndex,
+      scenPresets: window._scenPresetsData || {}
+    })); }catch(e2){}
     try{ renderScenarioList(); }catch(e1){}
     try{ updateStartScenarioSelectOptions(); }catch(e2){}
     document.getElementById('scene-scenario-edit').classList.remove('active');
     document.getElementById('scene-startsetup').classList.add('active');
     var scSel=document.getElementById('start-scenario');
     if(scSel){ scSel.value=String(currentScenarioIndex); }
-    showSystemMsg('この設定で開始できます（保存＝HTML上書きは不要）');
+    showSystemMsg('テストプレイを開始します。メニューに戻ってもシナリオ設定は保持されます。');
   }catch(e){}
 }
 
@@ -12426,7 +12597,15 @@ try{
     { id:'カード_火災警戒区域の設定', name:'カード_火災警戒区域の設定', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AB%E7%81%BD%E8%AD%A6%E6%88%92%E5%8C%BA%E5%9F%9F%E3%81%AE%E8%A8%AD%E5%AE%9A.png', desc:'入手条件：警報器鳴動後に前面道路へ向かう。' },
     { id:'カード_現場広報活動', name:'カード_現場広報活動', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%8F%BE%E5%A0%B4%E5%BA%83%E5%A0%B1%E6%B4%BB%E5%8B%95.png', desc:'入手条件：警報器鳴動100秒後に前面道路へ出現する野次馬をクリックする。' },
     { id:'カード_火災', name:'カード_火災', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AB%E7%81%BD.png', desc:'入手条件：前面道路で集合住宅の火災を発見する。' },
-    { id:'カード_LPG', name:'カード_LPG', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_LPG.png', desc:'入手条件：カセットボンベ発見シナリオで、通報者宅の台所の床下点検口を半分以上開ける。' }
+    { id:'カード_LPG', name:'カード_LPG', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_LPG.png', desc:'入手条件：「都市ガス以外の証拠」が「カセットボンベ」の場合、通報者宅台所の床下点検口を50%以上開ける。' },
+    { id:'カード_灯内内管漏洩', name:'カード_灯内内管漏洩', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AF%E5%86%85%E7%AE%A1%E6%BC%8F%E6%B4%A9.png', desc:'入手条件：ガス漏れ原因が「〇〇灯内内管」の場合、該当ガスメーターでデジタルマノメーター試験を行い、圧力降下を確認する。' },
+    { id:'カード_灯外内管漏洩', name:'カード_灯外内管漏洩', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AF%E5%A4%96%E7%AE%A1%E6%BC%8F%E6%B4%A9.png', desc:'入手条件：ガス漏れ原因が「〇〇灯外内管」の場合、ガスメーターでデジタルマノメーター試験を行い、圧力降下を確認する。' },
+    { id:'カード_道路漏洩', name:'カード_道路漏洩', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E9%81%93%E8%B7%AF%E6%BC%8F%E3%82%8C.png', desc:'入手条件：ガス漏れ原因が「道路上のガス管」の場合、前面道路で可燃性ガス検知器の反応箇所を発見する。' },
+    { id:'カード_スプレー缶', name:'カード_スプレー缶', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E3%82%B9%E3%83%97%E3%83%AC%E3%83%BC%E7%BC%B6.png', desc:'入手条件：「都市ガス以外の証拠」が「スプレー缶」の場合、居住者B宅の浴室に入室する。' },
+    { id:'カード_電子機器のおもちゃ', name:'カード_電子機器のおもちゃ', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E3%81%8A%E3%82%82%E3%81%A1%E3%82%83.png', desc:'入手条件：「都市ガス以外の証拠」が「電子機器のおもちゃ」の場合、通報者宅寝室の棚を50%以上開ける。' },
+    { id:'カード_冷蔵庫アラート', name:'カード_冷蔵庫アラート', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E5%86%B7%E8%94%B5%E5%BA%AB.png', desc:'入手条件：「都市ガス以外の証拠」が「冷蔵庫アラート」の場合、通報者宅台所の台所セットをクリックする。' },
+    { id:'カード_濡れ雑巾', name:'カード_濡れ雑巾', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E6%BF%A1%E3%82%8C%E9%9B%91%E5%B7%BE.png', desc:'入手条件：「都市ガス以外の証拠」が「濡れ雑巾」の場合、通報者宅脱衣所の収納棚を50%以上開ける。' },
+    { id:'カード_下水工事', name:'カード_下水工事', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E4%B8%8B%E6%B0%B4%E5%B7%A5%E4%BA%8B.png', desc:'入手条件：「都市ガス以外の証拠」が「下水工事」の場合、焼き鳥屋に入室する。' }
   ];
 
   // per-simulation state
@@ -13983,6 +14162,7 @@ try{
     originalParent: null,
     originalNextSibling: null
   };
+  window.__btDragState = dragState; // 外部のlk-dropzoneシステムが利用
 
   // **修正：ドキュメントレベルでpointermoveを処理**
   if(!window.__btDragMoveInstalled){
@@ -14051,10 +14231,21 @@ try{
         }
       }
 
-      // ドロップ処理
+      // ドロップ処理: 状況突破ゾーン
       if (droppedOnZone) {
         finishDragOnZone(dragState.cardId);
       }
+
+      // ドロップ処理: 漏洩系統ゾーン（ポインター座標で判定 — カードはすでに元位置に戻っているため）
+      try{
+        const lkZone = $('lk-dropzone');
+        if(lkZone && lkZone.offsetParent !== null){
+          const lkR = lkZone.getBoundingClientRect();
+          if(e.clientX>=lkR.left && e.clientX<=lkR.right && e.clientY>=lkR.top && e.clientY<=lkR.bottom){
+            if(typeof window.__lkFinishDrop === 'function') window.__lkFinishDrop(dragState.cardId);
+          }
+        }
+      }catch(e2){}
 
       // リセット
       dragState.active = false;
@@ -17778,8 +17969,8 @@ window._tantouGenerateReply = function(rawText){
     window._tantouGenerateReply = function(rawText){
       var t = rawText.replace(/\s+/g,'');
       if(t.indexOf('消防') !== -1){
-        setTimeout(function(){ try{ window.openBreakthrough('shobo'); }catch(e){} }, 300);
-        return '消防への要請を受け付けます。状況証拠をご提示ください。';
+        setTimeout(function(){ try{ closeCommWindow(); setTimeout(function(){ openCommWindow('normal','shobo'); },200); }catch(e){} }, 300);
+        return '消防への通報ウィンドウを開きます。';
       }
       if(t.indexOf('警察') !== -1){
         setTimeout(function(){ try{ window.openBreakthrough('keisatsu'); }catch(e){} }, 300);
@@ -21296,105 +21487,6 @@ window.stageEditorExportHTML = function() {
 
 })();
 
-// ================================================================
-// カセットボンベ発見イベントシステム
-// シナリオ設定「カセットボンベ発見」が「あり」の場合:
-//   - 通報者宅の台所の床下点検口を半分以上開けるとカード_LPGを入手
-// ================================================================
-(function(){
-  if(window.__cassetteBombeSystemInstalled) return;
-  window.__cassetteBombeSystemInstalled = true;
-
-  var _cbActive = false;
-  var _cbCardAwarded = false;
-  var _cbPollTimer = null;
-
-  function getKitchenHatchLid(){
-    var kitchen = document.getElementById('room-kitchen');
-    if(!kitchen) return null;
-    return kitchen.querySelector('.hatch-lid.ps-door');
-  }
-
-  function checkKitchenHatch(){
-    if(!_cbActive || _cbCardAwarded) return;
-    // 通報者宅（A）の台所にいるときのみチェック
-    try{
-      if(typeof currentApartmentOwner !== 'undefined' && currentApartmentOwner === 'B') return;
-    }catch(e){}
-    var lid = getKitchenHatchLid();
-    if(!lid) return;
-    try{
-      var ratio = (typeof getDoorOpenRatio2 === 'function') ? getDoorOpenRatio2(lid) : 0;
-      if(ratio > 0.5){
-        _cbCardAwarded = true;
-        try{ window.__awardCard && window.__awardCard('カード_LPG'); }catch(e){}
-      }
-    }catch(e){}
-  }
-
-  function startPolling(){
-    if(_cbPollTimer) return;
-    _cbPollTimer = setInterval(checkKitchenHatch, 300);
-  }
-
-  function stopPolling(){
-    if(_cbPollTimer){ clearInterval(_cbPollTimer); _cbPollTimer = null; }
-  }
-
-  function _cbCheckAfterStart(){
-    try{
-      var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
-      _cbActive = (sc && sc.cassetteBombe === 'あり');
-      if(_cbActive){
-        setTimeout(function(){ startPolling(); }, 500);
-      }
-    }catch(e){}
-  }
-
-  function hookStartGame(){
-    if(typeof window.startGame_original === 'function' && !window.startGame_original.__cbHooked){
-      var _orig = window.startGame_original;
-      window.startGame_original = function(){
-        var r = _orig.apply(this, arguments);
-        _cbCheckAfterStart();
-        return r;
-      };
-      window.startGame_original.__cbHooked = true;
-    }
-    if(typeof window.startGame === 'function' && !window.startGame.__cbHooked){
-      var _orig2 = window.startGame;
-      window.startGame = function(){
-        var r = _orig2.apply(this, arguments);
-        _cbCheckAfterStart();
-        return r;
-      };
-      window.startGame.__cbHooked = true;
-    }
-  }
-
-  function hookInitForReset(){
-    if(typeof window.initGame !== 'function' || window.initGame.__cbReset) return;
-    var _origInit = window.initGame;
-    window.initGame = function(){
-      _cbActive = false;
-      _cbCardAwarded = false;
-      stopPolling();
-      return _origInit.apply(this, arguments);
-    };
-    window.initGame.__cbReset = true;
-  }
-
-  function init(){
-    hookStartGame();
-    hookInitForReset();
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 1200); });
-  } else {
-    setTimeout(init, 1200);
-  }
-})();
 </script>
 
 <!-- ===================================================================
@@ -22866,13 +22958,14 @@ function _handleCardDrop(cardId){
 }
 
 function _buildReply(droppedId){
-  var lines=['「'+droppedId+'」の報告を受けました。'];
-  if(!_has(_reported,'カード_臭気情報'))    lines.push('通報者から臭気情報は聞き出せましたか？');
-  else if(!_has(_reported,'カード_検知器反応')) lines.push('検知器反応は見つかりましたか？');
-  else if(!_has(_reported,'カード_広範囲'))    lines.push('見つかった検知器反応は１箇所だけですか？');
-  else if(!_has(_reported,'カード_滞留ガス'))  lines.push('現場で変わったことは起きていませんか？');
-  else lines.push('必要な場合は消防、警察、社内応援を要請してください。');
-  return lines.join('\n');
+  var replies={
+    'カード_反応箇所': 'ガスの反応を確認しましたね。近くに、ポケット警報器や火気厳禁表示シートを設置して、安全確保を行いましょう。',
+    'カード_広範囲':   '広範囲のガス流入が想定されますね。反応箇所のガス種は判明していますか？まだの場合は、一度反応箇所の濃度を、高濃度ガス識別検知器で改めて確認してみましょう。',
+    'カード_13A':      '都市ガスが起因の可能性が高いですね。危険性が高い状況です。',
+    'カード_滞留ガス':  '大変危険な状況です。警報器が鳴っている部屋に居住者はいましたか？いない場合は、管理人室に声掛けしてください。管理人がいない場合は、消防を要請しましょう。'
+  };
+  var body = replies[droppedId] || '報告ありがとうございます。';
+  return body;
 }
 
 /* ================================================================
@@ -22880,7 +22973,10 @@ function _buildReply(droppedId){
    ================================================================ */
 window._tmPressShobo = function(){
   if(!_shoboOk()) return;
-  try{ openBreakthrough('shobo'); }catch(e){}
+  try{
+    closeCommWindow();
+    setTimeout(function(){ openCommWindow('normal','shobo'); }, 200);
+  }catch(e){}
 };
 window._tmPressKeisatsu = function(){
   if(!_shoboOk()) return;
@@ -23113,6 +23209,331 @@ function _showModeOverlay(onCard,onText){
 })(); /* end IIFE */
 </script>
 
+<script id="patch-shobo-commwindow">
+/* ===== 消防 カード/テキストモード コミュニケーションウィンドウ ===== */
+(function(){
+'use strict';
+
+var _sbMode      = null;   // 'card' | 'text' | null
+var _sbModeShown = false;
+var _sbReported  = [];
+var _sbChatLog   = [];
+var _sbHandCache = [];
+var _sbDrag      = {active:false,el:null,cardId:null,ox:0,oy:0};
+var _sbKeyAwarded = false; // カード_鍵 授与済み
+
+function _owned(){ try{ return window.__getOwnedCardIds ? window.__getOwnedCardIds() : []; }catch(e){ return []; } }
+function _has(arr,v){ return arr.indexOf(v)>=0; }
+function _cardImg(id){
+  try{
+    if(window.__CARD_DEFS){ var d=window.__CARD_DEFS; for(var i=0;i<d.length;i++) if(d[i].id===id) return d[i].img; }
+    if(typeof getCardImg==='function') return getCardImg(id);
+  }catch(e){}
+  return '';
+}
+
+/* ---- アドバイス返信 ---- */
+function _sbAdvice(){
+  return 'まずは、ガス屋さんの出動状況（台数、人数など）を報告して下さい。また、現場の状況（ガスの反応やガス種、避難状況など）を報告していただけると助かります。もし、施錠されている部屋で危険がある場合は、報告いただければ消防で鍵の手配を行います。';
+}
+
+/* ---- カードドロップ返信 ---- */
+function _sbReply(cardId){
+  var replies={
+    'カード_反応箇所':      'ガスの反応がある状況ですね。',
+    'カード_広範囲':        '広範囲のガス流入が想定されますね。',
+    'カード_13A':           '都市ガスが起因の可能性が高いですね。',
+    'カード_滞留ガス':      '大変危険な状況であることが分かりました。ガス屋さんは排風の準備をお願いします。',
+    'カード_現場広報活動':  '消防にて近隣住民への広報活動を実施しております。',
+    'カード_要救助者の介護':'要救助者がいる可能性があります。救急隊を準備させます。',
+    'カード_避難指示':      '消防にて残りの住民の避難誘導を行います。'
+  };
+  return replies[cardId] || '報告ありがとうございます。';
+}
+
+/* ---- カード_鍵 授与チェック ---- */
+function _checkKeyAward(){
+  if(_sbKeyAwarded) return;
+  if(_has(_sbReported,'カード_滞留ガス') && _has(_sbReported,'カード_要救助者の介護')){
+    _sbKeyAwarded = true;
+    try{
+      if(typeof award==='function') award('カード_鍵');
+    }catch(e){}
+  }
+}
+
+/* ---- メッセージ追加 ---- */
+function _sbAddMsg(text, who){
+  var entry={text:text, who:who||'消防'};
+  _sbChatLog.push(entry);
+  var log=document.getElementById('_sb-chat-log');
+  if(log){
+    var d=document.createElement('div'); d.className='_tm-msg';
+    var w=document.createElement('div'); w.className='_tm-msg-who'; w.textContent=entry.who; d.appendChild(w);
+    var t=document.createElement('div'); t.textContent=text; d.appendChild(t);
+    log.appendChild(d);
+    log.scrollTop=log.scrollHeight;
+  }
+}
+
+/* ---- 報告済みカード表示更新 ---- */
+function _sbRenderReported(){
+  var row  = document.getElementById('_sb-rep-row');
+  var hint = document.getElementById('_sb-dz-hint');
+  if(!row) return;
+  row.innerHTML='';
+  if(_sbReported.length===0){ if(hint) hint.style.display=''; return; }
+  if(hint) hint.style.display='none';
+  _sbReported.forEach(function(id){
+    var imgUrl=_cardImg(id); var el;
+    if(imgUrl){
+      el=document.createElement('img');
+      el.className='_tm-rep-card'; el.src=imgUrl; el.alt=id; el.title=id;
+    } else {
+      el=document.createElement('div');
+      el.style.cssText='height:5.8vmin;padding:0.4vmin 1vmin;background:#fde8d8;border-radius:0.7vmin;font-size:1.2vmin;display:flex;align-items:center;';
+      el.textContent=id;
+    }
+    row.appendChild(el);
+  });
+}
+
+/* ---- ドラッグ添付 ---- */
+function _sbAttachDrag(el){
+  el.addEventListener('pointerdown',function(ev){
+    ev.preventDefault(); ev.stopPropagation();
+    var r=el.getBoundingClientRect();
+    _sbDrag.active=true; _sbDrag.el=el; _sbDrag.cardId=el.dataset.cardId;
+    _sbDrag.ox=ev.clientX-r.left; _sbDrag.oy=ev.clientY-r.top;
+    el.style.position='fixed';
+    el.style.left=r.left+'px'; el.style.top=r.top+'px';
+    el.style.width=r.width+'px'; el.style.height=r.height+'px';
+    el.style.zIndex='320000'; el.style.opacity='0.8';
+    el.style.pointerEvents='none'; el.style.transition='none';
+    var dz=document.getElementById('_sb-dz');
+    if(dz) dz.classList.add('drag-over');
+  },{passive:false});
+}
+
+if(!window.__sbDragInstalled){
+  window.__sbDragInstalled=true;
+  document.addEventListener('pointermove',function(e){
+    if(!_sbDrag.active||!_sbDrag.el) return;
+    e.preventDefault();
+    _sbDrag.el.style.left=(e.clientX-_sbDrag.ox)+'px';
+    _sbDrag.el.style.top=(e.clientY-_sbDrag.oy)+'px';
+  },{passive:false});
+  document.addEventListener('pointerup',function(e){
+    if(!_sbDrag.active||!_sbDrag.el) return;
+    var el=_sbDrag.el, cardId=_sbDrag.cardId;
+    var cx=e.clientX, cy=e.clientY;
+    var dz=document.getElementById('_sb-dz');
+    var dropped=false;
+    if(dz){
+      var dr=dz.getBoundingClientRect();
+      dropped=(cx>=dr.left&&cx<=dr.right&&cy>=dr.top&&cy<=dr.bottom);
+      dz.classList.remove('drag-over');
+    }
+    el.style.position=el.style.left=el.style.top=el.style.width=
+      el.style.height=el.style.zIndex=el.style.opacity=
+      el.style.pointerEvents=el.style.transition='';
+    _sbDrag.active=false; _sbDrag.el=null; _sbDrag.cardId=null;
+    if(dropped) _sbHandleCardDrop(cardId);
+  });
+  document.addEventListener('pointercancel',function(){
+    if(!_sbDrag.active||!_sbDrag.el) return;
+    var el=_sbDrag.el;
+    el.style.position=el.style.left=el.style.top=el.style.width=
+      el.style.height=el.style.zIndex=el.style.opacity=
+      el.style.pointerEvents=el.style.transition='';
+    var dz=document.getElementById('_sb-dz');
+    if(dz) dz.classList.remove('drag-over');
+    _sbDrag.active=false; _sbDrag.el=null; _sbDrag.cardId=null;
+  });
+}
+
+/* ---- カードドロップ処理 ---- */
+function _sbHandleCardDrop(cardId){
+  if(!cardId||_has(_sbReported,cardId)) return;
+  _sbReported.push(cardId);
+  window._sbCloseDrawer();
+  _sbRenderReported();
+  setTimeout(function(){ _sbAddMsg(_sbReply(cardId)); _checkKeyAward(); }, 400);
+}
+
+/* ---- ドロワー ---- */
+function _sbEnsureDrawer(){
+  if(document.getElementById('_sb-drawer')) return;
+  var panel=document.createElement('div');
+  panel.id='_sb-drawer';
+  panel.style.cssText='position:fixed;bottom:0;left:0;right:0;background:rgba(80,20,10,0.97);border-top:2px solid rgba(255,200,150,0.3);box-shadow:0 -6px 28px rgba(0,0,0,0.7);z-index:320000;display:none;flex-direction:column;padding:1.5vmin 2vmin;';
+  panel.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-bottom:0.5vmin;">'
+      +'<span style="font-size:2vmin;font-weight:bold;color:#fff;">所持カード一覧 — カードをドラッグしてください</span>'
+      +'<button style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;font-size:2.5vmin;cursor:pointer;color:#fff;padding:0.2vmin 0.8vmin;line-height:1;" onclick="window._sbCloseDrawer()">×</button>'
+    +'</div>'
+    +'<div id="_sb-drawer-row" style="display:flex;gap:2vmin;overflow-x:auto;flex:1;align-items:center;padding:1.5vmin 0.5vmin;min-height:calc(var(--bt-card-w,14vmin)*4/3 + 2vmin);"></div>';
+  document.body.appendChild(panel);
+}
+
+window._sbOpenDrawer = function(){
+  _sbEnsureDrawer();
+  var row=document.getElementById('_sb-drawer-row');
+  if(!row) return;
+  row.innerHTML='';
+  var ids=_owned();
+  if(ids.length===0){
+    var m=document.createElement('div');
+    m.style.cssText='font-size:1.8vmin;color:#aaa;padding:1vmin;';
+    m.textContent='（まだカードがありません）';
+    row.appendChild(m);
+  } else {
+    ids.forEach(function(id){
+      var card=document.createElement('div');
+      card.className='bt-card'; card.dataset.cardId=id;
+      var imgUrl=_cardImg(id);
+      if(imgUrl){
+        var img=document.createElement('img');
+        img.src=imgUrl; img.alt=id;
+        img.style.cssText='width:100%;height:100%;object-fit:contain;pointer-events:none;';
+        card.appendChild(img);
+      } else {
+        var lbl=document.createElement('div');
+        lbl.textContent=id;
+        lbl.style.cssText='font-size:1.2vmin;text-align:center;padding:0.5vmin;color:#fff;pointer-events:none;word-break:break-all;';
+        card.appendChild(lbl);
+      }
+      _sbAttachDrag(card);
+      row.appendChild(card);
+    });
+  }
+  var panel=document.getElementById('_sb-drawer');
+  if(panel){ panel.style.display='flex'; }
+};
+
+window._sbCloseDrawer = function(){
+  var panel=document.getElementById('_sb-drawer');
+  if(panel) panel.style.display='none';
+};
+
+/* ---- カードモードUI構築 ---- */
+function _sbBuildCardUI(){
+  var hist=document.getElementById('comm-history');
+  if(!hist) return;
+  hist.innerHTML='';
+  hist.style.overflow='hidden';
+  hist.style.padding='0.8vmin';
+
+  var ui=document.createElement('div');
+  ui.id='_sb-card-ui';
+  ui.style.cssText='display:flex;flex-direction:column;gap:0.8vmin;height:100%;box-sizing:border-box;overflow:hidden;';
+  ui.innerHTML=
+    '<div style="background:#fde8d8;border:1px solid #e9967a;border-radius:1vmin;padding:1vmin 1.5vmin;font-size:1.7vmin;color:#7a2000;font-weight:bold;flex-shrink:0;">「所持カード」ボタンを押してカードをドラッグしてください。</div>'
+   +'<div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-top:0.3vmin;">'
+     +'<span style="font-size:1.45vmin;color:#666;font-weight:bold;">報告済みのカード一覧</span>'
+     +'<button style="background:#c0392b;color:#fff;border:none;border-radius:0.8vmin;font-size:1.5vmin;font-weight:bold;cursor:pointer;padding:0.8vmin 1.4vmin;white-space:nowrap;" onclick="window._sbOpenDrawer()">所持カード ▲</button>'
+   +'</div>'
+   +'<div id="_sb-dz" style="border:0.35vmin dashed #e9967a;border-radius:1.2vmin;padding:0.7vmin;background:#fff8f5;flex-shrink:0;min-height:8vmin;">'
+     +'<div id="_sb-dz-hint" style="color:#e9967a;font-size:1.5vmin;text-align:center;padding:0.8vmin;">カードをここにドラッグ</div>'
+     +'<div id="_sb-rep-row" style="display:flex;gap:0.8vmin;overflow-x:auto;min-height:6vmin;align-items:center;"></div>'
+   +'</div>'
+   +'<div style="display:flex;gap:0.6vmin;flex-shrink:0;">'
+     +'<button style="flex:1;padding:1.1vmin 0.3vmin;border:none;border-radius:0.9vmin;font-size:1.5vmin;cursor:pointer;font-weight:bold;background:#c0392b;color:#fff;" onclick="window._sbPressAdvice()">アドバイスをもらう</button>'
+   +'</div>'
+   +'<div id="_sb-chat-log" style="flex:1;overflow-y:auto;border:1px solid #e0e0e0;border-radius:1vmin;padding:1vmin;background:#fff;display:flex;flex-direction:column;gap:0.8vmin;min-height:0;"></div>';
+
+  hist.appendChild(ui);
+
+  // フッター入力欄を無効化
+  var inp=document.getElementById('comm-input');
+  if(inp){ inp.disabled=true; inp.placeholder='カードモードでは入力できません'; inp.style.opacity='0.5'; }
+  var btn=document.querySelector('#comm-window .comm-send');
+  if(btn){ btn.disabled=true; btn.style.opacity='0.5'; }
+
+  // チャットログ再描画
+  var log=document.getElementById('_sb-chat-log');
+  if(log){
+    _sbChatLog.forEach(function(e){
+      var d=document.createElement('div'); d.className='_tm-msg';
+      var w=document.createElement('div'); w.className='_tm-msg-who'; w.textContent=e.who; d.appendChild(w);
+      var t=document.createElement('div'); t.textContent=e.text; d.appendChild(t);
+      log.appendChild(d);
+    });
+    log.scrollTop=log.scrollHeight;
+  }
+
+  if(_sbChatLog.length===0){
+    setTimeout(function(){ _sbAddMsg('「所持カード」ボタンを押してカードをドラッグしてください。'); }, 400);
+  }
+}
+
+window._sbPressAdvice = function(){
+  _sbAddMsg(_sbAdvice());
+};
+
+/* ---- モード選択オーバーレイ ---- */
+function _sbShowModeOverlay(onCard, onText){
+  var ov=document.createElement('div');
+  ov.id='_sb-overlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:310000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2.5vmin;';
+  ov.innerHTML=
+    '<div style="color:#fff;font-size:3vmin;font-weight:bold;text-shadow:0 2px 8px rgba(0,0,0,0.8);margin-bottom:1vmin;">消防への報告方法を選択してください</div>'
+   +'<button id="_sb-btn-card" style="background:#c0392b;color:#fff;border:none;border-radius:1.8vmin;padding:2.5vmin 4.5vmin;font-size:2.4vmin;cursor:pointer;font-weight:bold;box-shadow:0 4px 16px rgba(0,0,0,0.4);min-width:52vmin;text-align:center;line-height:1.7;">カードを使用して報告する<br><span style="font-size:70%;font-weight:normal;">（難易度：低）</span></button>'
+   +'<button id="_sb-btn-text" style="background:#455a64;color:#fff;border:none;border-radius:1.8vmin;padding:2.5vmin 4.5vmin;font-size:2.4vmin;cursor:pointer;font-weight:bold;box-shadow:0 4px 16px rgba(0,0,0,0.4);min-width:52vmin;text-align:center;line-height:1.7;">文章を入力して報告する<br><span style="font-size:70%;font-weight:normal;">（難易度：高）</span></button>';
+  document.body.appendChild(ov);
+  document.getElementById('_sb-btn-card').onclick=function(){ ov.remove(); onCard(); };
+  document.getElementById('_sb-btn-text').onclick=function(){ ov.remove(); onText(); };
+}
+
+/* ---- openCommWindow フック ---- */
+(function(){
+  var orig=window.openCommWindow;
+  if(typeof orig!=='function'||orig.__sbHooked) return;
+  window.openCommWindow=function(mode,partner){
+    orig.apply(this,arguments);
+    if(partner==='shobo'){
+      if(!_sbModeShown){
+        _sbModeShown=true;
+        setTimeout(function(){
+          _sbShowModeOverlay(
+            function(){ _sbMode='card'; _sbBuildCardUI(); },
+            function(){ _sbMode='text'; }
+          );
+        },150);
+      } else if(_sbMode==='card'){
+        _sbHandCache=[];
+        _sbBuildCardUI();
+      }
+    }
+  };
+  window.openCommWindow.__sbHooked=true;
+  if(orig.__tmHooked) window.openCommWindow.__tmHooked=true;
+  if(orig.__btWrapped) window.openCommWindow.__btWrapped=true;
+  if(orig.__hbHook) window.openCommWindow.__hbHook=true;
+})();
+
+/* ---- initGame フック: ゲーム開始時にリセット ---- */
+(function(){
+  var orig=window.initGame;
+  if(typeof orig!=='function'||orig.__sbResetHooked) return;
+  window.initGame=function(){
+    _sbMode=null; _sbModeShown=false; _sbReported=[]; _sbChatLog=[]; _sbHandCache=[];
+    _sbKeyAwarded=false;
+    try{ window._sbCloseDrawer(); }catch(e){}
+    var inp=document.getElementById('comm-input');
+    if(inp){ inp.disabled=false; inp.placeholder='聞きたいことを入力...'; inp.style.opacity=''; }
+    var btn=document.querySelector('#comm-window .comm-send');
+    if(btn){ btn.disabled=false; btn.style.opacity=''; }
+    var hist=document.getElementById('comm-history');
+    if(hist){ hist.innerHTML=''; hist.style.overflow=''; hist.style.padding=''; }
+    return orig.apply(this,arguments);
+  };
+  window.initGame.__sbResetHooked=true;
+})();
+
+})(); /* end shobo IIFE */
+</script>
+
 <script>
 /* ================================================================
    チュートリアルシステム
@@ -23150,6 +23571,7 @@ var _tutT6BathDetCount = 0;
 /* No.7チュートリアル用：状態追跡フラグ */
 var _tutT7SafetyFull = false;
 var _tutT7CompletePressed = false;
+var _tutT7CardDropped = false;
 var _tutT7AnswerSubmitted = false;
 
 /* ---- チュートリアルステップ定義 ---- */
@@ -23829,9 +24251,32 @@ var TUTORIAL_STEPS = {
         return false;
       }
     },
-    /* Step 4: 漏洩系統回答を促す → 回答するボタン押下を待つ */
+    /* Step 4: カードドロップの説明 → カード_灯内内管漏洩をドロップするまで待つ */
     {
-      msg: 'どのシナリオでも、最後に漏洩系統はどこであると判断したか問われます。調査の結果、あなたが判断した漏洩系統を選択してみましょう。',
+      msg: '漏洩系統回答画面では、調査で入手した「証拠カード」をドロップゾーンにドラッグすることで、選択肢が追加されます。\nカードを持っていなければ、正解の選択肢が表示されないため、クリアできません。\n今回は「カード_灯内内管漏洩」が自動で付与されました。\n下の手札から「カード_灯内内管漏洩」をドラッグして、ドロップゾーンに置いてみましょう！',
+      icon: '🃏',
+      highlightFn: function(){
+        // カード_灯内内管漏洩 を自動付与してチュートリアルで体験できるようにする
+        try{
+          if(typeof window.__awardCard === 'function') window.__awardCard('カード_灯内内管漏洩');
+        }catch(e){}
+        // lk-dropzone と lk-hand をハイライト
+        var dz = document.getElementById('lk-dropzone');
+        if(dz){ dz.classList.add('tut-highlight'); _tutHighlighted.push(dz); }
+        var hd = document.getElementById('lk-hand');
+        if(hd){ hd.classList.add('tut-highlight'); _tutHighlighted.push(hd); }
+        // 手札を再描画
+        try{ if(typeof window.__lkRenderHand === 'function') window.__lkRenderHand(); }catch(e){}
+      },
+      nextBtn: false,
+      checkFn: function(){
+        if(window._tutT7CardDropped) return true;
+        return false;
+      }
+    },
+    /* Step 5: 漏洩系統回答を促す → 回答するボタン押下を待つ */
+    {
+      msg: 'ドロップされたカードに応じて選択肢が増えました！調査の結果、あなたが判断した漏洩系統を選択して「回答する」ボタンを押してみましょう。',
       icon: '🔍',
       highlightFn: null,
       nextBtn: false,
@@ -24075,6 +24520,7 @@ function startTutorial(no){
     /* No.7: 安全率メーターとクリア条件 */
     _tutT7SafetyFull = false;
     _tutT7CompletePressed = false;
+    _tutT7CardDropped = false;
     _tutT7AnswerSubmitted = false;
     state.vanStock = [];
     state.inventory = ['phone', 'memo', 'det', 'high', 'mano', 'sign', 'alm'];
@@ -24974,29 +25420,70 @@ window.clickFactoryValvePit = function(){
   var SCEN_PSEL_KEY = 'hoansochi_scenPresets_v1';
 
   // ---------- ストレージ ----------
-  function loadPresets(){
-    try{ var s=localStorage.getItem(PRESETS_KEY); if(s) return JSON.parse(s); }catch(e){}
-    return { presets:{} };
-  }
   function savePresets(d){
     try{ localStorage.setItem(PRESETS_KEY, JSON.stringify(d)); }catch(e){}
-  }
-  function loadScenPsel(){
-    try{ var s=localStorage.getItem(SCEN_PSEL_KEY); if(s) return JSON.parse(s); }catch(e){}
-    return {};
+    try{ var node=document.getElementById('saved-char-presets'); if(node) node.textContent=JSON.stringify(d); }catch(e){}
   }
   function saveScenPsel(d){
     try{ localStorage.setItem(SCEN_PSEL_KEY, JSON.stringify(d)); }catch(e){}
+    try{ var node=document.getElementById('saved-scen-presets'); if(node) node.textContent=JSON.stringify(d); }catch(e){}
+  }
+  // loadScenariosFromFile等から呼び出せるようwindowに公開
+  window._cpSavePresets  = savePresets;
+  window._cpSaveScenPsel = saveScenPsel;
+
+  function loadPresets(){
+    try{
+      var node = document.getElementById('saved-char-presets');
+      if(node && node.textContent && node.textContent.trim() && node.textContent.trim()!=='{}'){
+        var d = JSON.parse(node.textContent);
+        if(d && d.presets) return d;
+      }
+    }catch(e){}
+    try{
+      var s = localStorage.getItem(PRESETS_KEY);
+      if(s){ var d2 = JSON.parse(s); if(d2 && d2.presets) return d2; }
+    }catch(e){}
+    return { presets:{} };
+  }
+  function loadScenPsel(){
+    try{
+      var node = document.getElementById('saved-scen-presets');
+      if(node && node.textContent && node.textContent.trim() && node.textContent.trim()!=='{}'){
+        var d = JSON.parse(node.textContent);
+        if(d && typeof d==='object') return d;
+      }
+    }catch(e){}
+    try{
+      var s = localStorage.getItem(SCEN_PSEL_KEY);
+      if(s) return JSON.parse(s);
+    }catch(e){}
+    return {};
   }
 
   window._charPresetsData = loadPresets();
   window._scenPresetsData = loadScenPsel();
 
+  // デフォルトプリセット初期化
+  var _modified = false;
+  CHAR_DEFS.forEach(function(ch){
+    if(!window._charPresetsData.presets[ch.key] || window._charPresetsData.presets[ch.key].length===0){
+      window._charPresetsData.presets[ch.key] = [{
+        id: 'default_'+ch.key,
+        name: 'デフォルト',
+        greeting: DEFAULT_GREETINGS[ch.key]||'',
+        replies: []
+      }];
+      _modified = true;
+    }
+  });
+  if(_modified) savePresets(window._charPresetsData);
+
   function uid(){
     return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
   }
 
-  // ---------- 設定画面を開く（動的モーダル作成） ----------
+  // ---------- 設定画面を開く（動的モーダル） ----------
   window.openCharSettings = function(){
     var old = document.getElementById('scene-char-settings-modal');
     if(old){ old.parentNode.removeChild(old); }
@@ -25022,49 +25509,60 @@ window.clickFactoryValvePit = function(){
     try{ if(typeof showSystemMsg==='function') showSystemMsg('キャラクタープリセットを保存しました。'); }catch(e){}
   };
 
-  // ---------- UIからデータを収集 ----------
+  // ---------- UIからデータ収集 ----------
   function collectFromUI(){
     var data = { presets:{} };
     CHAR_DEFS.forEach(function(ch){
       data.presets[ch.key] = [];
       var pDivs = document.querySelectorAll('[data-cpkey="'+ch.key+'"]');
       pDivs.forEach(function(pDiv){
-        var pid   = pDiv.getAttribute('data-cpid');
-        var nameEl  = pDiv.querySelector('.cp-name');
-        var greetEl = pDiv.querySelector('.cp-greeting');
-        var name    = nameEl  ? nameEl.value.trim()  : '';
-        var greeting= greetEl ? greetEl.value         : '';
-        if(!name) return;
-        var replies = [];
-        pDiv.querySelectorAll('.cp-row').forEach(function(row){
-          var kw = row.querySelector('.cp-kw');
-          var rp = row.querySelector('.cp-rp');
-          var k = kw ? kw.value.trim() : '';
-          var r = rp ? rp.value.trim() : '';
-          if(k || r) replies.push({ keyword:k, reply:r });
-        });
-        data.presets[ch.key].push({ id:pid||uid(), name:name, greeting:greeting, replies:replies });
+        var pd = collectPresetData(pDiv);
+        if(!pd.name) return;
+        data.presets[ch.key].push(pd);
       });
     });
     window._charPresetsData = data;
   }
 
-  // ---------- プリセットDiv作成 ----------
+  function collectPresetData(pDiv){
+    var pid     = pDiv.getAttribute('data-cpid');
+    var nameEl  = pDiv.querySelector('.cp-name');
+    var greetEl = pDiv.querySelector('.cp-greeting');
+    var name    = nameEl  ? nameEl.value.trim() : '';
+    var greeting= greetEl ? greetEl.value        : '';
+    var replies = [];
+    pDiv.querySelectorAll('.cp-row').forEach(function(row){
+      var kw = row.querySelector('.cp-kw');
+      var rp = row.querySelector('.cp-rp');
+      var k = kw ? kw.value.trim() : '';
+      var r = rp ? rp.value.trim() : '';
+      if(k || r) replies.push({ keyword:k, reply:r });
+    });
+    return { id:pid||uid(), name:name, greeting:greeting, replies:replies };
+  }
+
+  // ---------- プリセット追加 ----------
   window._cpAddPreset = function(chKey){
     var cont = document.getElementById('cp-presets-'+chKey);
     if(!cont) return;
     cont.appendChild(buildPresetDiv(chKey, uid(), '', '', []));
   };
 
-  window._cpAddRow = function(chKey, pid, kw, rp){
+  // ---------- キーワード行追加 ----------
+  window._cpAddRow = function(pid, kw, rp){
     var rowCont = document.getElementById('cp-rows-'+pid);
     if(!rowCont) return;
+    appendRow(rowCont, pid, kw, rp);
+    updateCollapseLabel(pid);
+  };
+
+  function appendRow(rowCont, pid, kw, rp){
     var row = document.createElement('div');
     row.className = 'cp-row';
     row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
     var kwIn = document.createElement('input');
     kwIn.type='text'; kwIn.className='cp-kw';
-    kwIn.placeholder='キーワード（例：ガス）'; kwIn.value=kw||'';
+    kwIn.placeholder='キーワード（「、」で複数可）'; kwIn.value=kw||'';
     kwIn.style.cssText='flex:1;padding:6px;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;min-width:0;';
     var rpIn = document.createElement('input');
     rpIn.type='text'; rpIn.className='cp-rp';
@@ -25073,52 +25571,102 @@ window.clickFactoryValvePit = function(){
     var del = document.createElement('button');
     del.textContent='✕';
     del.style.cssText='background:#b71c1c;color:#fff;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;flex-shrink:0;font-size:13px;';
-    del.onclick=function(){ row.parentNode.removeChild(row); };
+    del.onclick=function(){
+      row.parentNode.removeChild(row);
+      updateCollapseLabel(pid);
+    };
     row.appendChild(kwIn); row.appendChild(rpIn); row.appendChild(del);
     rowCont.appendChild(row);
-  };
+  }
 
+  function updateCollapseLabel(pid){
+    var btn = document.getElementById('cp-collapse-btn-'+pid);
+    var rowCont = document.getElementById('cp-rows-'+pid);
+    if(!btn || !rowCont) return;
+    var count = rowCont.querySelectorAll('.cp-row').length;
+    var kwBody = rowCont.parentNode;
+    var isOpen = kwBody && kwBody.style.display !== 'none';
+    btn.textContent = (isOpen ? '▼' : '▶') + ' キーワード別返信（'+count+'件）';
+  }
+
+  // ---------- プリセットDiv作成 ----------
   function buildPresetDiv(chKey, pid, name, greeting, replies){
     var div = document.createElement('div');
     div.setAttribute('data-cpkey', chKey);
     div.setAttribute('data-cpid',  pid);
     div.style.cssText='background:rgba(255,255,255,0.05);border:1px solid #444;border-radius:6px;padding:12px;margin-bottom:8px;';
 
+    // 行1: プリセット名 / 複製 / 削除
     var row1 = document.createElement('div');
-    row1.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+    row1.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;';
     var nameIn = document.createElement('input');
     nameIn.type='text'; nameIn.className='cp-name';
     nameIn.placeholder='プリセット名（例：臭気通報）'; nameIn.value=name||'';
-    nameIn.style.cssText='flex:1;padding:6px;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;';
+    nameIn.style.cssText='flex:1;min-width:120px;padding:6px;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;';
+    var dupBtn = document.createElement('button');
+    dupBtn.textContent='複製';
+    dupBtn.style.cssText='background:#4a3800;color:#ffd;border:1px solid #7a6000;border-radius:4px;padding:6px 10px;font-size:12px;cursor:pointer;white-space:nowrap;';
+    dupBtn.onclick=(function(d,k){ return function(){
+      var data = collectPresetData(d);
+      var cont = document.getElementById('cp-presets-'+k);
+      if(!cont) return;
+      cont.appendChild(buildPresetDiv(k, uid(), (data.name||'')+' コピー', data.greeting, data.replies));
+    }; })(div, chKey);
     var delBtn = document.createElement('button');
-    delBtn.textContent='このプリセットを削除';
+    delBtn.textContent='削除';
     delBtn.style.cssText='background:#b71c1c;color:#fff;border:none;border-radius:4px;padding:6px 10px;font-size:12px;cursor:pointer;white-space:nowrap;';
     delBtn.onclick=function(){ div.parentNode.removeChild(div); };
-    row1.appendChild(nameIn); row1.appendChild(delBtn);
+    row1.appendChild(nameIn); row1.appendChild(dupBtn); row1.appendChild(delBtn);
 
+    // 挨拶文
     var greetLabel = document.createElement('label');
     greetLabel.textContent='初期挨拶文';
     greetLabel.style.cssText='color:#aaa;font-size:12px;display:block;margin-bottom:4px;';
     var greetIn = document.createElement('textarea');
     greetIn.className='cp-greeting'; greetIn.value=greeting||'';
-    greetIn.placeholder=DEFAULT_GREETINGS[chKey]||'（挨拶文を入力）';
+    greetIn.placeholder=DEFAULT_GREETINGS[chKey]||'';
     greetIn.style.cssText='width:100%;box-sizing:border-box;padding:6px;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:4px;font-size:13px;resize:vertical;min-height:48px;';
 
-    var kwLabel = document.createElement('label');
-    kwLabel.textContent='キーワード別返信';
-    kwLabel.style.cssText='color:#aaa;font-size:12px;display:block;margin:8px 0 4px 0;';
+    // キーワード折りたたみ
+    var collapseBtn = document.createElement('button');
+    collapseBtn.id = 'cp-collapse-btn-'+pid;
+    var initCount = replies ? replies.length : 0;
+    collapseBtn.textContent = (initCount>0 ? '▼' : '▶') + ' キーワード別返信（'+initCount+'件）';
+    collapseBtn.style.cssText='background:transparent;color:#80cbc4;border:1px solid #444;border-radius:4px;cursor:pointer;font-size:12px;padding:4px 10px;margin-top:8px;display:block;width:100%;text-align:left;';
+    var kwBody = document.createElement('div');
+    kwBody.style.display = initCount>0 ? 'block' : 'none';
+    collapseBtn.onclick=function(){
+      var isOpen = kwBody.style.display !== 'none';
+      kwBody.style.display = isOpen ? 'none' : 'block';
+      updateCollapseLabel(pid);
+    };
+
     var rowCont = document.createElement('div');
     rowCont.id='cp-rows-'+pid;
+    rowCont.style.marginTop='6px';
     var addRowBtn = document.createElement('button');
     addRowBtn.textContent='＋ キーワード追加';
     addRowBtn.style.cssText='background:#1565c0;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:12px;cursor:pointer;margin-top:4px;';
-    addRowBtn.onclick=(function(k,p){ return function(){ window._cpAddRow(k,p,'',''); }; })(chKey,pid);
+    addRowBtn.onclick=(function(p){ return function(){
+      window._cpAddRow(p,'','');
+      kwBody.style.display='block';
+      updateCollapseLabel(p);
+    }; })(pid);
+    var hint = document.createElement('p');
+    hint.textContent='「、」で区切ると複数キーワードを一括指定できます（例：たばこ、煙草、火気）';
+    hint.style.cssText='color:#666;font-size:11px;margin:4px 0 0 0;';
+
+    kwBody.appendChild(rowCont);
+    kwBody.appendChild(addRowBtn);
+    kwBody.appendChild(hint);
 
     div.appendChild(row1);
     div.appendChild(greetLabel); div.appendChild(greetIn);
-    div.appendChild(kwLabel); div.appendChild(rowCont); div.appendChild(addRowBtn);
+    div.appendChild(collapseBtn); div.appendChild(kwBody);
 
-    replies.forEach(function(r){ window._cpAddRow(chKey, pid, r.keyword, r.reply); });
+    if(replies && replies.length > 0){
+      replies.forEach(function(r){ appendRow(rowCont, pid, r.keyword, r.reply); });
+    }
     return div;
   }
 
@@ -25141,7 +25689,7 @@ window.clickFactoryValvePit = function(){
     hdr.appendChild(title); hdr.appendChild(closeBtn);
 
     var desc = document.createElement('p');
-    desc.textContent='キャラごとに複数のプリセットを作れます。プリセット名を入力し、挨拶文とキーワード別返信を設定してください。シナリオ設定画面でプリセットを選ぶと、そのシナリオ中のキャラ返信が切り替わります。';
+    desc.textContent='キャラごとにプリセットを複数作れます。初期挨拶文・キーワード返信を設定後、シナリオ設定でプリセットを選択してください。「設定を保存」でシナリオデータと一緒に書き出せます。';
     desc.style.cssText='color:#bbb;font-size:13px;margin-bottom:20px;line-height:1.6;';
 
     wrap.appendChild(hdr);
@@ -25150,7 +25698,6 @@ window.clickFactoryValvePit = function(){
     CHAR_DEFS.forEach(function(ch){
       var charDiv = document.createElement('div');
       charDiv.style.cssText='background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;padding:16px;margin-bottom:16px;';
-
       var charHdr = document.createElement('div');
       charHdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;';
       var charTitle = document.createElement('h3');
@@ -25164,7 +25711,6 @@ window.clickFactoryValvePit = function(){
 
       var presetCont = document.createElement('div');
       presetCont.id='cp-presets-'+ch.key;
-
       var presets = (data.presets && data.presets[ch.key]) ? data.presets[ch.key] : [];
       presets.forEach(function(p){
         presetCont.appendChild(buildPresetDiv(ch.key, p.id||uid(), p.name||'', p.greeting||'', p.replies||[]));
@@ -25189,12 +25735,17 @@ window.clickFactoryValvePit = function(){
   // ---------- アクティブシナリオのプリセットを取得 ----------
   function getActivePreset(partnerKey){
     try{
-      var idx = (typeof currentScenarioIndex!=='undefined') ? currentScenarioIndex : null;
-      if(idx===null||idx===undefined) return null;
+      // ゲームプレイ中は selectedScenarioIdx、編集中は currentScenarioIndex
+      var idx = null;
+      if(typeof selectedScenarioIdx!=='undefined' && selectedScenarioIdx!==null) idx = selectedScenarioIdx;
+      else if(typeof currentScenarioIndex!=='undefined' && currentScenarioIndex!==null) idx = currentScenarioIndex;
+      if(idx===null) return null;
+
       var cp = (window._scenPresetsData||{})[String(idx)];
       if(!cp) return null;
       var pid = cp[partnerKey];
       if(!pid) return null;
+
       var d = window._charPresetsData;
       if(!d||!d.presets||!d.presets[partnerKey]) return null;
       for(var i=0;i<d.presets[partnerKey].length;i++){
@@ -25204,15 +25755,19 @@ window.clickFactoryValvePit = function(){
     return null;
   }
 
-  // ---------- キーワード検索 ----------
+  // ---------- キーワード検索（「、」区切り複数対応） ----------
   function _lookupCustom(text, partnerKey){
     try{
       var preset = getActivePreset(partnerKey);
-      if(!preset||!preset.replies) return null;
+      if(!preset||!preset.replies||preset.replies.length===0) return null;
       var t = String(text||'').replace(/\s+/g,'');
       for(var i=0;i<preset.replies.length;i++){
-        var kw = String(preset.replies[i].keyword||'').trim();
-        if(kw && t.indexOf(kw)!==-1) return String(preset.replies[i].reply||'');
+        var kwRaw = String(preset.replies[i].keyword||'').trim();
+        if(!kwRaw) continue;
+        var keywords = kwRaw.split('、').map(function(k){ return k.trim(); }).filter(Boolean);
+        for(var j=0;j<keywords.length;j++){
+          if(t.indexOf(keywords[j])!==-1) return String(preset.replies[i].reply||'');
+        }
       }
     }catch(e){}
     return null;
@@ -25242,7 +25797,7 @@ window.clickFactoryValvePit = function(){
     };
     window.sendComm.__cpHooked = true;
   }
-  [500,1500,3000].forEach(function(t){ setTimeout(hookSendComm,t); });
+  [0,500,1500,3000].forEach(function(t){ setTimeout(hookSendComm,t); });
 
   // ---------- openCommWindow フック（挨拶） ----------
   function hookOpenCommWindow(){
@@ -25262,7 +25817,24 @@ window.clickFactoryValvePit = function(){
     };
     window.openCommWindow.__cpGreetHooked = true;
   }
-  [1000,2500,4000].forEach(function(t){ setTimeout(hookOpenCommWindow,t); });
+  [0,1000,2500,4000].forEach(function(t){ setTimeout(hookOpenCommWindow,t); });
+
+  // ---------- saveAndDownload フック（HTML保存時にデータ埋め込み） ----------
+  function hookSaveAndDownload(){
+    if(typeof window.saveAndDownload!=='function'||window.saveAndDownload.__cpHooked) return;
+    var orig = window.saveAndDownload;
+    window.saveAndDownload = function(){
+      try{
+        var cpNode = document.getElementById('saved-char-presets');
+        if(cpNode) cpNode.textContent = JSON.stringify(window._charPresetsData||{presets:{}});
+        var spNode = document.getElementById('saved-scen-presets');
+        if(spNode) spNode.textContent = JSON.stringify(window._scenPresetsData||{});
+      }catch(e){}
+      return orig.apply(this, arguments);
+    };
+    window.saveAndDownload.__cpHooked = true;
+  }
+  [0,500].forEach(function(t){ setTimeout(hookSaveAndDownload,t); });
 
   // ---------- シナリオ設定のセレクトを更新 ----------
   window.refreshPresetSelects = function(){
@@ -25283,11 +25855,13 @@ window.clickFactoryValvePit = function(){
   };
   setTimeout(window.refreshPresetSelects, 300);
 
-  // ---------- saveScenario / editScenario にプリセット情報を追加 ----------
+  // ---------- saveScenario / editScenario フック ----------
   function hookScenarioFunctions(){
+    // saveScenario wrap
     if(typeof window.saveScenario==='function' && !window.saveScenario.__cpHooked){
       var origSave = window.saveScenario;
       window.saveScenario = function(){
+        // プリセット選択を保存（saveScenario実行前に確保）
         try{
           var idx = (typeof currentScenarioIndex!=='undefined') ? currentScenarioIndex : null;
           if(idx!==null && idx!==undefined){
@@ -25295,7 +25869,7 @@ window.clickFactoryValvePit = function(){
             var cp = {};
             CHAR_DEFS.forEach(function(ch){
               var sel = document.getElementById('sc-cpsel-'+ch.key);
-              if(sel) cp[ch.key] = sel.value || '';
+              cp[ch.key] = sel ? (sel.value||'') : '';
             });
             window._scenPresetsData[String(idx)] = cp;
             saveScenPsel(window._scenPresetsData);
@@ -25306,29 +25880,36 @@ window.clickFactoryValvePit = function(){
       window.saveScenario.__cpHooked = true;
     }
 
-    if(typeof window.editScenario==='function' && !window.editScenario.__cpHooked){
-      var origEdit = window.editScenario;
-      window.editScenario = function(idx){
+    // openScenarioEdit wrap
+    if(typeof window.openScenarioEdit==='function' && !window.openScenarioEdit.__cpHooked){
+      var origEdit = window.openScenarioEdit;
+      window.openScenarioEdit = function(idx){
         origEdit.apply(this, arguments);
-        try{
-          window.refreshPresetSelects();
-          var cp = (window._scenPresetsData||{})[String(idx)];
-          if(!cp) return;
-          CHAR_DEFS.forEach(function(ch){
-            var sel = document.getElementById('sc-cpsel-'+ch.key);
-            if(sel) sel.value = cp[ch.key]||'';
-          });
-        }catch(e){}
+        // フォームが表示された後にセレクトを更新・復元
+        setTimeout(function(){
+          try{
+            window.refreshPresetSelects();
+            var cp = (window._scenPresetsData||{})[String(idx)];
+            if(!cp) return;
+            CHAR_DEFS.forEach(function(ch){
+              var sel = document.getElementById('sc-cpsel-'+ch.key);
+              if(sel) sel.value = cp[ch.key]||'';
+            });
+          }catch(e){}
+        }, 50);
       };
-      window.editScenario.__cpHooked = true;
+      window.openScenarioEdit.__cpHooked = true;
     }
   }
-  setTimeout(hookScenarioFunctions, 200);
+  // 即時 + 遅延の両方で実行（タイミング問題を回避）
+  hookScenarioFunctions();
+  setTimeout(hookScenarioFunctions, 100);
+  setTimeout(hookScenarioFunctions, 500);
 
   // ---------- カテゴリーヘッダーの背景色 ----------
   var CAT_COLORS = {
-    '集合住宅':         { bg:'#1a3a5c', color:'#e3f2fd' },
-    '工場':             { bg:'#3e2600', color:'#ffe0b2' },
+    '集合住宅':           { bg:'#1a3a5c', color:'#e3f2fd' },
+    '工場':               { bg:'#3e2600', color:'#ffe0b2' },
     'キャラクタープリセット': { bg:'#1a3a1a', color:'#e8f5e9' }
   };
   function applyHeaderColors(){
@@ -25351,6 +25932,9 @@ window.clickFactoryValvePit = function(){
 
 })();
 </script>
+
+<script id="saved-char-presets" type="application/json">{}</script>
+<script id="saved-scen-presets" type="application/json">{}</script>
 
 <!-- チュートリアルオーバーレイ -->
 <div id="tutorial-overlay">
@@ -25463,4 +26047,297 @@ window.clickFactoryValvePit = function(){
       <button class="se-cw-btn cw-cancel" onclick="window._seCwCancel()">キャンセル</button>
     </div>
   </div>
-</div><div class="se-layer-win" id="se-layer-win"><div class="se-layer-win-header"><span>レイヤー順序（上=前面）</span><button class="se-btn se-btn-secondary" style="padding:0.3vmin 0.6vmin;font-size:1.2vmin;" onclick="toggleLayerWindow()">✕</button></div><div class="se-layer-win-body" id="se-layer-body"><div class="se-layer-item" draggable="true" data-child-idx="8"><span class="se-layer-idx">1</span><span>hatch-container</span></div><div class="se-layer-item" draggable="true" data-child-idx="7"><span class="se-layer-idx">2</span><span>hall-floor</span></div><div class="se-layer-item" draggable="true" data-child-idx="6"><span class="se-layer-idx">3</span><span>hall-door-wrapper</span></div><div class="se-layer-item" draggable="true" data-child-idx="5"><span class="se-layer-idx">4</span><span>hall-door-wrapper</span></div><div class="se-layer-item" draggable="true" data-child-idx="4"><span class="se-layer-idx">5</span><span>entrance-area</span></div><div class="se-layer-item" draggable="true" data-child-idx="3"><span class="se-layer-idx">6</span><span>hall-back-wall</span></div><div class="se-layer-item" draggable="true" data-child-idx="2"><span class="se-layer-idx">7</span><span>guide-sign</span></div><div class="se-layer-item" draggable="true" data-child-idx="1"><span class="se-layer-idx">8</span><span>guide-sign</span></div><div class="se-layer-item" draggable="true" data-child-idx="0"><span class="se-layer-idx">9</span><span>custom-hall-wall</span></div></div></div></body></html>
+</div><div class="se-layer-win" id="se-layer-win"><div class="se-layer-win-header"><span>レイヤー順序（上=前面）</span><button class="se-btn se-btn-secondary" style="padding:0.3vmin 0.6vmin;font-size:1.2vmin;" onclick="toggleLayerWindow()">✕</button></div><div class="se-layer-win-body" id="se-layer-body"><div class="se-layer-item" draggable="true" data-child-idx="8"><span class="se-layer-idx">1</span><span>hatch-container</span></div><div class="se-layer-item" draggable="true" data-child-idx="7"><span class="se-layer-idx">2</span><span>hall-floor</span></div><div class="se-layer-item" draggable="true" data-child-idx="6"><span class="se-layer-idx">3</span><span>hall-door-wrapper</span></div><div class="se-layer-item" draggable="true" data-child-idx="5"><span class="se-layer-idx">4</span><span>hall-door-wrapper</span></div><div class="se-layer-item" draggable="true" data-child-idx="4"><span class="se-layer-idx">5</span><span>entrance-area</span></div><div class="se-layer-item" draggable="true" data-child-idx="3"><span class="se-layer-idx">6</span><span>hall-back-wall</span></div><div class="se-layer-item" draggable="true" data-child-idx="2"><span class="se-layer-idx">7</span><span>guide-sign</span></div><div class="se-layer-item" draggable="true" data-child-idx="1"><span class="se-layer-idx">8</span><span>guide-sign</span></div><div class="se-layer-item" draggable="true" data-child-idx="0"><span class="se-layer-idx">9</span><span>custom-hall-wall</span></div></div></div>
+
+<script>
+// ================================================================
+// 漏洩系統画面 カードドロップシステム
+// ================================================================
+(function(){
+  if(window.__lkDropSystemInstalled) return;
+  window.__lkDropSystemInstalled = true;
+
+  var _lkDropped = new Set();
+
+  function _getOptionsForCard(cardId){
+    var opts = [];
+    if(cardId === 'カード_灯内内管漏洩'){
+      opts = ['101号室灯内内管','102号室灯内内管','201号室灯内内管','202号室灯内内管','ラーメン屋灯内内管','焼き鳥屋灯内内管'];
+    } else if(cardId === 'カード_灯外内管漏洩'){
+      opts = ['集合住宅灯外内管'];
+    } else if(cardId === 'カード_道路漏洩'){
+      opts = ['道路上のガス管'];
+    } else if(cardId === 'カード_LPG' || cardId === 'カード_スプレー缶'){
+      opts = ['都市ガス以外'];
+    }
+    var anyOtherEvidence = ['カード_LPG','カード_スプレー缶','カード_電子機器のおもちゃ','カード_濡れ雑巾','カード_冷蔵庫アラート','カード_下水工事'];
+    if(anyOtherEvidence.indexOf(cardId) !== -1){
+      if(opts.indexOf('異常なし') === -1) opts.push('異常なし');
+    }
+    return opts;
+  }
+
+  function _addOption(value){
+    var sel = document.getElementById('clear-answer-select');
+    if(!sel) return;
+    for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value === value) return; }
+    var opt = document.createElement('option');
+    opt.value = value; opt.textContent = value;
+    sel.appendChild(opt);
+  }
+
+  function lkFinishDrop(cardId){
+    if(!cardId) return;
+    if(_lkDropped.has(cardId)) return;
+    _lkDropped.add(cardId);
+    var dz = document.getElementById('lk-dropzone');
+    if(dz){
+      var hint = document.getElementById('lk-dropzone-hint');
+      if(hint) hint.style.display = 'none';
+      var img = document.createElement('img');
+      img.alt = cardId;
+      try{ var def = (typeof window.__getCardDef === 'function') ? window.__getCardDef(cardId) : null; if(def && def.img) img.src = def.img; }catch(e){}
+      img.style.cssText = 'height:6vmin;width:auto;border-radius:0.5vmin;box-shadow:0 0.3vmin 0.8vmin rgba(0,0,0,0.5);';
+      img.title = cardId;
+      dz.appendChild(img);
+    }
+    var newOpts = _getOptionsForCard(cardId);
+    for(var i=0;i<newOpts.length;i++) _addOption(newOpts[i]);
+    try{
+      if(newOpts.length > 0){
+        try{ showSystemMsg('選択肢が追加されました：' + newOpts.join('・')); }catch(e){}
+      }
+    }catch(e){}
+    try{ if(cardId === 'カード_灯内内管漏洩') window._tutT7CardDropped = true; }catch(e){}
+    lkRenderHand();
+  }
+
+  function lkRenderHand(){
+    var hand = document.getElementById('lk-hand-inner');
+    if(!hand) return;
+    hand.innerHTML = '';
+    var ids = [];
+    try{ if(typeof window.__getOwnedCardIds === 'function') ids = window.__getOwnedCardIds(); }catch(e){}
+    ids.forEach(function(id){
+      var def = null;
+      try{ if(typeof window.__getCardDef === 'function') def = window.__getCardDef(id); }catch(e){}
+      if(!def || !def.img) return;
+      var card = document.createElement('div');
+      card.className = 'bt-card';
+      card.dataset.cardId = id;
+      card.innerHTML = '<img src="' + def.img + '" alt="' + id + '">';
+      card.style.opacity = _lkDropped.has(id) ? '0.4' : '1';
+      card.addEventListener('pointerdown', function(ev){
+        ev.preventDefault(); ev.stopPropagation();
+        var ds = window.__btDragState;
+        if(!ds) return;
+        var rect = card.getBoundingClientRect();
+        ds.active = true; ds.cardId = id; ds.element = card;
+        ds.offsetX = ev.clientX - rect.left; ds.offsetY = ev.clientY - rect.top;
+        ds.originalParent = card.parentNode; ds.originalNextSibling = card.nextSibling;
+        card.style.position = 'fixed'; card.style.left = rect.left + 'px'; card.style.top = rect.top + 'px';
+        card.style.width = rect.width + 'px'; card.style.height = rect.height + 'px';
+        card.style.zIndex = '9999'; card.style.opacity = '0.85'; card.style.pointerEvents = 'none';
+        document.body.appendChild(card);
+      });
+      hand.appendChild(card);
+    });
+  }
+
+  function lkReset(){
+    _lkDropped = new Set();
+    var dz = document.getElementById('lk-dropzone');
+    if(dz) dz.innerHTML = '<span id="lk-dropzone-hint">証拠カードをここへドラッグ</span>';
+    lkRenderHand();
+  }
+
+  window.__lkFinishDrop = lkFinishDrop;
+  window.__lkRenderHand = lkRenderHand;
+  window.__lkReset = lkReset;
+
+  var _lkObserver = new MutationObserver(function(){
+    var sc = document.getElementById('scene-clear');
+    if(sc && sc.classList.contains('active')) setTimeout(lkRenderHand, 300);
+  });
+  var _sc = document.getElementById('scene-clear');
+  if(_sc) _lkObserver.observe(_sc, { attributes: true, attributeFilter:['class'] });
+})();
+
+// ================================================================
+// closeClearStep1: 漏洩系統画面を閉じてゲームに戻る
+// ================================================================
+function closeClearStep1(){
+  try{
+    document.getElementById('scene-clear').classList.remove('active');
+    try{ isPaused = false; }catch(e){}
+    try{ loop(); }catch(e){}
+  }catch(e){}
+}
+
+// ================================================================
+// カード入手条件 イベントシステム（カード①〜⑨）
+// ================================================================
+(function(){
+  if(window.__cardEventSystemInstalled) return;
+  window.__cardEventSystemInstalled = true;
+
+  function award(id){ try{ window.__awardCard && window.__awardCard(id); }catch(e){} }
+  function getScenario(){ return (typeof activeScenario !== 'undefined') ? activeScenario : null; }
+  function getOtherEvidence(){ var sc=getScenario(); return (sc&&sc.otherEvidence)?String(sc.otherEvidence):'なし'; }
+  function getGasCause(){ var sc=getScenario(); return (sc&&sc.gasCause)?String(sc.gasCause):''; }
+  function getCurrentRoom(){ return (typeof state!=='undefined'&&state)?state.room:-1; }
+  function isOwnerA(){ return (typeof currentApartmentOwner!=='undefined')?currentApartmentOwner==='A':false; }
+
+  // ①②: マノメーター圧力降下 → 灯内/灯外内管カード付与
+  (function(){
+    if(window.__pressureCardHooked) return;
+    window.__pressureCardHooked = true;
+    function tryHook(){
+      if(typeof window.finalizePressureTest !== 'function'){ setTimeout(tryHook,500); return; }
+      var _orig = window.finalizePressureTest;
+      window.finalizePressureTest = function(id){
+        var ret = _orig.apply(this, arguments);
+        setTimeout(function(){
+          try{
+            if(window._pressureNg && window._pressureNg[id]){
+              var cause = getGasCause();
+              if(cause.indexOf('灯内内管')!==-1) award('カード_灯内内管漏洩');
+              if(cause.indexOf('灯外内管')!==-1) award('カード_灯外内管漏洩');
+            }
+          }catch(e){}
+        },150);
+        return ret;
+      };
+    }
+    tryHook();
+  })();
+
+  // ③: 前面道路（room 1）でガス検知 → カード_道路漏洩
+  setInterval(function(){
+    try{
+      if(getGasCause()!=='道路上のガス管') return;
+      if(getCurrentRoom()!==1) return;
+      if((typeof hs1Discovered!=='undefined'&&hs1Discovered)||(typeof hs2Discovered!=='undefined'&&hs2Discovered)){
+        award('カード_道路漏洩');
+      }
+    }catch(e){}
+  }, 500);
+
+  // ④: カセットボンベ → 通報者台所の床下点検口50%以上
+  setInterval(function(){
+    try{
+      if(getOtherEvidence()!=='カセットボンベ') return;
+      if(!isOwnerA()||getCurrentRoom()!==9) return;
+      var k=document.getElementById('room-kitchen'); if(!k) return;
+      var lid=k.querySelector('.hatch-lid.ps-door'); if(!lid) return;
+      if(typeof getDoorOpenRatio2==='function'&&getDoorOpenRatio2(lid)>=0.5) award('カード_LPG');
+    }catch(e){}
+  }, 300);
+
+  // ⑤: スプレー缶 → 居住者B浴室入室（changeRoom hook）
+  (function(){
+    if(window.__sprayCardHooked) return;
+    window.__sprayCardHooked = true;
+    function tryHookCR(){
+      if(typeof window.changeRoom!=='function'){ setTimeout(tryHookCR,500); return; }
+      var _orig=window.changeRoom;
+      window.changeRoom=function(r,x){
+        var ret=_orig.apply(this,arguments);
+        try{
+          if(r===8&&(typeof currentApartmentOwner!=='undefined')&&currentApartmentOwner==='B'&&getOtherEvidence()==='スプレー缶')
+            award('カード_スプレー缶');
+        }catch(e){}
+        return ret;
+      };
+    }
+    tryHookCR();
+  })();
+
+  // ⑥: 電子機器のおもちゃ → 通報者寝室の棚50%以上 + 効果音ループ
+  var _toyDone=false;
+  setInterval(function(){
+    try{
+      if(_toyDone||getOtherEvidence()!=='電子機器のおもちゃ'||!isOwnerA()||getCurrentRoom()!==10) return;
+      var room=document.getElementById('room-bedroom'); if(!room) return;
+      var door=room.querySelector('.bed-shelf-door.ps-door'); if(!door) return;
+      if(typeof getDoorOpenRatio2==='function'&&getDoorOpenRatio2(door)>=0.5){ _toyDone=true; award('カード_電子機器のおもちゃ'); }
+    }catch(e){}
+  }, 300);
+  // おもちゃ効果音ループ（10秒毎）
+  setInterval(function(){
+    try{
+      if(_toyDone||getOtherEvidence()!=='電子機器のおもちゃ') return;
+      var r=getCurrentRoom();
+      if(!((r===10&&isOwnerA())||([5,6,7,8,9].indexOf(r)!==-1&&isOwnerA()))) return;
+      var a=new Audio('https://raw.githubusercontent.com/skuall555/game-assets/main/toy_bgm.wav');
+      a.volume=r===10?0.7:0.42; a.play().catch(function(){});
+    }catch(e){}
+  }, 10000);
+
+  // ⑦: 冷蔵庫アラート → 通報者台所の台所セットをクリック + 効果音ループ
+  var _fridgeDone=false;
+  document.addEventListener('click',function(e){
+    try{
+      if(_fridgeDone||getOtherEvidence()!=='冷蔵庫アラート'||!isOwnerA()||getCurrentRoom()!==9) return;
+      var t=e.target;
+      while(t&&t!==document.body){
+        if(t.classList&&(t.classList.contains('kit-set-unit')||t.classList.contains('custom-kit-set'))){ _fridgeDone=true; award('カード_冷蔵庫アラート'); return; }
+        t=t.parentElement;
+      }
+    }catch(e){}
+  },true);
+  // 冷蔵庫効果音ループ（10秒毎）
+  setInterval(function(){
+    try{
+      if(_fridgeDone||getOtherEvidence()!=='冷蔵庫アラート') return;
+      var r=getCurrentRoom();
+      if(!((r===9&&isOwnerA())||([5,6,7,8,10].indexOf(r)!==-1&&isOwnerA()))) return;
+      var a=new Audio('https://raw.githubusercontent.com/skuall555/game-assets/main/fridge_alert.wav');
+      a.volume=r===9?0.7:0.42; a.play().catch(function(){});
+    }catch(e){}
+  }, 10000);
+
+  // ⑧: 濡れ雑巾 → 通報者脱衣所の収納棚50%以上
+  setInterval(function(){
+    try{
+      if(getOtherEvidence()!=='濡れ雑巾'||!isOwnerA()||getCurrentRoom()!==7) return;
+      var changing=document.getElementById('room-changing'); if(!changing) return;
+      var door=changing.querySelector('.shelf-door.ps-door'); if(!door) return;
+      if(typeof getDoorOpenRatio2==='function'&&getDoorOpenRatio2(door)>=0.5) award('カード_濡れ雑巾');
+    }catch(e){}
+  }, 300);
+
+  // ⑨: 下水工事 → 焼き鳥屋入室でカード + 緑ボタン非表示（changeRoom hook）
+  (function(){
+    if(window.__sewageCardHooked) return;
+    window.__sewageCardHooked = true;
+    function tryHookCR9(){
+      if(typeof window.changeRoom!=='function'){ setTimeout(tryHookCR9,500); return; }
+      var _orig=window.changeRoom;
+      window.changeRoom=function(r,x){
+        var ret=_orig.apply(this,arguments);
+        try{
+          if(r===13&&getOtherEvidence()==='下水工事') award('カード_下水工事');
+          if(r===13){
+            setTimeout(function(){
+              try{
+                var yk=document.getElementById('room-yakitori'); if(!yk) return;
+                if(getOtherEvidence()==='下水工事'){
+                  yk.querySelectorAll('.talk-btn,.fan-switch-toggle').forEach(function(b){ b.style.display='none'; });
+                  // HUDの通話ボタンも非表示
+                  var hudTalkBtn=document.getElementById('talk-btn');
+                  if(hudTalkBtn) hudTalkBtn.style.display='none';
+                }
+              }catch(e){}
+            },100);
+          }
+        }catch(e){}
+        return ret;
+      };
+    }
+    tryHookCR9();
+  })();
+
+})();
+</script>
+</body></html>
