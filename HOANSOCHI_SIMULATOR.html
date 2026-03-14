@@ -3204,7 +3204,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
     window.location.href,
     POPUP_NAME,
     'width=' + GAME_W + ',height=' + GAME_H +
-    ',toolbar=no,menubar=no,scrollbars=no,resizable=yes,location=no,status=no'
+    ',left=100,top=100,toolbar=no,menubar=no,scrollbars=no,resizable=yes,location=no,status=no'
   );
   if (popup) {
     // 元のタブ/ウィンドウは案内画面に差し替え
@@ -3222,7 +3222,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       '<h1>&#x1F3AE; ゲームを新しいウィンドウで開きました</h1>',
       '<p>ポップアップウィンドウでプレイしてください。</p>',
       '<button onclick="var p=window.open(\''+window.location.href+'\',\''+POPUP_NAME+'\',',
-      '\'width='+GAME_W+',height='+GAME_H+',toolbar=no,menubar=no,scrollbars=no,resizable=yes,location=no,status=no\');',
+      '\'width='+GAME_W+',height='+GAME_H+',left=100,top=100,toolbar=no,menubar=no,scrollbars=no,resizable=yes,location=no,status=no\');',
       'if(p){p.focus();}">再度開く / 前面に出す</button>',
       '</div></body></html>'
     ].join(''));
@@ -4607,10 +4607,6 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="bath-drain custom-drain-img"></div>
 <div class="bathtub custom-bathtub-img"></div>
 <div class="bath-floor"></div>
-<div class="shelf-unit" id="bath-shelf-a" style="left:70%;bottom:20%;">
-  <div class="shelf-inner"><div>備品</div><div>タオル</div></div>
-  <div class="bath-shelf-door ps-door" data-max-slide="100" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false" style="transform: translateX(0px); opacity: 1;">収納棚</div>
-</div>
 </div>
 
 <div id="room-kitchen" class="room" style="">
@@ -4715,10 +4711,6 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="bath-drain custom-drain-img"></div>
 <div class="bathtub custom-bathtub-img"></div>
 <div class="bath-floor"></div>
-<div class="shelf-unit" id="bath-shelf-b" style="left:70%;bottom:20%;">
-  <div class="shelf-inner"><div>備品</div><div>タオル</div></div>
-  <div class="bath-shelf-door ps-door" data-max-slide="100" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false" style="transform: translateX(0px); opacity: 1;">収納棚</div>
-</div>
 </div>
 
 <div id="room-kitchen-b" class="room" style="">
@@ -12606,9 +12598,9 @@ try{
     { id:'カード_灯外内管漏洩', name:'カード_灯外内管漏洩', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AF%E5%A4%96%E7%AE%A1%E6%BC%8F%E6%B4%A9.png', desc:'入手条件：ガス漏れ原因が「〇〇灯外内管」の場合、ガスメーターでデジタルマノメーター試験を行い、圧力降下を確認する。' },
     { id:'カード_道路漏洩', name:'カード_道路漏洩', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E9%81%93%E8%B7%AF%E6%BC%8F%E3%82%8C.png', desc:'入手条件：ガス漏れ原因が「道路上のガス管」の場合、前面道路で可燃性ガス検知器の反応箇所を発見する。' },
     { id:'カード_スプレー缶', name:'カード_スプレー缶', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E3%82%B9%E3%83%97%E3%83%AC%E3%83%BC%E7%BC%B6.png', desc:'入手条件：「都市ガス以外の証拠」が「スプレー缶」の場合、居住者B宅の浴室に入室する。' },
-    { id:'カード_電子機器のおもちゃ', name:'カード_電子機器のおもちゃ', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E3%81%8B%E3%82%82%E3%81%A1%E3%82%83.png', desc:'入手条件：「都市ガス以外の証拠」が「電子機器のおもちゃ」の場合、通報者宅寝室の棚を50%以上開ける。' },
+    { id:'カード_電子機器のおもちゃ', name:'カード_電子機器のおもちゃ', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E3%81%8A%E3%82%82%E3%81%A1%E3%82%83.png', desc:'入手条件：「都市ガス以外の証拠」が「電子機器のおもちゃ」の場合、通報者宅寝室の棚を50%以上開ける。' },
     { id:'カード_冷蔵庫アラート', name:'カード_冷蔵庫アラート', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E5%86%B7%E8%94%B5%E5%BA%AB.png', desc:'入手条件：「都市ガス以外の証拠」が「冷蔵庫アラート」の場合、通報者宅台所の台所セットをクリックする。' },
-    { id:'カード_濡れ雑巾', name:'カード_濡れ雑巾', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E6%BF%A1%E3%82%8C%E9%9B%91%E5%B7%BE.png', desc:'入手条件：「都市ガス以外の証拠」が「濡れ雑巾」の場合、通報者宅浴室の棚を50%以上開ける。' },
+    { id:'カード_濡れ雑巾', name:'カード_濡れ雑巾', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E6%BF%A1%E3%82%8C%E9%9B%91%E5%B7%BE.png', desc:'入手条件：「都市ガス以外の証拠」が「濡れ雑巾」の場合、通報者宅脱衣所の収納棚を50%以上開ける。' },
     { id:'カード_下水工事', name:'カード_下水工事', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E4%B8%8B%E6%B0%B4%E5%B7%A5%E4%BA%8B.png', desc:'入手条件：「都市ガス以外の証拠」が「下水工事」の場合、焼き鳥屋に入室する。' }
   ];
 
@@ -25778,7 +25770,12 @@ window.clickFactoryValvePit = function(){
     }
     var newOpts = _getOptionsForCard(cardId);
     for(var i=0;i<newOpts.length;i++) _addOption(newOpts[i]);
-    try{ if(cardId === 'カード_灯内内管漏洩' && typeof _tutT7CardDropped !== 'undefined') _tutT7CardDropped = true; }catch(e){}
+    try{
+      if(newOpts.length > 0){
+        try{ showSystemMsg('選択肢が追加されました：' + newOpts.join('・')); }catch(e){}
+      }
+    }catch(e){}
+    try{ if(cardId === 'カード_灯内内管漏洩') window._tutT7CardDropped = true; }catch(e){}
     lkRenderHand();
   }
 
@@ -25937,17 +25934,10 @@ function closeClearStep1(){
   setInterval(function(){
     try{
       if(_toyDone||getOtherEvidence()!=='電子機器のおもちゃ') return;
-      var r=getCurrentRoom(); var vol=0;
-      if(r===10&&isOwnerA()) vol=1.0;
-      else if([5,6,7,8,9].indexOf(r)!==-1&&isOwnerA()) vol=0.5;
-      if(!vol) return;
-      var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
-      var ac=new AC(), osc=ac.createOscillator(), g=ac.createGain();
-      osc.connect(g); g.connect(ac.destination);
-      osc.frequency.value=880;
-      g.gain.setValueAtTime(vol*0.3,ac.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.35);
-      osc.start(ac.currentTime); osc.stop(ac.currentTime+0.35);
+      var r=getCurrentRoom();
+      if(!((r===10&&isOwnerA())||([5,6,7,8,9].indexOf(r)!==-1&&isOwnerA()))) return;
+      var a=new Audio('https://raw.githubusercontent.com/skuall555/game-assets/main/toy_bgm.wav');
+      a.volume=r===10?1.0:0.5; a.play().catch(function(){});
     }catch(e){}
   }, 10000);
 
@@ -25963,33 +25953,23 @@ function closeClearStep1(){
       }
     }catch(e){}
   },true);
-  // 冷蔵庫効果音ループ（10秒毎、ビープ×3）
+  // 冷蔵庫効果音ループ（10秒毎）
   setInterval(function(){
     try{
       if(_fridgeDone||getOtherEvidence()!=='冷蔵庫アラート') return;
-      var r=getCurrentRoom(); var vol=0;
-      if(r===10&&isOwnerA()) vol=1.0;
-      else if([5,6,7,8,9].indexOf(r)!==-1&&isOwnerA()) vol=0.5;
-      if(!vol) return;
-      var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
-      var ac=new AC();
-      [0,0.22,0.44].forEach(function(t){
-        var osc=ac.createOscillator(),g=ac.createGain();
-        osc.connect(g); g.connect(ac.destination);
-        osc.frequency.value=1200;
-        g.gain.setValueAtTime(vol*0.22,ac.currentTime+t);
-        g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+t+0.18);
-        osc.start(ac.currentTime+t); osc.stop(ac.currentTime+t+0.18);
-      });
+      var r=getCurrentRoom();
+      if(!((r===9&&isOwnerA())||([5,6,7,8,10].indexOf(r)!==-1&&isOwnerA()))) return;
+      var a=new Audio('https://raw.githubusercontent.com/skuall555/game-assets/main/fridge_alert.wav');
+      a.volume=r===9?1.0:0.5; a.play().catch(function(){});
     }catch(e){}
   }, 10000);
 
-  // ⑧: 濡れ雑巾 → 通報者浴室の棚50%以上
+  // ⑧: 濡れ雑巾 → 通報者脱衣所の収納棚50%以上
   setInterval(function(){
     try{
-      if(getOtherEvidence()!=='濡れ雑巾'||!isOwnerA()||getCurrentRoom()!==8) return;
-      var bath=document.getElementById('room-bath'); if(!bath) return;
-      var door=bath.querySelector('.bath-shelf-door.ps-door'); if(!door) return;
+      if(getOtherEvidence()!=='濡れ雑巾'||!isOwnerA()||getCurrentRoom()!==7) return;
+      var changing=document.getElementById('room-changing'); if(!changing) return;
+      var door=changing.querySelector('.shelf-door.ps-door'); if(!door) return;
       if(typeof getDoorOpenRatio2==='function'&&getDoorOpenRatio2(door)>=0.5) award('カード_濡れ雑巾');
     }catch(e){}
   }, 300);
