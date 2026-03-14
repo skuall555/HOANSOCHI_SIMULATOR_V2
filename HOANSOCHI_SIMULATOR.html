@@ -8097,7 +8097,7 @@ function createDefaultScenarioData(){
       gasKind:'13A',
       weather:'晴れ',weatherAfter:'なし',
       leak1:'脱衣所',leak2:'脱衣所',
-      alarm:'なし',alarmEntry:'なし',
+      alarm:'なし',alarmTrigger:'鳴動しない',alarmEntry:'なし',
       reporterRoomNo:'101',
       residentBRoomNo:'102'
     ,indoorLeakRoomNo:'なし',basement:'なし',gasCause:'101号室灯内内管',
@@ -8130,6 +8130,7 @@ function normalizeScenarioData(arr){
       leak1:(s.leak1!=null)?String(s.leak1):'脱衣所',
       leak2:(s.leak2!=null)?String(s.leak2):'脱衣所',
       alarm:(s.alarm!=null)?String(s.alarm):'なし',
+      alarmTrigger:(s.alarmTrigger!=null)?String(s.alarmTrigger):'鳴動しない',
       alarmEntry:(s.alarmEntry!=null)?String(s.alarmEntry):'なし',
       reporterRoomNo:(rep!=null)?String(rep):'101',
       residentBRoomNo:(bro!=null)?String(bro):'102',
@@ -10903,6 +10904,7 @@ function _commAvatarSrcFor(partnerKey){
   // ※居住者Bの画像は ALARM_RESIDENT_IMG_URL を差し替えてください
   if(partnerKey==='alarmB') return (typeof ALARM_RESIDENT_IMG_URL!=='undefined') ? ALARM_RESIDENT_IMG_URL : 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png';
   if(partnerKey==='fireCommander') return (typeof window._fireIconURL!=='undefined') ? window._fireIconURL : 'https://raw.githubusercontent.com/skuall555/game-assets/main/tmp8791ecvh.png';
+  if(partnerKey==='shobo') return (typeof window._fireIconURL!=='undefined') ? window._fireIconURL : 'https://raw.githubusercontent.com/skuall555/game-assets/main/tmp8791ecvh.png';
   return (customData && customData['resident']) ? customData['resident'] : 'https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png';
 }
 
@@ -17983,8 +17985,8 @@ window._tantouGenerateReply = function(rawText){
     window._tantouGenerateReply = function(rawText){
       var t = rawText.replace(/\s+/g,'');
       if(t.indexOf('消防') !== -1){
-        setTimeout(function(){ try{ closeCommWindow(); setTimeout(function(){ openCommWindow('normal','shobo'); },200); }catch(e){} }, 300);
-        return '消防への通報ウィンドウを開きます。';
+        setTimeout(function(){ try{ window.openBreakthrough('shobo'); }catch(e){} }, 300);
+        return '消防への要請を受け付けます。状況証拠をご提示ください。';
       }
       if(t.indexOf('警察') !== -1){
         setTimeout(function(){ try{ window.openBreakthrough('keisatsu'); }catch(e){} }, 300);
@@ -18285,8 +18287,8 @@ window._tantouGenerateReply = function(rawText){
     greenBtn.className = 'act-btn talk-btn';
     greenBtn.style.cssText = 'display:flex;';
     greenBtn.innerHTML = '<img src="'+FIRE_ICON_URL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="消防大隊長">';
-    greenBtn.onmousedown = function(){ if(typeof openCommWindow==='function') openCommWindow('normal','fireCommander'); };
-    greenBtn.addEventListener('touchstart', function(e){ if(typeof openCommWindow==='function') openCommWindow('normal','fireCommander'); e.preventDefault(); }, {passive:false});
+    greenBtn.onmousedown = function(){ if(typeof openCommWindow==='function') openCommWindow('normal','shobo'); };
+    greenBtn.addEventListener('touchstart', function(e){ if(typeof openCommWindow==='function') openCommWindow('normal','shobo'); e.preventDefault(); }, {passive:false});
     // controls-r内のaction-btnの直前に挿入
     var cr = document.querySelector('.controls-r');
     var actionBtn = document.getElementById('action-btn');
@@ -22987,10 +22989,7 @@ function _buildReply(droppedId){
    ================================================================ */
 window._tmPressShobo = function(){
   if(!_shoboOk()) return;
-  try{
-    closeCommWindow();
-    setTimeout(function(){ openCommWindow('normal','shobo'); }, 200);
-  }catch(e){}
+  try{ openBreakthrough('shobo'); }catch(e){}
 };
 window._tmPressKeisatsu = function(){
   if(!_shoboOk()) return;
