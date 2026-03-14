@@ -3429,25 +3429,31 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div id="clear-inner" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
 
   <!-- Step 1: 漏洩系統問題画面 -->
-  <div id="clear-step1" style="background:rgba(0,0,0,0.88);border-radius:2vmin;padding:4vmin;max-width:80vw;width:80vmin;color:#fff;text-align:center;display:block;">
-    <div style="font-size:3.5vmin;font-weight:bold;margin-bottom:3vmin;color:#4fc3f7;">🔍 保安措置が完了しました</div>
-    <div style="font-size:2.5vmin;margin-bottom:3vmin;line-height:1.7;background:rgba(255,255,255,0.08);border-radius:1vmin;padding:2vmin;">
-      Q. 今回の調査の結果、あなたが判断した<br><strong style="color:#ffd54f;">漏洩系統</strong>を選択してください。
+  <div id="clear-step1" style="background:rgba(0,0,0,0.92);border-radius:2vmin;padding:3.5vmin;max-width:92vw;width:96vmin;color:#fff;text-align:center;display:block;position:relative;">
+    <!-- 閉じるボタン（ゲームに戻る） -->
+    <button onclick="closeClearStep1()" title="ゲームに戻る" style="position:absolute;top:0.8vmin;right:0.8vmin;width:4.5vmin;height:4.5vmin;background:#c62828;color:#fff;border:0.3vmin solid #fff;border-radius:0.5vmin;font-size:3vmin;font-weight:bold;cursor:pointer;line-height:1;z-index:10;">×</button>
+
+    <div style="font-size:3.2vmin;font-weight:bold;margin-bottom:1.5vmin;color:#4fc3f7;">🔍 保安措置が完了しました</div>
+    <div style="font-size:2.2vmin;margin-bottom:1.5vmin;line-height:1.7;background:rgba(255,255,255,0.08);border-radius:1vmin;padding:1.5vmin;">
+      Q. 今回の調査の結果、あなたが判断した<br><strong style="color:#ffd54f;">漏洩系統</strong>を選択してください。<br>
+      <span style="font-size:80%;color:#90caf9;">※証拠カードをドロップゾーンへドラッグして選択肢を追加できます。</span>
     </div>
-    <select id="clear-answer-select" style="width:100%;padding:1.5vmin;font-size:2.5vmin;border-radius:1vmin;border:0.3vmin solid #4fc3f7;background:#1a2a3a;color:#fff;margin-bottom:3vmin;box-sizing:border-box;">
+
+    <!-- カードドロップゾーン -->
+    <div id="lk-dropzone" style="border:0.3vmin dashed #4fc3f7;border-radius:1vmin;min-height:7.5vmin;padding:1vmin;margin-bottom:1.2vmin;display:flex;flex-wrap:wrap;gap:1vmin;align-items:center;justify-content:center;color:#90caf9;font-size:2vmin;transition:background 0.2s;">
+      <span id="lk-dropzone-hint">証拠カードをここへドラッグ</span>
+    </div>
+
+    <select id="clear-answer-select" style="width:100%;padding:1.5vmin;font-size:2.5vmin;border-radius:1vmin;border:0.3vmin solid #4fc3f7;background:#1a2a3a;color:#fff;margin-bottom:1.5vmin;box-sizing:border-box;">
       <option value="">-- 選択してください --</option>
-      <option value="101号室灯内内管">101号室灯内内管</option>
-      <option value="102号室灯内内管">102号室灯内内管</option>
-      <option value="201号室灯内内管">201号室灯内内管</option>
-      <option value="202号室灯内内管">202号室灯内内管</option>
-      <option value="ラーメン屋灯内内管">ラーメン屋灯内内管</option>
-      <option value="焼き鳥屋灯内内管">焼き鳥屋灯内内管</option>
-      <option value="集合住宅灯外内管">集合住宅灯外内管</option>
-      <option value="道路上のガス管">道路上のガス管</option>
-      <option value="都市ガス以外">都市ガス以外</option>
-      <option value="異常なし">異常なし</option>
     </select>
-    <button onclick="submitClearAnswer()" style="width:60%;padding:2vmin;background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:1.5vmin;font-size:2.8vmin;font-weight:bold;cursor:pointer;box-shadow:0 0.5vmin 1.5vmin rgba(30,136,229,0.5);">回答する ▶</button>
+    <button onclick="submitClearAnswer()" style="width:60%;padding:2vmin;background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:1.5vmin;font-size:2.8vmin;font-weight:bold;cursor:pointer;box-shadow:0 0.5vmin 1.5vmin rgba(30,136,229,0.5);margin-bottom:1.5vmin;">回答する ▶</button>
+
+    <!-- 所持カード手札 -->
+    <div style="font-size:1.8vmin;color:#90caf9;margin-bottom:0.5vmin;text-align:left;">所持カード（ドラッグして証拠提出）</div>
+    <div id="lk-hand" style="border:0.2vmin solid #2a4a6a;border-radius:1vmin;min-height:8vmin;padding:0.8vmin;overflow-x:auto;display:flex;gap:1vmin;align-items:center;justify-content:flex-start;-webkit-overflow-scrolling:touch;">
+      <div id="lk-hand-inner" style="display:flex;gap:1vmin;align-items:center;min-width:max-content;"></div>
+    </div>
   </div>
 
   <!-- Step 2: 結果・レーダーチャート画面 -->
@@ -3873,6 +3879,18 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         <select id="sc-fire-event">
           <option value="なし">なし</option>
           <option value="集合住宅">集合住宅</option>
+        </select>
+      </div>
+      <div class="scenario-field scenario-field-apt" draggable="true" data-field="otherEvidence">
+        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="都市ガス以外の証拠">都市ガス以外の証拠</span></label>
+        <select id="sc-other-evidence">
+          <option value="なし">なし</option>
+          <option value="カセットボンベ">カセットボンベ</option>
+          <option value="スプレー缶">スプレー缶</option>
+          <option value="濡れ雑巾">濡れ雑巾</option>
+          <option value="電子機器のおもちゃ">電子機器のおもちゃ</option>
+          <option value="冷蔵庫アラート">冷蔵庫アラート</option>
+          <option value="下水工事">下水工事</option>
         </select>
       </div>
       <div class="scenario-category-header" style="background: rgb(62, 38, 0); color: rgb(255, 224, 178);">＜カテゴリー：工場＞</div>
@@ -4589,6 +4607,10 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="bath-drain custom-drain-img"></div>
 <div class="bathtub custom-bathtub-img"></div>
 <div class="bath-floor"></div>
+<div class="shelf-unit" id="bath-shelf-a" style="left:70%;bottom:20%;">
+  <div class="shelf-inner"><div>備品</div><div>タオル</div></div>
+  <div class="bath-shelf-door ps-door" data-max-slide="100" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false" style="transform: translateX(0px); opacity: 1;">収納棚</div>
+</div>
 </div>
 
 <div id="room-kitchen" class="room" style="">
@@ -4693,6 +4715,10 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="bath-drain custom-drain-img"></div>
 <div class="bathtub custom-bathtub-img"></div>
 <div class="bath-floor"></div>
+<div class="shelf-unit" id="bath-shelf-b" style="left:70%;bottom:20%;">
+  <div class="shelf-inner"><div>備品</div><div>タオル</div></div>
+  <div class="bath-shelf-door ps-door" data-max-slide="100" data-gas-cleared="false" data-is-dangerous="false" data-bonus-applied="false" style="transform: translateX(0px); opacity: 1;">収納棚</div>
+</div>
 </div>
 
 <div id="room-kitchen-b" class="room" style="">
@@ -5233,22 +5259,15 @@ function completeSafetyMeasures() {
   }catch(e){}
 }
 
-// 回答選択肢を同期
+// 回答選択肢を同期（カードドロップにより動的に追加）
 function _syncAnswerSelect(){
   try{
     var sel = document.getElementById('clear-answer-select');
     if(!sel) return;
-    // シナリオ設定のgasCauseセレクトと同じ選択肢リストを使用
-    var src = document.getElementById('sc-gas-cause');
-    if(src && src.options && src.options.length > 0){
-      sel.innerHTML = '<option value="">-- 選択してください --</option>';
-      for(var i=0;i<src.options.length;i++){
-        var opt = document.createElement('option');
-        opt.value = src.options[i].value;
-        opt.textContent = src.options[i].textContent;
-        sel.appendChild(opt);
-      }
-    }
+    // 選択肢はカードドロップで追加されるため、ここではリセットのみ
+    sel.innerHTML = '<option value="">-- 選択してください --</option>';
+    // ドロップゾーンもリセット
+    try{ window.__lkReset && window.__lkReset(); }catch(e2){}
   }catch(e){}
 }
 
@@ -8086,7 +8105,7 @@ function createDefaultScenarioData(){
       reporterRoomNo:'101',
       residentBRoomNo:'102'
     ,indoorLeakRoomNo:'なし',basement:'なし',gasCause:'101号室灯内内管',
-    description:'',hint:'',difficulty:'B級',fireEvent:'なし',cassetteBombe:'なし'});
+    description:'',hint:'',difficulty:'B級',fireEvent:'なし',cassetteBombe:'なし',otherEvidence:'なし'});
   }
   return a;
 }
@@ -8127,7 +8146,8 @@ function normalizeScenarioData(arr){
       safetyNorma:(s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100,
       stageComposition:(s.stageComposition!=null)?String(s.stageComposition):'',
       fireEvent:(s.fireEvent!=null)?String(s.fireEvent):'なし',
-      cassetteBombe:(s.cassetteBombe!=null)?String(s.cassetteBombe):'なし'
+      cassetteBombe:(s.cassetteBombe!=null)?String(s.cassetteBombe):'なし',
+      otherEvidence:(s.otherEvidence!=null)?String(s.otherEvidence):'なし'
     };
   }
   return base;
@@ -8404,6 +8424,7 @@ function openScenarioEdit(idx){
   try{ document.getElementById('sc-safety-norma').value = (s.safetyNorma!=null&&!isNaN(parseInt(s.safetyNorma)))?parseInt(s.safetyNorma):100; }catch(e){}
   try{ document.getElementById('sc-fire-event').value = s.fireEvent?String(s.fireEvent):'なし'; }catch(e){}
   try{ document.getElementById('sc-cassette-bombe').value = s.cassetteBombe?String(s.cassetteBombe):'なし'; }catch(e){}
+  try{ document.getElementById('sc-other-evidence').value = s.otherEvidence?String(s.otherEvidence):'なし'; }catch(e){}
   try{ document.getElementById('sc-factory').value = s.factory?String(s.factory):'なし'; }catch(e){}
 
   // ステージ構成セレクトを動的に更新
@@ -8537,6 +8558,7 @@ function saveScenario(){
     stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     fireEvent: (function(){ try{ var el=document.getElementById('sc-fire-event'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     cassetteBombe: (function(){ try{ var el=document.getElementById('sc-cassette-bombe'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
+    otherEvidence: (function(){ try{ var el=document.getElementById('sc-other-evidence'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     factory: (function(){ try{ var el=document.getElementById('sc-factory'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
   };
   renderScenarioList();
@@ -12333,6 +12355,7 @@ function _collectScenarioFromForm(){
     stageComposition: (function(){ try{ var el=document.getElementById('sc-stage-composition'); return (el&&el.value)?el.value:''; }catch(e){ return ''; } })(),
     fireEvent: (function(){ try{ var el=document.getElementById('sc-fire-event'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     cassetteBombe: (function(){ try{ var el=document.getElementById('sc-cassette-bombe'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
+    otherEvidence: (function(){ try{ var el=document.getElementById('sc-other-evidence'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     factory: (function(){ try{ var el=document.getElementById('sc-factory'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
   };
 }
@@ -12578,7 +12601,15 @@ try{
     { id:'カード_火災警戒区域の設定', name:'カード_火災警戒区域の設定', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AB%E7%81%BD%E8%AD%A6%E6%88%92%E5%8C%BA%E5%9F%9F%E3%81%AE%E8%A8%AD%E5%AE%9A.png', desc:'入手条件：警報器鳴動後に前面道路へ向かう。' },
     { id:'カード_現場広報活動', name:'カード_現場広報活動', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%8F%BE%E5%A0%B4%E5%BA%83%E5%A0%B1%E6%B4%BB%E5%8B%95.png', desc:'入手条件：警報器鳴動100秒後に前面道路へ出現する野次馬をクリックする。' },
     { id:'カード_火災', name:'カード_火災', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AB%E7%81%BD.png', desc:'入手条件：前面道路で集合住宅の火災を発見する。' },
-    { id:'カード_LPG', name:'カード_LPG', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_LPG.png', desc:'入手条件：カセットボンベ発見シナリオで、通報者宅の台所の床下点検口を半分以上開ける。' }
+    { id:'カード_LPG', name:'カード_LPG', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_LPG.png', desc:'入手条件：「都市ガス以外の証拠」が「カセットボンベ」の場合、通報者宅台所の床下点検口を50%以上開ける。' },
+    { id:'カード_灯内内管漏洩', name:'カード_灯内内管漏洩', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AF%E5%86%85%E7%AE%A1%E6%BC%8F%E6%B4%A9.png', desc:'入手条件：ガス漏れ原因が「〇〇灯内内管」の場合、該当ガスメーターでデジタルマノメーター試験を行い、圧力降下を確認する。' },
+    { id:'カード_灯外内管漏洩', name:'カード_灯外内管漏洩', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E7%81%AF%E5%A4%96%E7%AE%A1%E6%BC%8F%E6%B4%A9.png', desc:'入手条件：ガス漏れ原因が「〇〇灯外内管」の場合、ガスメーターでデジタルマノメーター試験を行い、圧力降下を確認する。' },
+    { id:'カード_道路漏洩', name:'カード_道路漏洩', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E9%81%93%E8%B7%AF%E6%BC%8F%E3%82%8C.png', desc:'入手条件：ガス漏れ原因が「道路上のガス管」の場合、前面道路で可燃性ガス検知器の反応箇所を発見する。' },
+    { id:'カード_スプレー缶', name:'カード_スプレー缶', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E3%82%B9%E3%83%97%E3%83%AC%E3%83%BC%E7%BC%B6.png', desc:'入手条件：「都市ガス以外の証拠」が「スプレー缶」の場合、居住者B宅の浴室に入室する。' },
+    { id:'カード_電子機器のおもちゃ', name:'カード_電子機器のおもちゃ', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E3%81%8B%E3%82%82%E3%81%A1%E3%82%83.png', desc:'入手条件：「都市ガス以外の証拠」が「電子機器のおもちゃ」の場合、通報者宅寝室の棚を50%以上開ける。' },
+    { id:'カード_冷蔵庫アラート', name:'カード_冷蔵庫アラート', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E5%86%B7%E8%94%B5%E5%BA%AB.png', desc:'入手条件：「都市ガス以外の証拠」が「冷蔵庫アラート」の場合、通報者宅台所の台所セットをクリックする。' },
+    { id:'カード_濡れ雑巾', name:'カード_濡れ雑巾', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E6%BF%A1%E3%82%8C%E9%9B%91%E5%B7%BE.png', desc:'入手条件：「都市ガス以外の証拠」が「濡れ雑巾」の場合、通報者宅浴室の棚を50%以上開ける。' },
+    { id:'カード_下水工事', name:'カード_下水工事', img:'https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%82%AB%E3%83%BC%E3%83%89_%E4%B8%8B%E6%B0%B4%E5%B7%A5%E4%BA%8B.png', desc:'入手条件：「都市ガス以外の証拠」が「下水工事」の場合、焼き鳥屋に入室する。' }
   ];
 
   // per-simulation state
@@ -14135,6 +14166,7 @@ try{
     originalParent: null,
     originalNextSibling: null
   };
+  window.__btDragState = dragState; // 外部のlk-dropzoneシステムが利用
 
   // **修正：ドキュメントレベルでpointermoveを処理**
   if(!window.__btDragMoveInstalled){
@@ -14203,10 +14235,24 @@ try{
         }
       }
 
-      // ドロップ処理
+      // ドロップ処理: 状況突破ゾーン
       if (droppedOnZone) {
         finishDragOnZone(dragState.cardId);
       }
+
+      // ドロップ処理: 漏洩系統ゾーン
+      try{
+        const lkZone = $('lk-dropzone');
+        if(lkZone && lkZone.offsetParent !== null){
+          const lkR = lkZone.getBoundingClientRect();
+          const cardRect2 = card.getBoundingClientRect();
+          const cx2 = cardRect2.left + cardRect2.width/2;
+          const cy2 = cardRect2.top + cardRect2.height/2;
+          if(cx2>=lkR.left && cx2<=lkR.right && cy2>=lkR.top && cy2<=lkR.bottom){
+            if(typeof window.__lkFinishDrop === 'function') window.__lkFinishDrop(dragState.cardId);
+          }
+        }
+      }catch(e){}
 
       // リセット
       dragState.active = false;
@@ -23203,6 +23249,7 @@ var _tutT6BathDetCount = 0;
 /* No.7チュートリアル用：状態追跡フラグ */
 var _tutT7SafetyFull = false;
 var _tutT7CompletePressed = false;
+var _tutT7CardDropped = false;
 var _tutT7AnswerSubmitted = false;
 
 /* ---- チュートリアルステップ定義 ---- */
@@ -23882,9 +23929,32 @@ var TUTORIAL_STEPS = {
         return false;
       }
     },
-    /* Step 4: 漏洩系統回答を促す → 回答するボタン押下を待つ */
+    /* Step 4: カードドロップの説明 → カード_灯内内管漏洩をドロップするまで待つ */
     {
-      msg: 'どのシナリオでも、最後に漏洩系統はどこであると判断したか問われます。調査の結果、あなたが判断した漏洩系統を選択してみましょう。',
+      msg: '漏洩系統回答画面では、調査で入手した「証拠カード」をドロップゾーンにドラッグすることで、選択肢が追加されます。\nカードを持っていなければ、正解の選択肢が表示されないため、クリアできません。\n今回は「カード_灯内内管漏洩」が自動で付与されました。\n下の手札から「カード_灯内内管漏洩」をドラッグして、ドロップゾーンに置いてみましょう！',
+      icon: '🃏',
+      highlightFn: function(){
+        // カード_灯内内管漏洩 を自動付与してチュートリアルで体験できるようにする
+        try{
+          if(typeof window.__awardCard === 'function') window.__awardCard('カード_灯内内管漏洩');
+        }catch(e){}
+        // lk-dropzone と lk-hand をハイライト
+        var dz = document.getElementById('lk-dropzone');
+        if(dz){ dz.classList.add('tut-highlight'); _tutHighlighted.push(dz); }
+        var hd = document.getElementById('lk-hand');
+        if(hd){ hd.classList.add('tut-highlight'); _tutHighlighted.push(hd); }
+        // 手札を再描画
+        try{ if(typeof window.__lkRenderHand === 'function') window.__lkRenderHand(); }catch(e){}
+      },
+      nextBtn: false,
+      checkFn: function(){
+        if(window._tutT7CardDropped) return true;
+        return false;
+      }
+    },
+    /* Step 5: 漏洩系統回答を促す → 回答するボタン押下を待つ */
+    {
+      msg: 'ドロップされたカードに応じて選択肢が増えました！調査の結果、あなたが判断した漏洩系統を選択して「回答する」ボタンを押してみましょう。',
       icon: '🔍',
       highlightFn: null,
       nextBtn: false,
@@ -24128,6 +24198,7 @@ function startTutorial(no){
     /* No.7: 安全率メーターとクリア条件 */
     _tutT7SafetyFull = false;
     _tutT7CompletePressed = false;
+    _tutT7CardDropped = false;
     _tutT7AnswerSubmitted = false;
     state.vanStock = [];
     state.inventory = ['phone', 'memo', 'det', 'high', 'mano', 'sign', 'alm'];
@@ -25654,4 +25725,306 @@ window.clickFactoryValvePit = function(){
       <button class="se-cw-btn cw-cancel" onclick="window._seCwCancel()">キャンセル</button>
     </div>
   </div>
-</div><div class="se-layer-win" id="se-layer-win"><div class="se-layer-win-header"><span>レイヤー順序（上=前面）</span><button class="se-btn se-btn-secondary" style="padding:0.3vmin 0.6vmin;font-size:1.2vmin;" onclick="toggleLayerWindow()">✕</button></div><div class="se-layer-win-body" id="se-layer-body"><div class="se-layer-item" draggable="true" data-child-idx="8"><span class="se-layer-idx">1</span><span>hatch-container</span></div><div class="se-layer-item" draggable="true" data-child-idx="7"><span class="se-layer-idx">2</span><span>hall-floor</span></div><div class="se-layer-item" draggable="true" data-child-idx="6"><span class="se-layer-idx">3</span><span>hall-door-wrapper</span></div><div class="se-layer-item" draggable="true" data-child-idx="5"><span class="se-layer-idx">4</span><span>hall-door-wrapper</span></div><div class="se-layer-item" draggable="true" data-child-idx="4"><span class="se-layer-idx">5</span><span>entrance-area</span></div><div class="se-layer-item" draggable="true" data-child-idx="3"><span class="se-layer-idx">6</span><span>hall-back-wall</span></div><div class="se-layer-item" draggable="true" data-child-idx="2"><span class="se-layer-idx">7</span><span>guide-sign</span></div><div class="se-layer-item" draggable="true" data-child-idx="1"><span class="se-layer-idx">8</span><span>guide-sign</span></div><div class="se-layer-item" draggable="true" data-child-idx="0"><span class="se-layer-idx">9</span><span>custom-hall-wall</span></div></div></div></body></html>
+</div><div class="se-layer-win" id="se-layer-win"><div class="se-layer-win-header"><span>レイヤー順序（上=前面）</span><button class="se-btn se-btn-secondary" style="padding:0.3vmin 0.6vmin;font-size:1.2vmin;" onclick="toggleLayerWindow()">✕</button></div><div class="se-layer-win-body" id="se-layer-body"><div class="se-layer-item" draggable="true" data-child-idx="8"><span class="se-layer-idx">1</span><span>hatch-container</span></div><div class="se-layer-item" draggable="true" data-child-idx="7"><span class="se-layer-idx">2</span><span>hall-floor</span></div><div class="se-layer-item" draggable="true" data-child-idx="6"><span class="se-layer-idx">3</span><span>hall-door-wrapper</span></div><div class="se-layer-item" draggable="true" data-child-idx="5"><span class="se-layer-idx">4</span><span>hall-door-wrapper</span></div><div class="se-layer-item" draggable="true" data-child-idx="4"><span class="se-layer-idx">5</span><span>entrance-area</span></div><div class="se-layer-item" draggable="true" data-child-idx="3"><span class="se-layer-idx">6</span><span>hall-back-wall</span></div><div class="se-layer-item" draggable="true" data-child-idx="2"><span class="se-layer-idx">7</span><span>guide-sign</span></div><div class="se-layer-item" draggable="true" data-child-idx="1"><span class="se-layer-idx">8</span><span>guide-sign</span></div><div class="se-layer-item" draggable="true" data-child-idx="0"><span class="se-layer-idx">9</span><span>custom-hall-wall</span></div></div></div>
+
+<script>
+// ================================================================
+// 漏洩系統画面 カードドロップシステム
+// ================================================================
+(function(){
+  if(window.__lkDropSystemInstalled) return;
+  window.__lkDropSystemInstalled = true;
+
+  var _lkDropped = new Set();
+
+  function _getOptionsForCard(cardId){
+    var opts = [];
+    if(cardId === 'カード_灯内内管漏洩'){
+      opts = ['101号室灯内内管','102号室灯内内管','201号室灯内内管','202号室灯内内管','ラーメン屋灯内内管','焼き鳥屋灯内内管'];
+    } else if(cardId === 'カード_灯外内管漏洩'){
+      opts = ['集合住宅灯外内管'];
+    } else if(cardId === 'カード_道路漏洩'){
+      opts = ['道路上のガス管'];
+    } else if(cardId === 'カード_LPG' || cardId === 'カード_スプレー缶'){
+      opts = ['都市ガス以外'];
+    }
+    var anyOtherEvidence = ['カード_LPG','カード_スプレー缶','カード_電子機器のおもちゃ','カード_濡れ雑巾','カード_冷蔵庫アラート','カード_下水工事'];
+    if(anyOtherEvidence.indexOf(cardId) !== -1){
+      if(opts.indexOf('異常なし') === -1) opts.push('異常なし');
+    }
+    return opts;
+  }
+
+  function _addOption(value){
+    var sel = document.getElementById('clear-answer-select');
+    if(!sel) return;
+    for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value === value) return; }
+    var opt = document.createElement('option');
+    opt.value = value; opt.textContent = value;
+    sel.appendChild(opt);
+  }
+
+  function lkFinishDrop(cardId){
+    if(!cardId) return;
+    if(_lkDropped.has(cardId)) return;
+    _lkDropped.add(cardId);
+    var dz = document.getElementById('lk-dropzone');
+    if(dz){
+      var hint = document.getElementById('lk-dropzone-hint');
+      if(hint) hint.style.display = 'none';
+      var img = document.createElement('img');
+      img.alt = cardId;
+      try{ var def = (typeof window.__getCardDef === 'function') ? window.__getCardDef(cardId) : null; if(def && def.img) img.src = def.img; }catch(e){}
+      img.style.cssText = 'height:6vmin;width:auto;border-radius:0.5vmin;box-shadow:0 0.3vmin 0.8vmin rgba(0,0,0,0.5);';
+      img.title = cardId;
+      dz.appendChild(img);
+    }
+    var newOpts = _getOptionsForCard(cardId);
+    for(var i=0;i<newOpts.length;i++) _addOption(newOpts[i]);
+    try{ if(cardId === 'カード_灯内内管漏洩' && typeof _tutT7CardDropped !== 'undefined') _tutT7CardDropped = true; }catch(e){}
+    lkRenderHand();
+  }
+
+  function lkRenderHand(){
+    var hand = document.getElementById('lk-hand-inner');
+    if(!hand) return;
+    hand.innerHTML = '';
+    var ids = [];
+    try{ if(typeof window.__getOwnedCardIds === 'function') ids = window.__getOwnedCardIds(); }catch(e){}
+    ids.forEach(function(id){
+      var def = null;
+      try{ if(typeof window.__getCardDef === 'function') def = window.__getCardDef(id); }catch(e){}
+      if(!def || !def.img) return;
+      var card = document.createElement('div');
+      card.className = 'bt-card';
+      card.dataset.cardId = id;
+      card.innerHTML = '<img src="' + def.img + '" alt="' + id + '">';
+      card.style.opacity = _lkDropped.has(id) ? '0.4' : '1';
+      card.addEventListener('pointerdown', function(ev){
+        ev.preventDefault(); ev.stopPropagation();
+        var ds = window.__btDragState;
+        if(!ds) return;
+        var rect = card.getBoundingClientRect();
+        ds.active = true; ds.cardId = id; ds.element = card;
+        ds.offsetX = ev.clientX - rect.left; ds.offsetY = ev.clientY - rect.top;
+        ds.originalParent = card.parentNode; ds.originalNextSibling = card.nextSibling;
+        card.style.position = 'fixed'; card.style.left = rect.left + 'px'; card.style.top = rect.top + 'px';
+        card.style.width = rect.width + 'px'; card.style.height = rect.height + 'px';
+        card.style.zIndex = '9999'; card.style.opacity = '0.85'; card.style.pointerEvents = 'none';
+        document.body.appendChild(card);
+      });
+      hand.appendChild(card);
+    });
+  }
+
+  function lkReset(){
+    _lkDropped = new Set();
+    var dz = document.getElementById('lk-dropzone');
+    if(dz) dz.innerHTML = '<span id="lk-dropzone-hint">証拠カードをここへドラッグ</span>';
+    lkRenderHand();
+  }
+
+  window.__lkFinishDrop = lkFinishDrop;
+  window.__lkRenderHand = lkRenderHand;
+  window.__lkReset = lkReset;
+
+  var _lkObserver = new MutationObserver(function(){
+    var sc = document.getElementById('scene-clear');
+    if(sc && sc.classList.contains('active')) setTimeout(lkRenderHand, 300);
+  });
+  var _sc = document.getElementById('scene-clear');
+  if(_sc) _lkObserver.observe(_sc, { attributes: true, attributeFilter:['class'] });
+})();
+
+// ================================================================
+// closeClearStep1: 漏洩系統画面を閉じてゲームに戻る
+// ================================================================
+function closeClearStep1(){
+  try{
+    document.getElementById('scene-clear').classList.remove('active');
+    try{ isPaused = false; }catch(e){}
+    try{ loop(); }catch(e){}
+  }catch(e){}
+}
+
+// ================================================================
+// カード入手条件 イベントシステム（カード①〜⑨）
+// ================================================================
+(function(){
+  if(window.__cardEventSystemInstalled) return;
+  window.__cardEventSystemInstalled = true;
+
+  function award(id){ try{ window.__awardCard && window.__awardCard(id); }catch(e){} }
+  function getScenario(){ return (typeof activeScenario !== 'undefined') ? activeScenario : null; }
+  function getOtherEvidence(){ var sc=getScenario(); return (sc&&sc.otherEvidence)?String(sc.otherEvidence):'なし'; }
+  function getGasCause(){ var sc=getScenario(); return (sc&&sc.gasCause)?String(sc.gasCause):''; }
+  function getCurrentRoom(){ return (typeof state!=='undefined'&&state)?state.room:-1; }
+  function isOwnerA(){ return (typeof currentApartmentOwner!=='undefined')?currentApartmentOwner==='A':false; }
+
+  // ①②: マノメーター圧力降下 → 灯内/灯外内管カード付与
+  (function(){
+    if(window.__pressureCardHooked) return;
+    window.__pressureCardHooked = true;
+    function tryHook(){
+      if(typeof window.finalizePressureTest !== 'function'){ setTimeout(tryHook,500); return; }
+      var _orig = window.finalizePressureTest;
+      window.finalizePressureTest = function(id){
+        var ret = _orig.apply(this, arguments);
+        setTimeout(function(){
+          try{
+            if(window._pressureNg && window._pressureNg[id]){
+              var cause = getGasCause();
+              if(cause.indexOf('灯内内管')!==-1) award('カード_灯内内管漏洩');
+              if(cause.indexOf('灯外内管')!==-1) award('カード_灯外内管漏洩');
+            }
+          }catch(e){}
+        },150);
+        return ret;
+      };
+    }
+    tryHook();
+  })();
+
+  // ③: 前面道路（room 1）でガス検知 → カード_道路漏洩
+  setInterval(function(){
+    try{
+      if(getGasCause()!=='道路上のガス管') return;
+      if(getCurrentRoom()!==1) return;
+      if((typeof hs1Discovered!=='undefined'&&hs1Discovered)||(typeof hs2Discovered!=='undefined'&&hs2Discovered)){
+        award('カード_道路漏洩');
+      }
+    }catch(e){}
+  }, 500);
+
+  // ④: カセットボンベ → 通報者台所の床下点検口50%以上
+  setInterval(function(){
+    try{
+      if(getOtherEvidence()!=='カセットボンベ') return;
+      if(!isOwnerA()||getCurrentRoom()!==9) return;
+      var k=document.getElementById('room-kitchen'); if(!k) return;
+      var lid=k.querySelector('.hatch-lid.ps-door'); if(!lid) return;
+      if(typeof getDoorOpenRatio2==='function'&&getDoorOpenRatio2(lid)>=0.5) award('カード_LPG');
+    }catch(e){}
+  }, 300);
+
+  // ⑤: スプレー缶 → 居住者B浴室入室（changeRoom hook）
+  (function(){
+    if(window.__sprayCardHooked) return;
+    window.__sprayCardHooked = true;
+    function tryHookCR(){
+      if(typeof window.changeRoom!=='function'){ setTimeout(tryHookCR,500); return; }
+      var _orig=window.changeRoom;
+      window.changeRoom=function(r,x){
+        var ret=_orig.apply(this,arguments);
+        try{
+          if(r===8&&(typeof currentApartmentOwner!=='undefined')&&currentApartmentOwner==='B'&&getOtherEvidence()==='スプレー缶')
+            award('カード_スプレー缶');
+        }catch(e){}
+        return ret;
+      };
+    }
+    tryHookCR();
+  })();
+
+  // ⑥: 電子機器のおもちゃ → 通報者寝室の棚50%以上 + 効果音ループ
+  var _toyDone=false;
+  setInterval(function(){
+    try{
+      if(_toyDone||getOtherEvidence()!=='電子機器のおもちゃ'||!isOwnerA()||getCurrentRoom()!==10) return;
+      var room=document.getElementById('room-bedroom'); if(!room) return;
+      var door=room.querySelector('.bed-shelf-door.ps-door'); if(!door) return;
+      if(typeof getDoorOpenRatio2==='function'&&getDoorOpenRatio2(door)>=0.5){ _toyDone=true; award('カード_電子機器のおもちゃ'); }
+    }catch(e){}
+  }, 300);
+  // おもちゃ効果音ループ（10秒毎）
+  setInterval(function(){
+    try{
+      if(_toyDone||getOtherEvidence()!=='電子機器のおもちゃ') return;
+      var r=getCurrentRoom(); var vol=0;
+      if(r===10&&isOwnerA()) vol=1.0;
+      else if([5,6,7,8,9].indexOf(r)!==-1&&isOwnerA()) vol=0.5;
+      if(!vol) return;
+      var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+      var ac=new AC(), osc=ac.createOscillator(), g=ac.createGain();
+      osc.connect(g); g.connect(ac.destination);
+      osc.frequency.value=880;
+      g.gain.setValueAtTime(vol*0.3,ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.35);
+      osc.start(ac.currentTime); osc.stop(ac.currentTime+0.35);
+    }catch(e){}
+  }, 10000);
+
+  // ⑦: 冷蔵庫アラート → 通報者台所の台所セットをクリック + 効果音ループ
+  var _fridgeDone=false;
+  document.addEventListener('click',function(e){
+    try{
+      if(_fridgeDone||getOtherEvidence()!=='冷蔵庫アラート'||!isOwnerA()||getCurrentRoom()!==9) return;
+      var t=e.target;
+      while(t&&t!==document.body){
+        if(t.classList&&(t.classList.contains('kit-set-unit')||t.classList.contains('custom-kit-set'))){ _fridgeDone=true; award('カード_冷蔵庫アラート'); return; }
+        t=t.parentElement;
+      }
+    }catch(e){}
+  },true);
+  // 冷蔵庫効果音ループ（10秒毎、ビープ×3）
+  setInterval(function(){
+    try{
+      if(_fridgeDone||getOtherEvidence()!=='冷蔵庫アラート') return;
+      var r=getCurrentRoom(); var vol=0;
+      if(r===10&&isOwnerA()) vol=1.0;
+      else if([5,6,7,8,9].indexOf(r)!==-1&&isOwnerA()) vol=0.5;
+      if(!vol) return;
+      var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+      var ac=new AC();
+      [0,0.22,0.44].forEach(function(t){
+        var osc=ac.createOscillator(),g=ac.createGain();
+        osc.connect(g); g.connect(ac.destination);
+        osc.frequency.value=1200;
+        g.gain.setValueAtTime(vol*0.22,ac.currentTime+t);
+        g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+t+0.18);
+        osc.start(ac.currentTime+t); osc.stop(ac.currentTime+t+0.18);
+      });
+    }catch(e){}
+  }, 10000);
+
+  // ⑧: 濡れ雑巾 → 通報者浴室の棚50%以上
+  setInterval(function(){
+    try{
+      if(getOtherEvidence()!=='濡れ雑巾'||!isOwnerA()||getCurrentRoom()!==8) return;
+      var bath=document.getElementById('room-bath'); if(!bath) return;
+      var door=bath.querySelector('.bath-shelf-door.ps-door'); if(!door) return;
+      if(typeof getDoorOpenRatio2==='function'&&getDoorOpenRatio2(door)>=0.5) award('カード_濡れ雑巾');
+    }catch(e){}
+  }, 300);
+
+  // ⑨: 下水工事 → 焼き鳥屋入室でカード + 緑ボタン非表示（changeRoom hook）
+  (function(){
+    if(window.__sewageCardHooked) return;
+    window.__sewageCardHooked = true;
+    function tryHookCR9(){
+      if(typeof window.changeRoom!=='function'){ setTimeout(tryHookCR9,500); return; }
+      var _orig=window.changeRoom;
+      window.changeRoom=function(r,x){
+        var ret=_orig.apply(this,arguments);
+        try{
+          if(r===13&&getOtherEvidence()==='下水工事') award('カード_下水工事');
+          if(r===13){
+            setTimeout(function(){
+              try{
+                var yk=document.getElementById('room-yakitori'); if(!yk) return;
+                if(getOtherEvidence()==='下水工事'){
+                  yk.querySelectorAll('.talk-btn,.fan-switch-toggle').forEach(function(b){ b.style.display='none'; });
+                }
+              }catch(e){}
+            },100);
+          }
+        }catch(e){}
+        return ret;
+      };
+    }
+    tryHookCR9();
+  })();
+
+})();
+</script>
+</body></html>
