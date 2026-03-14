@@ -14,8 +14,8 @@
 <style>
 
 body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; display: flex; align-items: center; justify-content: center; font-family: 'MS Gothic', 'Meiryo', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; }
-#app-container { position: relative; aspect-ratio: 16 / 9; width: 100vw; height: auto; max-width: 177.78vh; max-height: 100vh; background: #333; overflow: hidden; box-shadow: 0 0 0 2px #111; font-size: 2vw; }
-@media (min-aspect-ratio: 16/9) { #app-container { font-size: 3.55vh; } }
+#app-container { position: relative; aspect-ratio: 16 / 9; width: 100vw; height: auto; max-width: min(177.78vh, 1280px); max-height: min(100vh, 720px); background: #333; overflow: hidden; box-shadow: 0 0 0 2px #111; font-size: min(2vw, 25.6px); }
+@media (min-aspect-ratio: 16/9) { #app-container { font-size: min(3.55vh, 25.56px); } }
 
 /* ===== スマホ縦画面対応 =====
    縦持ち時はゲームを90度回転してランドスケープ表示 */
@@ -3191,6 +3191,46 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 }
 
 </style>
+
+<script>
+// === 720p固定ウィンドウで起動 ===
+(function() {
+  var GAME_W = 1280, GAME_H = 720;
+  var POPUP_NAME = 'hoansochi_game_window';
+  // すでにポップアップウィンドウ内なら何もしない
+  if (window.name === POPUP_NAME) return;
+  // ポップアップを開く
+  var popup = window.open(
+    window.location.href,
+    POPUP_NAME,
+    'width=' + GAME_W + ',height=' + GAME_H +
+    ',toolbar=no,menubar=no,scrollbars=no,resizable=yes,location=no,status=no'
+  );
+  if (popup) {
+    // 元のタブ/ウィンドウは案内画面に差し替え
+    document.open();
+    document.write([
+      '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">',
+      '<title>HOANSOCHI SIMULATOR</title>',
+      '<style>',
+      'body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;',
+      'height:100vh;font-family:sans-serif;color:#fff;text-align:center;}',
+      '.box{padding:2em;}h1{font-size:1.4em;margin-bottom:1em;}',
+      'button{padding:.7em 2em;font-size:1em;background:#225;color:#fff;border:1px solid #88f;',
+      'border-radius:6px;cursor:pointer;}button:hover{background:#448;}',
+      '</style></head><body><div class="box">',
+      '<h1>&#x1F3AE; ゲームを新しいウィンドウで開きました</h1>',
+      '<p>ポップアップウィンドウでプレイしてください。</p>',
+      '<button onclick="var p=window.open(\''+window.location.href+'\',\''+POPUP_NAME+'\',',
+      '\'width='+GAME_W+',height='+GAME_H+',toolbar=no,menubar=no,scrollbars=no,resizable=yes,location=no,status=no\');',
+      'if(p){p.focus();}">再度開く / 前面に出す</button>',
+      '</div></body></html>'
+    ].join(''));
+    document.close();
+  }
+  // popup が null = ブロックされた場合はそのまま表示（通常モードでプレイ可能）
+})();
+</script>
 
 <script>
 // === BOOTSTRAP: 読み込み途中でも先に押されて未定義エラーにならないように
