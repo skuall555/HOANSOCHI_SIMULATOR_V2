@@ -3875,13 +3875,6 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
           <option value="集合住宅">集合住宅</option>
         </select>
       </div>
-      <div class="scenario-field scenario-field-apt" draggable="true" data-field="cassetteBombe">
-        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="カセットボンベ発見">カセットボンベ発見</span></label>
-        <select id="sc-cassette-bombe">
-          <option value="なし">なし</option>
-          <option value="あり">あり</option>
-        </select>
-      </div>
       <div class="scenario-category-header" style="background: rgb(62, 38, 0); color: rgb(255, 224, 178);">＜カテゴリー：工場＞</div>
       <div class="scenario-field scenario-field-factory" draggable="true" data-field="factory">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="工場の有無">工場の有無<br><span style="font-size:80%;color:#666;">※あり：前面道路から左端で工場前へ移動可</span></span></label>
@@ -21455,105 +21448,6 @@ window.stageEditorExportHTML = function() {
 
 })();
 
-// ================================================================
-// カセットボンベ発見イベントシステム
-// シナリオ設定「カセットボンベ発見」が「あり」の場合:
-//   - 通報者宅の台所の床下点検口を半分以上開けるとカード_LPGを入手
-// ================================================================
-(function(){
-  if(window.__cassetteBombeSystemInstalled) return;
-  window.__cassetteBombeSystemInstalled = true;
-
-  var _cbActive = false;
-  var _cbCardAwarded = false;
-  var _cbPollTimer = null;
-
-  function getKitchenHatchLid(){
-    var kitchen = document.getElementById('room-kitchen');
-    if(!kitchen) return null;
-    return kitchen.querySelector('.hatch-lid.ps-door');
-  }
-
-  function checkKitchenHatch(){
-    if(!_cbActive || _cbCardAwarded) return;
-    // 通報者宅（A）の台所にいるときのみチェック
-    try{
-      if(typeof currentApartmentOwner !== 'undefined' && currentApartmentOwner === 'B') return;
-    }catch(e){}
-    var lid = getKitchenHatchLid();
-    if(!lid) return;
-    try{
-      var ratio = (typeof getDoorOpenRatio2 === 'function') ? getDoorOpenRatio2(lid) : 0;
-      if(ratio > 0.5){
-        _cbCardAwarded = true;
-        try{ window.__awardCard && window.__awardCard('カード_LPG'); }catch(e){}
-      }
-    }catch(e){}
-  }
-
-  function startPolling(){
-    if(_cbPollTimer) return;
-    _cbPollTimer = setInterval(checkKitchenHatch, 300);
-  }
-
-  function stopPolling(){
-    if(_cbPollTimer){ clearInterval(_cbPollTimer); _cbPollTimer = null; }
-  }
-
-  function _cbCheckAfterStart(){
-    try{
-      var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
-      _cbActive = (sc && sc.cassetteBombe === 'あり');
-      if(_cbActive){
-        setTimeout(function(){ startPolling(); }, 500);
-      }
-    }catch(e){}
-  }
-
-  function hookStartGame(){
-    if(typeof window.startGame_original === 'function' && !window.startGame_original.__cbHooked){
-      var _orig = window.startGame_original;
-      window.startGame_original = function(){
-        var r = _orig.apply(this, arguments);
-        _cbCheckAfterStart();
-        return r;
-      };
-      window.startGame_original.__cbHooked = true;
-    }
-    if(typeof window.startGame === 'function' && !window.startGame.__cbHooked){
-      var _orig2 = window.startGame;
-      window.startGame = function(){
-        var r = _orig2.apply(this, arguments);
-        _cbCheckAfterStart();
-        return r;
-      };
-      window.startGame.__cbHooked = true;
-    }
-  }
-
-  function hookInitForReset(){
-    if(typeof window.initGame !== 'function' || window.initGame.__cbReset) return;
-    var _origInit = window.initGame;
-    window.initGame = function(){
-      _cbActive = false;
-      _cbCardAwarded = false;
-      stopPolling();
-      return _origInit.apply(this, arguments);
-    };
-    window.initGame.__cbReset = true;
-  }
-
-  function init(){
-    hookStartGame();
-    hookInitForReset();
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 1200); });
-  } else {
-    setTimeout(init, 1200);
-  }
-})();
 </script>
 
 <!-- ===================================================================
