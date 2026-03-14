@@ -5029,6 +5029,7 @@ else dangerRate = 1.0;
 // 安全率の初期化
 safetyValue = 0;
 window._noGasBonusDoors = new Set();
+window._doorScanDone = new Set(); // 廻り検知・滞留ガス確認の実施済み管理
 safetyMeasures = {
   windows: {
     'A-bath': false,
@@ -6428,50 +6429,60 @@ const handleOverlayClick = (e) => {
 }
 
 // ドラッグ中の扉・点検口ガス滞留チェック（検知器モード専用）
+// 新仕様：①廻り検知（開閉度0以上）②滞留ガス確認（開閉度30%以上）
 function checkDoorGasAtPos(e) {
     if(isPlacementMode || isVentMode) return;
     if(!isDetectorMode && !isGasIdMode) return;
     try{
-        var cx2 = e.clientX, cy2 = e.clientY;
-        if(e.touches && e.touches[0]){ cx2 = e.touches[0].clientX; cy2 = e.touches[0].clientY; }
-        const elems2 = document.elementsFromPoint(cx2, cy2);
-        let doorToClear = null;
-        for (let el of elems2) {
-            if (el.classList.contains('ps-door')) {
-                if(el.dataset.isDangerous === "true" && el.dataset.gasCleared !== "true") { doorToClear = el; break; }
-            }
-            if (el.classList.contains('ps-container') || el.classList.contains('hall-door-wrapper') ||
-                el.classList.contains('shelf-unit') || el.classList.contains('glass-door-wrapper') ||
-                el.classList.contains('kit-bed-door-wrapper') || el.classList.contains('hatch-container') ||
-                el.classList.contains('ent-hatch-box') || el.classList.contains('ent-pit') || el.classList.contains('ent-panel')) {
-                 const d = el.querySelector('.ps-door');
-                 if(d && d.dataset.isDangerous === "true" && d.dataset.gasCleared !== "true") { doorToClear = d; break; }
+        var cx = e.clientX, cy = e.clientY;
+        if(e.touches && e.touches[0]){ cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
+        const elems = document.elementsFromPoint(cx, cy);
+        let door = null;
+        for(let el of elems){
+            if(el.classList.contains('ps-door')){ door = el; break; }
+            if(el.classList.contains('ps-container') || el.classList.contains('hall-door-wrapper') ||
+               el.classList.contains('shelf-unit') || el.classList.contains('glass-door-wrapper') ||
+               el.classList.contains('kit-bed-door-wrapper') || el.classList.contains('hatch-container') ||
+               el.classList.contains('ent-hatch-box') || el.classList.contains('ent-pit') || el.classList.contains('ent-panel')){
+                var pd = el.querySelector('.ps-door');
+                if(pd){ door = pd; break; }
             }
         }
-        if(doorToClear) {
-            doorToClear.dataset.gasCleared = "true";
-            doorToClear.dataset.isDangerous = "false";
-            playAudio('se_ching', SE.ching);
-            dangerValue = Math.floor(dangerValue * 0.95);
-            dangerRate = Math.max(0.1, dangerRate - 0.05);
-            showSystemMsg("ガス滞留なし。危険度低下！");
+        if(!door) return;
+        if(!window._doorScanDone) window._doorScanDone = new Set();
+        var dk = door.id || ((door.className||'') + '_' + (door.dataset.maxSlide||'') + '_' + state.room);
+
+        // ① 廻り検知（開閉度問わず、1回まで）
+        var k1 = 'scan1_' + dk;
+        if(!window._doorScanDone.has(k1)){
+            window._doorScanDone.add(k1);
+            dangerValue = Math.floor(dangerValue * 0.9);
+            dangerRate = Math.max(0.1, dangerRate - 0.1);
+            addSafety(5, "【保安措置】扉・蓋の廻りの検知器調査を実施！安全率+5%！");
+            showSystemMsg("扉・蓋の廻りの検知器調査を実施");
             updateDangerUI();
-            try{
-                if(isDetectorMode){
-                    if(!window._noGasBonusDoors) window._noGasBonusDoors = new Set();
-                    var doorKey = doorToClear.id || (doorToClear.className + '_' + (doorToClear.dataset ? doorToClear.dataset.maxSlide : '') + '_' + state.room);
-                    if(!window._noGasBonusDoors.has(doorKey)){
-                        window._noGasBonusDoors.add(doorKey);
-                        try{ if(window._gameStats) window._gameStats.noGasConfirmed++; }catch(e3){}
-                        addSafety(5, "【保安措置】滞留ガスなし確認！安全率+5%！");
-                    }
-                }
-            }catch(e2){}
+            try{ if(window._gameStats) window._gameStats.noGasConfirmed++; }catch(e2){}
+        }
+
+        // ② 滞留ガス確認（開閉度30%以上、1回まで）
+        var ratio = (typeof getDoorOpenRatio2 === 'function') ? getDoorOpenRatio2(door) : 0;
+        var k2 = 'scan2_' + dk;
+        if(ratio >= 0.30 && !window._doorScanDone.has(k2)){
+            window._doorScanDone.add(k2);
+            door.dataset.gasCleared = "true";
+            door.dataset.isDangerous = "false";
+            dangerValue = Math.floor(dangerValue * 0.9);
+            dangerRate = Math.max(0.1, dangerRate - 0.1);
+            addSafety(5, "【保安措置】滞留ガスの有無を確認！安全率+5%！");
+            showSystemMsg("滞留ガスの有無を確認");
+            updateDangerUI();
+            try{ playAudio('se_ching', SE.ching); }catch(e2){}
         }
     }catch(err){}
 }
 
 /* 初期状態で少し開いている扉・点検口のガス確認（ドラッグ不要） */
+/* 初期状態で少し開いている扉・点検口：ホバーだけで廻り検知を実施（ドラッグ不要） */
 function checkInitialOpenDoorGas(e){
     try{
         var cx = e.clientX, cy = e.clientY;
@@ -6488,27 +6499,20 @@ function checkInitialOpenDoorGas(e){
                 door = el.querySelector('.ps-door');
             }
             if(!door) continue;
-            if(door.dataset.isDangerous !== "true" || door.dataset.gasCleared === "true") continue;
-            /* 扉が初期から少し開いている場合のみ対象 */
+            /* translateX が 3px 以上 = 初期から少し開いている */
             var m = door.style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
             if(!m || Math.abs(parseFloat(m[1])) < 3) continue;
-            /* ガス確認実行 */
-            door.dataset.gasCleared = "true";
-            door.dataset.isDangerous = "false";
-            try{ playAudio('se_ching', SE.ching); }catch(e2){}
-            try{ dangerValue = Math.floor(dangerValue * 0.95); dangerRate = Math.max(0.1, dangerRate - 0.05); }catch(e3){}
-            try{ showSystemMsg("ガス滞留なし。危険度低下！"); updateDangerUI(); }catch(e4){}
-            try{
-                if(isDetectorMode){
-                    if(!window._noGasBonusDoors) window._noGasBonusDoors = new Set();
-                    var dk = door.id || (door.className + '_' + state.room);
-                    if(!window._noGasBonusDoors.has(dk)){
-                        window._noGasBonusDoors.add(dk);
-                        if(window._gameStats) window._gameStats.noGasConfirmed++;
-                        addSafety(5, "【保安措置】滞留ガスなし確認！安全率+5%！");
-                    }
-                }
-            }catch(e5){}
+            if(!window._doorScanDone) window._doorScanDone = new Set();
+            var dk = door.id || ((door.className||'') + '_' + (door.dataset.maxSlide||'') + '_' + state.room);
+            var k1 = 'scan1_' + dk;
+            if(!window._doorScanDone.has(k1)){
+                window._doorScanDone.add(k1);
+                dangerValue = Math.floor(dangerValue * 0.9);
+                dangerRate = Math.max(0.1, dangerRate - 0.1);
+                addSafety(5, "【保安措置】扉・蓋の廻りの検知器調査を実施！安全率+5%！");
+                showSystemMsg("扉・蓋の廻りの検知器調査を実施");
+                updateDangerUI();
+            }
             break;
         }
     }catch(err){}
@@ -7535,8 +7539,8 @@ if (isWindow) {
               // 反応箇所が被っていない → 警告のみ（爆発しない）
               d.style.transform = 'translateX(0px)';
               try{
-                showSystemMsg("滞留ガスを確認してから解放しましょう。危険度の上昇率が上がった。");
-                dangerRate += 0.2;
+                showSystemMsg("内部の滞留ガスの有無を確認してから開けましょう。＜危険度上昇：０．２＞");
+                dangerRate += 0.4;
                 updateDangerUI();
                 if(window._gameStats) window._gameStats.safetyAwarenessPenalty = (window._gameStats.safetyAwarenessPenalty||0) + 5;
               }catch(_eWarn){}
