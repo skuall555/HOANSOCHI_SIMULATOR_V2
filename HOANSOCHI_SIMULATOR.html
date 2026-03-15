@@ -17671,6 +17671,10 @@ window._tantouGenerateReply = function(rawText){
             showFanCursor();
           }, 80);
         } else {
+          if(room === 0){
+            // 駐車場 → 元の処理（車両に戻す）に委譲
+            return _orig.apply(this, arguments);
+          }
           if(window._fanPlaced){
             // 設置済み → 排風起動
             try{ startVentMode(); }catch(e){ try{ showSystemMsg('排風を開始します。'); }catch(_){} }
@@ -17718,6 +17722,8 @@ window._tantouGenerateReply = function(rawText){
             window._fanPlacedRoom = 1;
             window._fanPlacedX    = xPct;
             showFanIcon(xPct, yPct);  /* クリック位置から道路面へ落下 */
+            if(typeof state !== 'undefined' && state.itemCounts) state.itemCounts.fan = 0;
+            try{ renderInventory(); }catch(_){}
             try{ showSystemMsg('排風機を風下に設置しました。'); }catch(_){}
           } else {
             setTimeout(function(){ try{ badEnd('排風機を風上に設置してしまいました。'); }catch(_){} }, 80);
@@ -26691,13 +26697,13 @@ function hookInitGame(){
   window.initGame.__wHooked = true;
 }
 
-/* ---- 駐車場(room-0)・前面道路(room-1)でのアイテム選択 → 車両に戻す ---- */
+/* ---- 駐車場(room-0)でのアイテム選択 → 車両に戻す ---- */
 function hookSelectItemForStreet(){
   if(typeof window.selectItem !== 'function'){ setTimeout(hookSelectItemForStreet, 200); return; }
   if(window.selectItem.__streetHooked) return;
   var _orig = window.selectItem;
   window.selectItem = function(key){
-    if(typeof state !== 'undefined' && (state.room === 0 || state.room === 1) &&
+    if(typeof state !== 'undefined' && state.room === 0 &&
        typeof ITEMS_DEF !== 'undefined' && ITEMS_DEF[key] && ITEMS_DEF[key].type === 'coll'){
       try{ playAudio('se_item', SE.item); }catch(e){}
       state.inventory = state.inventory.filter(function(k){ return k !== key; });
@@ -27060,4 +27066,78 @@ if(document.readyState === 'loading'){
 
 })();
 </script>
+
+<script id="bgm-fixes-patch">
+/* ================================================================
+   BGM修正パッチ
+   Change 1: 危険度70以上のBGMをデフォルトURLに設定
+   Change 2: 録画再生中はメインメニューBGMをオフ
+   ================================================================ */
+(function(){
+'use strict';
+
+/* ---- Change 1: 危険BGMデフォルトURL ---- */
+(function(){
+  function initDangerBGM(){
+    try{
+      if(typeof customAudio === 'undefined') { setTimeout(initDangerBGM, 200); return; }
+      if(customAudio['bgm_danger']) return; // ユーザーカスタム済みなら上書きしない
+      var a = new Audio('https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%AE%8B%E3%82%8A%E3%82%BF%E3%82%A4%E3%83%A0%E5%B0%91.wav');
+      a.loop = true;
+      customAudio['bgm_danger'] = a;
+    }catch(e){}
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initDangerBGM);
+  } else {
+    initDangerBGM();
+  }
+})();
+
+/* ---- Change 2: 録画再生中はメインメニューBGMをオフ ---- */
+(function(){
+  // _recPlayer_ が出現したときにメニューBGMを停止する MutationObserver
+  function watchRecPlayer(){
+    try{
+      var obs = new MutationObserver(function(mutations){
+        mutations.forEach(function(mut){
+          mut.addedNodes.forEach(function(node){
+            if(node.nodeType === 1 && node.id === '_recPlayer_'){
+              try{ if(typeof stopMenuBGM === 'function') stopMenuBGM(); }catch(e){}
+            }
+          });
+        });
+      });
+      obs.observe(document.body, { childList: true });
+    }catch(e){}
+  }
+
+  // startMenuBGM をラップして再生中チェックを追加
+  function hookStartMenuBGM(){
+    if(typeof window.startMenuBGM !== 'function' || window.startMenuBGM.__recCheckHooked) return;
+    var _orig = window.startMenuBGM;
+    window.startMenuBGM = function(){
+      if(document.getElementById('_recPlayer_')){
+        try{ if(typeof stopMenuBGM === 'function') stopMenuBGM(); }catch(e){}
+        return;
+      }
+      return _orig.apply(this, arguments);
+    };
+    window.startMenuBGM.__recCheckHooked = true;
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){
+      watchRecPlayer();
+      setTimeout(hookStartMenuBGM, 500);
+    });
+  } else {
+    watchRecPlayer();
+    setTimeout(hookStartMenuBGM, 500);
+  }
+})();
+
+})();
+</script>
+
 </body></html>
