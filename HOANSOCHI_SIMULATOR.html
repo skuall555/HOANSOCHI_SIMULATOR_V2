@@ -326,9 +326,10 @@ border: none; border-radius: 1vmin; font-size: 2.5vmin; cursor: pointer;
 }
 .title-text {
     position: absolute;
-    top: 16%;
-    width: 100%;
-    text-align: center;
+    top: 3%;
+    left: 3%;
+    width: auto;
+    text-align: left;
     font-size: 4.8vmin;
     font-weight: 900;
     color: #e8f4ff;
@@ -7356,8 +7357,8 @@ el.style.backgroundPosition = 'center';
 if(key==='sky') el.style.background = `url(${customData[key]}) center/cover no-repeat`;
 }
 });
-updateMeterVisual(1); updateMeterVisual(2); updateMeterVisual(3); updateMeterVisual(4);
 }
+updateMeterVisual(1); updateMeterVisual(2); updateMeterVisual(3); updateMeterVisual(4);
 }
 
 function handleImport(input) {
@@ -21562,7 +21563,7 @@ window.stageEditorExportHTML = function() {
       }
     }catch(e){}
 
-    try{ if(typeof showSystemMsg === 'function') showSystemMsg('ガス漏れ源が止まった。濃度が低下し始めた。'); }catch(e){}
+    /* try{ if(typeof showSystemMsg === 'function') showSystemMsg('ガス漏れ源が止まった。濃度が低下し始めた。'); }catch(e){} */
   }
 
   // getLel1 を上書き（低下ロジック追加）
