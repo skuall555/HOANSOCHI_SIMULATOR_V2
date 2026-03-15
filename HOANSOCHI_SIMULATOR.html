@@ -26460,6 +26460,7 @@ function showWeightBubble(w){
   var bubble = document.getElementById('player-weight-bubble');
   if(!bubble) return;
   bubble.textContent = '重量：' + w + ' / 100';
+  bubble.style.color = (w > 100) ? '#c62828' : '#000';
   bubble.style.display = 'block';
   clearTimeout(_bubbleTimer);
   _bubbleTimer = setTimeout(function(){ bubble.style.display = 'none'; }, 3000);
@@ -26470,12 +26471,16 @@ function updateWeightDisplay(){
   if(w === _lastWeight) return;
   _lastWeight = w;
   showWeightBubble(w);
-  if(w > 120 && !_warnedOver120){
-    _warnedOver120 = true;
-    try{ showSystemMsg('所持重量が１２０を超えると、更に移動速度が遅くなります。'); }catch(e){}
-  } else if(w > 100 && !_warnedOver100){
+  if(w > 100 && !_warnedOver100){
     _warnedOver100 = true;
     try{ showSystemMsg('所持重量が１００を超えると、移動速度が遅くなります。必要なものを必要なタイミングで持ち出しましょう。'); }catch(e){}
+    if(w > 120 && !_warnedOver120){
+      _warnedOver120 = true;
+      setTimeout(function(){ try{ showSystemMsg('所持重量が１２０を超えると、更に移動速度が遅くなります。'); }catch(e2){} }, 3200);
+    }
+  } else if(w > 120 && !_warnedOver120){
+    _warnedOver120 = true;
+    try{ showSystemMsg('所持重量が１２０を超えると、更に移動速度が遅くなります。'); }catch(e){}
   }
   if(w <= 100){ _warnedOver100 = false; _warnedOver120 = false; }
   else if(w <= 120){ _warnedOver120 = false; }
@@ -26675,6 +26680,38 @@ function hookInitGame(){
   window.initGame.__wHooked = true;
 }
 
+/* ---- 前面道路(room-1)でのアイテム選択 → 車両に戻す ---- */
+function hookSelectItemForStreet(){
+  if(typeof window.selectItem !== 'function'){ setTimeout(hookSelectItemForStreet, 200); return; }
+  if(window.selectItem.__streetHooked) return;
+  var _orig = window.selectItem;
+  window.selectItem = function(key){
+    if(typeof state !== 'undefined' && state.room === 1 &&
+       typeof ITEMS_DEF !== 'undefined' && ITEMS_DEF[key] && ITEMS_DEF[key].type === 'coll'){
+      try{ playAudio('se_item', SE.item); }catch(e){}
+      state.inventory = state.inventory.filter(function(k){ return k !== key; });
+      if(state.equipped === key){ state.equipped = null; try{ updateHand(); }catch(e){} }
+      state.vanStock.push(key);
+      try{ renderInventory(); }catch(e){}
+      try{ renderVan(); }catch(e){}
+      return;
+    }
+    _orig.apply(this, arguments);
+  };
+  window.selectItem.__streetHooked = true;
+}
+
+/* ---- 吹き出しのプレイヤー反転に追従しない（counter-transform） ---- */
+function watchBubbleFlip(){
+  var player = document.getElementById('player');
+  var bubble = document.getElementById('player-weight-bubble');
+  if(player && bubble){
+    var isFlipped = (player.style.transform || '').indexOf('scaleX(-1)') !== -1;
+    bubble.style.transform = isFlipped ? 'translateX(-50%) scaleX(-1)' : 'translateX(-50%)';
+  }
+  requestAnimationFrame(watchBubbleFlip);
+}
+
 /* ---- 初期化 ---- */
 function init(){
   initWeightBubble();
@@ -26685,6 +26722,8 @@ function init(){
   hookVentOverlay();
   hookDetectorOverlayForFan();
   hookInitGame();
+  hookSelectItemForStreet();
+  watchBubbleFlip();
 }
 
 if(document.readyState === 'loading'){
