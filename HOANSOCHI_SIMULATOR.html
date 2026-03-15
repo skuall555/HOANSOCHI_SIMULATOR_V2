@@ -6339,6 +6339,7 @@ const handleOverlayClick = (e) => {
 
     // Placement Logic
     if(isPlacementMode) {
+        if(placementType === 'fan') return; // 排風機は専用ハンドラで処理（二重設置防止）
         // Check if clicking existing placed item
         const elements = document.elementsFromPoint(cx, cy);
         const placed = elements.find(el => el.classList.contains('placed-item'));
@@ -10702,12 +10703,19 @@ function resumeLoopSafe(){
         try{
           var el = document.getElementById(item.id);
           if(!el) return;
-          // 対象は fire と cone
-          if(item.type !== 'fire' && item.type !== 'cone') return;
+          // 対象は fire, cone, sign
+          if(item.type !== 'fire' && item.type !== 'cone' && item.type !== 'sign') return;
           // どの部屋に置いたか：item.room からDOMを推定
           var active = document.querySelector('.room.active');
           var isStreet = active && active.id === 'room-street';
-          var scale = isStreet ? 3 : 6;
+          var scale;
+          if(item.type === 'sign'){
+            // 火気厳禁表示シート: 前面道路60%、それ以外80%
+            scale = isStreet ? 0.6 : 0.8;
+          } else {
+            // 消火器・カラーコーン: 前面道路40%(1.2)、それ以外60%(3.6)
+            scale = isStreet ? 1.2 : 3.6;
+          }
           // translate(-50%,-50%) は維持
           el.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
           el.dataset.scale = String(scale);
@@ -15804,6 +15812,10 @@ try{
           try{ if(typeof window.renderInventory==='function') window.renderInventory(); }catch(e3){}
           try{ window.__valveMode = true; }catch(e4){}
           showMsg('バルブ開閉モード - バルブピットをタップ -');
+        }else if(typeof state !== 'undefined' && state.room === 0){
+          // 駐車場 → 車両に戻す（オリジナルのselectItemに委譲）
+          try{ window.__valveMode = false; }catch(e5){}
+          return orig.apply(this, arguments);
         }else{
           try{ window.__valveMode = false; }catch(e5){}
           showMsg('このエリアにバルブピットは無いようだ。');
@@ -26482,24 +26494,7 @@ function updateWeightDisplay(){
   if(w === _lastWeight) return;
   _lastWeight = w;
   showWeightBubble(w);
-  if(w > 100 && !_warnedOver100){
-    _warnedOver100 = true;
-    /* pickupItem の「回収しました」メッセージより後に表示されるよう遅延 */
-    setTimeout(function(){
-      try{ showSystemMsg('所持重量が１００を超えると、移動速度が遅くなります。必要なものを必要なタイミングで持ち出しましょう。'); }catch(e){}
-    }, 3100);
-    if(w > 120 && !_warnedOver120){
-      _warnedOver120 = true;
-      setTimeout(function(){ try{ showSystemMsg('所持重量が１２０を超えると、更に移動速度が遅くなります。'); }catch(e2){} }, 6400);
-    }
-  } else if(w > 120 && !_warnedOver120){
-    _warnedOver120 = true;
-    setTimeout(function(){
-      try{ showSystemMsg('所持重量が１２０を超えると、更に移動速度が遅くなります。'); }catch(e){}
-    }, 3100);
-  }
-  if(w <= 100){ _warnedOver100 = false; _warnedOver120 = false; }
-  else if(w <= 120){ _warnedOver120 = false; }
+  // 重量閾値メッセージは削除（代わりに移動時「重たい・・・」吹き出しで表示）
 }
 window.updateWeightDisplay = updateWeightDisplay;
 
@@ -26747,6 +26742,321 @@ if(document.readyState === 'loading'){
 } else {
   init();
 }
+
+})();
+</script>
+
+<!-- ============================================================
+     パッチ v2: 重たい吹き出し・アイテム回収ダイアログ・バン一覧リスト表示
+     ============================================================ -->
+<script>
+(function(){
+'use strict';
+
+/* ================================================================
+   Change 1: 重量>=100 かつ移動時に「重たい・・・」吹き出し（青字）
+   ================================================================ */
+(function(){
+  var _prevX = null;
+  var _lastHeavyShown = 0;
+  var HEAVY_INTERVAL = 1200; // ms: 連続移動でも1.2秒に1回まで表示
+
+  function showHeavyBubble(){
+    var bubble = document.getElementById('player-weight-bubble');
+    if(!bubble) return;
+    var now = Date.now();
+    if(now - _lastHeavyShown < HEAVY_INTERVAL) return;
+    _lastHeavyShown = now;
+    bubble.textContent = '重たい・・・';
+    bubble.style.color = '#1565c0'; // 青字
+    bubble.style.display = 'block';
+    clearTimeout(bubble._heavyTimer);
+    bubble._heavyTimer = setTimeout(function(){ bubble.style.display = 'none'; }, 1500);
+  }
+
+  setInterval(function(){
+    try{
+      if(typeof state === 'undefined' || !state) return;
+      var curX = state.x;
+      if(_prevX !== null && curX !== _prevX){
+        // 移動した
+        var w = (typeof calcTotalWeight === 'function') ? calcTotalWeight() : 0;
+        if(w >= 100) showHeavyBubble();
+      }
+      _prevX = curX;
+    }catch(e){}
+  }, 150);
+})();
+
+/* ================================================================
+   Change 2: 設置アイテムをモード外でクリックしても回収ダイアログ表示
+   対象: ポケット警報器(alm), 火気厳禁表示シート(sign), 消火器(fire),
+         カラーコーン(cone), 排風機(fan), バルブ開閉器(valve)
+   ================================================================ */
+(function(){
+  var RETRIEVABLE = ['alm', 'sign', 'fire', 'cone', 'fan'];
+
+  function showRetrieveDialog(itemName, onYes){
+    // 既存ダイアログがあれば閉じる
+    var existing = document.getElementById('retrieve-confirm-overlay');
+    if(existing) try{ document.body.removeChild(existing); }catch(_){}
+
+    var overlay = document.createElement('div');
+    overlay.id = 'retrieve-confirm-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99990;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:1.5vmin;padding:3vmin 4vmin;box-shadow:0 2vmin 6vmin rgba(0,0,0,0.5);text-align:center;font-size:2.5vmin;font-family:sans-serif;max-width:80vw;';
+    box.innerHTML = '<p style="margin:0 0 2vmin;font-weight:bold;">' + itemName + 'を回収しますか？</p>';
+    var btnYes = document.createElement('button');
+    btnYes.textContent = 'はい';
+    btnYes.style.cssText = 'margin:0.8vmin;padding:1.2vmin 3vmin;font-size:2.2vmin;background:#1565c0;color:#fff;border:none;border-radius:1vmin;cursor:pointer;';
+    var btnNo = document.createElement('button');
+    btnNo.textContent = 'いいえ';
+    btnNo.style.cssText = 'margin:0.8vmin;padding:1.2vmin 3vmin;font-size:2.2vmin;background:#757575;color:#fff;border:none;border-radius:1vmin;cursor:pointer;';
+    box.appendChild(btnYes);
+    box.appendChild(btnNo);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    function close(){ try{ document.body.removeChild(overlay); }catch(_){} }
+    overlay.addEventListener('click', function(e){ e.stopPropagation(); });
+    btnYes.addEventListener('click', function(e){ e.stopPropagation(); close(); onYes(); });
+    btnNo.addEventListener('click',  function(e){ e.stopPropagation(); close(); });
+  }
+
+  // --- 通常 placed-item (alm/sign/fire/cone/fan) の回収ダイアログ ---
+  document.addEventListener('click', function(e){
+    try{
+      // モード中は既存の処理に任せる
+      if(typeof isPlacementMode !== 'undefined' && isPlacementMode) return;
+      if(typeof isVentMode !== 'undefined' && isVentMode) return;
+      if(typeof isDetectorMode !== 'undefined' && isDetectorMode) return;
+      // 回収確認ダイアログ中のクリックは無視
+      if(e.target && typeof e.target.closest === 'function' && e.target.closest('#retrieve-confirm-overlay')) return;
+
+      var target = e.target;
+      var placedEl = null;
+      // クリック要素またはその親が .placed-item か確認
+      if(target.classList && target.classList.contains('placed-item')){
+        placedEl = target;
+      } else if(target.closest && target.closest('.placed-item')){
+        placedEl = target.closest('.placed-item');
+      }
+      if(!placedEl) return;
+      var type = placedEl.dataset.type;
+      if(!type || RETRIEVABLE.indexOf(type) < 0) return;
+
+      e.stopPropagation();
+      e.preventDefault();
+
+      var itemName = (typeof ITEMS_DEF !== 'undefined' && ITEMS_DEF[type]) ? ITEMS_DEF[type].name : type;
+      var placedId = placedEl.id;
+
+      showRetrieveDialog(itemName, function(){
+        if(type === 'fan'){
+          // 排風機回収
+          try{ if(typeof removePlacedFanElement === 'function') removePlacedFanElement(); }catch(_){}
+          var el2 = document.getElementById(placedId);
+          if(el2) try{ el2.parentNode.removeChild(el2); }catch(_){}
+          // fan-placed-icon も非表示
+          var fi = document.getElementById('fan-placed-icon');
+          if(fi) fi.style.display = 'none';
+          window._fanPlaced = false;
+          window._fanPlacedRoom = null;
+          if(typeof state !== 'undefined' && state.itemCounts) state.itemCounts.fan = 1;
+          try{ renderInventory(); }catch(_){}
+          try{ showSystemMsg('排風機を回収しました。'); }catch(_){}
+        } else {
+          // alm/sign/fire/cone 回収
+          var idx = (typeof removePlacedItem === 'function') ? removePlacedItem(placedId) : -1;
+          var el3 = document.getElementById(placedId);
+          if(el3) try{ el3.parentNode.removeChild(el3); }catch(_){}
+          if(typeof state !== 'undefined' && state.itemCounts && state.itemCounts[type] !== undefined){
+            state.itemCounts[type]++;
+          }
+          try{ renderInventory(); }catch(_){}
+          try{ playAudio('se_item', SE.item); }catch(_){}
+          try{ showSystemMsg(itemName + 'を回収しました。'); }catch(_){}
+        }
+      });
+    }catch(err){}
+  }, false);
+
+  // --- バルブ開閉器(valve): valve-shut-entrance をクリックで回収ダイアログ ---
+  function hookValveShutClick(){
+    var ve = document.getElementById('valve-shut-entrance');
+    if(!ve || ve.__retrieveHooked) return;
+    ve.__retrieveHooked = true;
+    ve.style.pointerEvents = 'auto';
+    ve.style.cursor = 'pointer';
+    ve.addEventListener('click', function(e){
+      e.stopPropagation();
+      // バルブ閉止中のみ回収可能
+      if(!window.__valveClosed) return;
+      showRetrieveDialog('バルブ開閉器', function(){
+        // バルブを開に戻す（valve-reopen-modal の YES と同等処理）
+        ve.style.display = 'none';
+        window.__valveClosed = false;
+        if(typeof state !== 'undefined' && state.itemCounts) state.itemCounts.valve = 1;
+        try{ renderInventory(); }catch(_){}
+        try{ window.__valveMode = false; }catch(_){}
+        try{ window.__valveClosedSafetyApplied = false; }catch(_){}
+        try{ showSystemMsg('バルブを開にしました。バルブ開閉器を回収しました。'); }catch(_){}
+      });
+    });
+  }
+
+  // --- fan-placed-icon をクリック可能にして回収ダイアログ ---
+  function hookFanPlacedIconClick(){
+    var fi = document.getElementById('fan-placed-icon');
+    if(!fi || fi.__retrieveHooked) return;
+    fi.__retrieveHooked = true;
+    fi.style.pointerEvents = 'auto';
+    fi.style.cursor = 'pointer';
+    fi.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(!window._fanPlaced) return;
+      showRetrieveDialog('排風機', function(){
+        fi.style.display = 'none';
+        window._fanPlaced = false;
+        window._fanPlacedRoom = null;
+        try{ if(typeof removePlacedFanElement === 'function') removePlacedFanElement(); }catch(_){}
+        if(typeof state !== 'undefined' && state.itemCounts) state.itemCounts.fan = 1;
+        try{ renderInventory(); }catch(_){}
+        try{ showSystemMsg('排風機を回収しました。'); }catch(_){}
+      });
+    });
+  }
+
+  // 初期化 + 定期チェック（動的生成に対応）
+  setInterval(function(){
+    hookValveShutClick();
+    hookFanPlacedIconClick();
+  }, 500);
+})();
+
+/* ================================================================
+   Change 3: 駐車場バン在庫をリスト表示（重量順・名称・重量表示）
+   ================================================================ */
+(function(){
+  var WEIGHT_DEF_LIST = { cone:10, fire:20, valve:70, fan:70, alm:1, sign:1, det:5, high:5, mano:5 };
+  var WEIGHT_OTHER_LIST = 5;
+
+  function getItemWeight(key){
+    return (WEIGHT_DEF_LIST[key] !== undefined) ? WEIGHT_DEF_LIST[key] : WEIGHT_OTHER_LIST;
+  }
+
+  // CSS injection for van list
+  if(!document.getElementById('van-list-style')){
+    var style = document.createElement('style');
+    style.id = 'van-list-style';
+    style.textContent = [
+      /* van-grid をリスト表示に変更 */
+      '#van-container.van-grid.active {',
+      '  display:flex !important;',
+      '  flex-direction:column;',
+      '  overflow-y:auto;',
+      '  overflow-x:hidden;',
+      '  gap:0;',
+      '  padding:0.5vmin;',
+      '  box-sizing:border-box;',
+      '  background:rgba(255,255,255,0.92);',
+      '  border-radius:1vmin;',
+      '  border:0.2vmin solid #aaa;',
+      '}',
+      '#van-container.van-grid.active .van-list-item {',
+      '  display:flex;',
+      '  align-items:center;',
+      '  gap:1.5vmin;',
+      '  padding:0.8vmin 1vmin;',
+      '  border-bottom:0.15vmin solid #ddd;',
+      '  cursor:pointer;',
+      '  background:transparent;',
+      '  width:100%;',
+      '  box-sizing:border-box;',
+      '}',
+      '#van-container.van-grid.active .van-list-item:last-child{border-bottom:none;}',
+      '#van-container.van-grid.active .van-list-item:hover{background:rgba(21,101,192,0.08);}',
+      '#van-container.van-grid.active .van-list-img {',
+      '  width:6vmin;height:6vmin;flex-shrink:0;',
+      '  display:flex;align-items:center;justify-content:center;',
+      '}',
+      '#van-container.van-grid.active .van-list-img img{width:100%;height:100%;object-fit:contain;}',
+      '#van-container.van-grid.active .van-list-info {',
+      '  display:flex;flex-direction:column;gap:0.2vmin;flex:1;',
+      '  font-size:1.6vmin;line-height:1.3;',
+      '}',
+      '#van-container.van-grid.active .van-list-name{font-weight:bold;color:#222;}',
+      '#van-container.van-grid.active .van-list-weight{color:#555;font-size:1.4vmin;}',
+    ].join('\n');
+    document.head.appendChild(style);
+  }
+
+  function patchRenderVan(){
+    if(typeof window.renderVan !== 'function'){ setTimeout(patchRenderVan, 200); return; }
+    if(window.renderVan.__listPatched) return;
+    var _orig = window.renderVan;
+    window.renderVan = function(){
+      try{
+        var grid = document.getElementById('van-container');
+        if(!grid){ _orig.apply(this, arguments); return; }
+        grid.innerHTML = '';
+
+        // 重量順（降順）にソート
+        var sorted = (state.vanStock || []).slice().sort(function(a, b){
+          return getItemWeight(b) - getItemWeight(a);
+        });
+
+        sorted.forEach(function(key){
+          if(!ITEMS_DEF[key]) return;
+          var item = ITEMS_DEF[key];
+          var w = getItemWeight(key);
+
+          var li = document.createElement('div');
+          li.className = 'van-list-item';
+          li.onclick = function(){ pickupItem(key); };
+
+          // 画像
+          var imgDiv = document.createElement('div');
+          imgDiv.className = 'van-list-img';
+          var customKey = 'item_' + key;
+          if(typeof customData !== 'undefined' && customData[customKey]){
+            imgDiv.innerHTML = '<img src="' + customData[customKey] + '">';
+          } else {
+            imgDiv.innerHTML = item.icon;
+          }
+
+          // 名称・重量
+          var infoDiv = document.createElement('div');
+          infoDiv.className = 'van-list-info';
+          var nameDiv = document.createElement('div');
+          nameDiv.className = 'van-list-name';
+          nameDiv.textContent = '名称：' + item.name;
+          var weightDiv = document.createElement('div');
+          weightDiv.className = 'van-list-weight';
+          weightDiv.textContent = '重量：' + w;
+
+          infoDiv.appendChild(nameDiv);
+          infoDiv.appendChild(weightDiv);
+          li.appendChild(imgDiv);
+          li.appendChild(infoDiv);
+          grid.appendChild(li);
+        });
+      }catch(err){
+        _orig.apply(this, arguments);
+      }
+    };
+    window.renderVan.__listPatched = true;
+    // 初回描画
+    try{ window.renderVan(); }catch(_){}
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', patchRenderVan);
+  } else {
+    setTimeout(patchRenderVan, 300);
+  }
+})();
 
 })();
 </script>
