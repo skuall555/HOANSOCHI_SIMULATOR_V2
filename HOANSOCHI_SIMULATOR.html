@@ -2447,7 +2447,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   background: rgba(220,235,255,0.08);
 }
 /* 工場前レイアウト */
-.factory-road { position:absolute; bottom:0; width:100%; height:15%; background:#555; background-image:radial-gradient(#444 10%,transparent 10%); background-size:2vmin 2vmin; border-top:0.5vmin solid #444; z-index:10; }
+.factory-road { position:absolute; bottom:0; width:100%; height:15%; background:#555; background-image:url('https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%81%93%E8%B7%AF.png'); background-size:cover; background-position:center; border-top:0.5vmin solid #444; z-index:10; }
 .factory-fence-left { position:absolute; left:0; bottom:15%; width:3%; height:70%; background:#888; border-right:0.5vmin solid #555; z-index:5; }
 .factory-gate-structure {
   position:absolute; left:5%; bottom:15%; width:42%; height:75%; z-index:4;
@@ -2629,6 +2629,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 /* 風向き表示バナー */
 #wind-direction-banner{position:absolute;top:4%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.55);color:#fff;font-size:1.6vmin;padding:0.5vmin 1.5vmin;border-radius:2vmin;z-index:164;pointer-events:none;white-space:nowrap;display:none;}
 #room-street.wind-active #wind-direction-banner{display:block;}
+#room-factory-front.wind-active #factory-front-wind-banner{display:block!important;}
 /* ガス止めOKポップアップ */
 #gas-ok-popup.active{display:flex!important;}
 /* 心拍キャンバス */
@@ -3896,6 +3897,12 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
           <option value="あり">あり</option>
         </select>
       </div>
+      <div class="scenario-field scenario-field-factory-access" draggable="true" data-field="factoryAccess">
+        <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="工場の立ち入り許可">工場の立ち入り許可<br><span style="font-size:80%;color:#666;">※なし：工場敷地への入場不可</span></span></label>
+        <select id="sc-factory-access">
+          <option value="なし">なし</option>
+        </select>
+      </div>
       <div class="scenario-field" draggable="true" data-field="description">
         <label><span class="drag-handle">⋮⋮</span><span class="field-label-text" contenteditable="true" data-default="解説">解説</span></label>
         <textarea id="sc-description" placeholder="このシナリオの解説や補足事項を入力" style="height: 228px;"></textarea>
@@ -4341,8 +4348,12 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 
 <!-- 工場前 (room 20) -->
 <div id="room-factory-front" class="room" style="">
+  <!-- 工場建屋背景画像 -->
+  <div style="position:absolute;bottom:15%;left:0;width:100%;height:85%;z-index:1;overflow:hidden;">
+    <img src="https://raw.githubusercontent.com/skuall555/game-assets/main/Factory_back.png" style="width:100%;height:100%;object-fit:cover;object-position:bottom;" alt="工場建屋">
+  </div>
+  <!-- 道路（前面道路・駐車場と同じ） -->
   <div class="factory-road"></div>
-  <div class="factory-fence-left"></div>
   <!-- 工場ゲート構造物 -->
   <div class="factory-gate-structure">
     <div class="factory-gate-label">◎ 工場 ◎</div>
@@ -4353,19 +4364,14 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       <div class="factory-gate-door-text">工場敷地入口</div>
     </div>
   </div>
-  <!-- 工場建屋背景 -->
-  <div class="factory-building-bg">
-    <div class="factory-building-windows">
-      <div class="factory-building-window"></div>
-      <div class="factory-building-window"></div>
-      <div class="factory-building-window"></div>
-      <div class="factory-building-window"></div>
-      <div class="factory-building-window"></div>
-      <div class="factory-building-window"></div>
-    </div>
-  </div>
-  <div class="guide-sign" style="top:75%;">◀ 前面道路へ</div>
-  <div class="guide-sign right" style="top:75%;">工場敷地へ ▶ (アクション)</div>
+  <!-- 風アニメーションオーバーレイ -->
+  <div id="factory-front-wind-overlay" class="street-wind-overlay wind-left"></div>
+  <!-- 風向き表示バナー -->
+  <div id="factory-front-wind-banner" style="position:absolute;top:4%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.55);color:#fff;font-size:1.6vmin;padding:0.5vmin 1.5vmin;border-radius:2vmin;z-index:164;pointer-events:none;white-space:nowrap;display:none;"></div>
+  <!-- 設置済み排風機アイコン（工場前用） -->
+  <div id="factory-front-fan-icon" style="display:none;position:absolute;top:72%;width:18%;aspect-ratio:1;z-index:50;pointer-events:none;transform:translateX(-50%);"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%8E%92%E9%A2%A8%E6%A9%9F_%E8%BB%8A%E4%B8%A1.png" style="width:100%;height:100%;object-fit:contain;"></div>
+  <div class="guide-sign" style="top:75%;">工場敷地入口 (アクション)</div>
+  <div class="guide-sign right" style="top:75%;">前面道路 ▶</div>
 </div>
 
 <!-- 工場敷地 (room 21) -->
@@ -8113,7 +8119,8 @@ function createDefaultScenarioData(){
       reporterRoomNo:'101',
       residentBRoomNo:'102'
     ,indoorLeakRoomNo:'なし',basement:'なし',gasCause:'101号室灯内内管',
-    description:'',hint:'',difficulty:'B級',fireEvent:'なし',cassetteBombe:'なし',otherEvidence:'なし'});
+    description:'',hint:'',difficulty:'B級',fireEvent:'なし',cassetteBombe:'なし',otherEvidence:'なし',
+    factory:'なし',factoryAccess:'なし'});
   }
   return a;
 }
@@ -8156,7 +8163,9 @@ function normalizeScenarioData(arr){
       stageComposition:(s.stageComposition!=null)?String(s.stageComposition):'',
       fireEvent:(s.fireEvent!=null)?String(s.fireEvent):'なし',
       cassetteBombe:(s.cassetteBombe!=null)?String(s.cassetteBombe):'なし',
-      otherEvidence:(s.otherEvidence!=null)?String(s.otherEvidence):'なし'
+      otherEvidence:(s.otherEvidence!=null)?String(s.otherEvidence):'なし',
+      factory:(s.factory!=null)?String(s.factory):'なし',
+      factoryAccess:(s.factoryAccess!=null)?String(s.factoryAccess):'なし'
     };
   }
   return base;
@@ -8435,6 +8444,7 @@ function openScenarioEdit(idx){
   try{ document.getElementById('sc-cassette-bombe').value = s.cassetteBombe?String(s.cassetteBombe):'なし'; }catch(e){}
   try{ document.getElementById('sc-other-evidence').value = s.otherEvidence?String(s.otherEvidence):'なし'; }catch(e){}
   try{ document.getElementById('sc-factory').value = s.factory?String(s.factory):'なし'; }catch(e){}
+  try{ document.getElementById('sc-factory-access').value = s.factoryAccess?String(s.factoryAccess):'なし'; }catch(e){}
 
   // ステージ構成セレクトを動的に更新
   try{
@@ -8568,7 +8578,8 @@ function saveScenario(){
     fireEvent: (function(){ try{ var el=document.getElementById('sc-fire-event'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     cassetteBombe: (function(){ try{ var el=document.getElementById('sc-cassette-bombe'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     otherEvidence: (function(){ try{ var el=document.getElementById('sc-other-evidence'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
-    factory: (function(){ try{ var el=document.getElementById('sc-factory'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
+    factory: (function(){ try{ var el=document.getElementById('sc-factory'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
+    factoryAccess: (function(){ try{ var el=document.getElementById('sc-factory-access'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
   };
   renderScenarioList();
   try{ refreshStartScenarioOptions(); }catch(e){}
@@ -12398,7 +12409,8 @@ function _collectScenarioFromForm(){
     fireEvent: (function(){ try{ var el=document.getElementById('sc-fire-event'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     cassetteBombe: (function(){ try{ var el=document.getElementById('sc-cassette-bombe'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
     otherEvidence: (function(){ try{ var el=document.getElementById('sc-other-evidence'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
-    factory: (function(){ try{ var el=document.getElementById('sc-factory'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
+    factory: (function(){ try{ var el=document.getElementById('sc-factory'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })(),
+    factoryAccess: (function(){ try{ var el=document.getElementById('sc-factory-access'); return (el&&el.value)?el.value:'なし'; }catch(e){ return 'なし'; } })()
   };
 }
 function updateStartScenarioSelectOptions(){
@@ -25207,7 +25219,6 @@ window.tutorialGoHistory = tutorialGoHistory;
 (function(){
   try {
     if(!Array.isArray(window.LOCATIONS)) return;
-    // rooms 20-25 を追加（index 20-25）
     var factoryNames = ['工場前', '工場敷地', '工場内食堂', '事務室', '工場ライン', 'ボイラー室'];
     factoryNames.forEach(function(name, i){ window.LOCATIONS[20 + i] = name; });
   } catch(e) {}
@@ -25227,9 +25238,16 @@ window.tutorialGoHistory = tutorialGoHistory;
     else if(r === 23) { var el = document.getElementById('room-factory-office'); if(el) el.classList.add('active'); }
     else if(r === 24) { var el = document.getElementById('room-factory-line'); if(el) el.classList.add('active'); }
     else if(r === 25) { var el = document.getElementById('room-factory-boiler'); if(el) el.classList.add('active'); }
-    // 工場屋外ルームに天候適用
+    // 工場前 (room 20) ではプレイヤーを小サイズに（前面道路と同様）
+    if(r === 20) {
+      try { var p = document.getElementById('player'); if(p) p.classList.add('small-scale'); } catch(e) {}
+    }
+    // 工場屋外ルームに天候・風適用
     if(r === 20 || r === 21) {
       try { applyWeatherToFactoryOutdoor(); } catch(e) {}
+    }
+    if(r === 20) {
+      try { applyWindToFactoryFront(); } catch(e) {}
     }
     // 行先選択モーダルを閉じる
     try {
@@ -25262,15 +25280,15 @@ window.applyWeatherToFactoryOutdoor = function(){
       } else {
         el.style.background = el.dataset.defaultBg;
       }
-      // 道路の天候変化（工場前の road）
+      // 道路の天候変化
       var road = el.querySelector('.factory-road');
       if(road) {
         var iceUrl = 'url(https://raw.githubusercontent.com/skuall555/game-assets/main/%E8%B7%AF%E9%9D%A2%E5%87%8D%E7%B5%90.png)';
         var wetUrl = 'url(https://raw.githubusercontent.com/skuall555/game-assets/main/%E8%B7%AF%E9%9D%A2%E6%BF%A1%E3%82%8C.png)';
-        if(!road.dataset.defaultBg) road.dataset.defaultBg = road.style.backgroundImage || '';
+        var normalUrl = 'url(https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%81%93%E8%B7%AF.png)';
         if(w === '大雪') { road.style.backgroundImage = iceUrl; road.style.backgroundSize='cover'; road.style.backgroundPosition='center'; }
         else if(w === '雨') { road.style.backgroundImage = wetUrl; road.style.backgroundSize='cover'; road.style.backgroundPosition='center'; }
-        else { road.style.backgroundImage = road.dataset.defaultBg; }
+        else { road.style.backgroundImage = normalUrl; road.style.backgroundSize='cover'; road.style.backgroundPosition='center'; }
       }
     });
   } catch(e) {}
@@ -25289,7 +25307,27 @@ window.applyWeatherToFactoryOutdoor = function(){
 })();
 
 // =========================================================
-// 4. ゲームループ遷移（工場ルーム左右端）
+// 3b. 工場前 風向き表示
+// =========================================================
+window.applyWindToFactoryFront = function(){
+  try {
+    var overlay = document.getElementById('factory-front-wind-overlay');
+    var banner  = document.getElementById('factory-front-wind-banner');
+    var room    = document.getElementById('room-factory-front');
+    var dir = (typeof window._windDirection !== 'undefined') ? window._windDirection : 'left';
+    if(overlay){
+      overlay.classList.remove('wind-right','wind-left');
+      overlay.classList.add(dir === 'right' ? 'wind-right' : 'wind-left');
+    }
+    if(banner){
+      banner.textContent = dir === 'right' ? '風向き: → (右)' : '風向き: ← (左)';
+    }
+    if(room){ room.classList.add('wind-active'); }
+  } catch(e) {}
+};
+
+// =========================================================
+// 4. ゲームループ遷移（工場ルーム左右端） ★バグ修正: requestAnimationFrame追加
 // =========================================================
 (function(){
   var _origLoop = window.loop;
@@ -25298,22 +25336,23 @@ window.applyWeatherToFactoryOutdoor = function(){
     if(typeof isPaused !== 'undefined' && isPaused) return;
     // 工場ルームの場合は元のloopを呼ぶ前に左右遷移を処理
     if(typeof state !== 'undefined' && (state.room >= 20 && state.room <= 25)){
-      // 移動入力のみ処理（loop内の移動ロジックを再現）
+      // 移動入力のみ処理
       if(!transitionCooldown && !isDetectorMode && !isPlacementMode && !isVentMode){
         var _spd=(typeof getEffectiveSpeed==='function'?getEffectiveSpeed():SPEED);
         if(input.l) state.x -= _spd;
         if(input.r) state.x += _spd;
       }
-      // 左端遷移
+      // 左端遷移（工場前は左端を壁として塞ぐ）
       if(state.x < 0){
-        if(state.room === 20){ changeRoom(1, 95); input.l=false; input.r=false; return; }
-        else if(state.room === 21){ changeRoom(20, 85); input.l=false; input.r=false; return; }
-        else if(state.room >= 22 && state.room <= 25){ changeRoom(21, 10); input.l=false; input.r=false; return; }
+        if(state.room === 20){ state.x = 0; }
+        else if(state.room === 21){ changeRoom(20, 85); input.l=false; input.r=false; loopId = requestAnimationFrame(loop); return; }
+        else if(state.room >= 22 && state.room <= 25){ changeRoom(21, 10); input.l=false; input.r=false; loopId = requestAnimationFrame(loop); return; }
         else { state.x = 0; }
       }
-      // 右端遷移
+      // 右端遷移（工場前の右端→前面道路）
       else if(state.x > 100){
-        if(state.room === 21){ showFactoryDestModal(); state.x = 98; input.l=false; input.r=false; return; }
+        if(state.room === 20){ changeRoom(1, 5); input.l=false; input.r=false; loopId = requestAnimationFrame(loop); return; }
+        else if(state.room === 21){ showFactoryDestModal(); state.x = 98; input.l=false; input.r=false; loopId = requestAnimationFrame(loop); return; }
         else { state.x = 100; }
       }
       // プレイヤー物理
@@ -25329,36 +25368,51 @@ window.applyWeatherToFactoryOutdoor = function(){
       var icon = '⬆';
       if(state.room === 20){ icon = '🚪'; }
       try {
-        var ab = document.getElementById('action-btn');
-        if(ab) ab.textContent = icon;
+        var ai = document.getElementById('action-icon');
+        if(ai) ai.textContent = icon;
       } catch(e){}
       // プレイヤー描画
-      try { renderPlayer(); } catch(e) {}
+      try {
+        var p = document.getElementById('player');
+        if(p){
+          p.style.left = state.x + '%';
+          p.style.bottom = state.y + '%';
+          if(input.l) p.style.transform='scaleX(1)';
+          if(input.r) p.style.transform='scaleX(-1)';
+        }
+      } catch(e) {}
       // HUD更新
       try { updateHUD(); } catch(e) {}
-      return; // 元の loop は呼ばない（このルームでは独立して動作）
+      // ★バグ修正: ループを継続する
+      loopId = requestAnimationFrame(loop);
+      return;
     }
-    // 工場前（room 1）から左端に行くと工場前へ（工場ありの場合）
-    // これは元ループのパッチで対応
+    // 非工場ルームは元のループを呼ぶ
     _origLoop();
   };
 })();
 
 // =========================================================
-// 5. 前面道路（room 1）から左端→工場前
-// ※ メインループの else if(state.room===1) で直接対応済み
+// 5. 前面道路（room 1）左端→工場前 はメインループで対応済み
 // =========================================================
 
 // =========================================================
-// 6. handleAction 拡張（工場前→工場敷地入場）
+// 6. handleAction 拡張（工場前→工場敷地入場 / 立ち入り許可チェック）
 // =========================================================
 (function(){
   var _origHandleAction = window.handleAction;
   window.handleAction = function(){
     try {
       if(typeof state !== 'undefined' && state.room === 20){
-        // 工場前でアクション → 工場敷地へ
         if(transitionCooldown || isPaused) return;
+        // 工場の立ち入り許可チェック
+        var access = (typeof activeScenario !== 'undefined' && activeScenario && activeScenario.factoryAccess)
+                     ? activeScenario.factoryAccess : 'なし';
+        if(access === 'なし'){
+          try { showSystemMsg('許可されていません。'); } catch(e) {}
+          return;
+        }
+        // 許可あり→工場敷地へ
         try { playAudio('se_door', SE.door); } catch(e) {}
         changeRoom(21, 5);
         input.j = false;
@@ -25399,7 +25453,6 @@ window.changeRoomFromFactory = function(roomNum){
 // =========================================================
 // 8. バルブトグル機能
 // =========================================================
-// バルブ状態管理（open=true/closed=false）
 var _factoryValveState = { line: true, boiler: true };
 
 window.toggleFactoryValve = function(valveId){
@@ -25417,7 +25470,6 @@ window.toggleFactoryValve = function(valveId){
   } catch(e) {}
 };
 
-// バルブピットクリック
 window.clickFactoryValvePit = function(){
   try {
     if(typeof showSystemMsg === 'function'){
@@ -25427,13 +25479,102 @@ window.clickFactoryValvePit = function(){
 };
 
 // =========================================================
-// 9. シナリオ設定 sc-factory フィールドの save/load 対応
-// ※ saveScenario / _collectScenarioFromForm / openScenarioEdit に
-//    直接 factory フィールドを追加済みのためパッチ不要
+// 9. 排風機設置 工場前（room 20）対応
 // =========================================================
+(function(){
+  // selectItem をラップして room 20 でも fan 設置を可能にする
+  function patchFanForFactory(){
+    if(typeof window.selectItem !== 'function' || window.selectItem.__fanFactoryV1) return;
+    var _orig = window.selectItem;
+    window.selectItem = function(key){
+      if(key === 'fan'){
+        var room = (typeof state !== 'undefined') ? state.room : null;
+        if(room === 20){
+          if(window._fanPlaced){
+            // 設置済み → 排風起動
+            try{ startVentMode(); }catch(e){ try{ showSystemMsg('排風を開始します。'); }catch(_){} }
+          } else {
+            // 工場前で排風機設置モード開始
+            setTimeout(function(){
+              window._fanPlacementActive = true;
+              try{ startPlacementMode('fan'); }catch(_){}
+              setTimeout(function(){
+                try{
+                  var modeMsg = document.getElementById('mode-msg');
+                  if(modeMsg) modeMsg.textContent = '排風機設置モード：設置場所をクリック';
+                }catch(_){}
+              }, 0);
+            }, 80);
+          }
+          return;
+        }
+      }
+      return _orig.apply(this, arguments);
+    };
+    window.selectItem.__fanFactoryV1 = true;
+  }
+  setTimeout(patchFanForFactory, 500);
+  setTimeout(patchFanForFactory, 1500);
+
+  // fan-placed-icon (room-street内) を factory-front-fan-icon にミラー
+  // room 20 にいるとき、fan-placed-icon の表示を factory-front-fan-icon に反映する
+  setInterval(function(){
+    try{
+      if(typeof state === 'undefined' || state.room !== 20) return;
+      var src = document.getElementById('fan-placed-icon');
+      var dst = document.getElementById('factory-front-fan-icon');
+      if(!src || !dst) return;
+      if(src.style.display !== 'none'){
+        if(dst.style.display === 'none'){
+          dst.style.left = src.style.left || '50%';
+          dst.style.top  = src.style.top  || '72%';
+          dst.style.display = 'block';
+        }
+      } else {
+        if(dst.style.display !== 'none') dst.style.display = 'none';
+      }
+    }catch(e){}
+  }, 200);
+
+  // room 20 から離れるときに factory-front-fan-icon を非表示
+  (function(){
+    var _prevRoom = -1;
+    setInterval(function(){
+      try{
+        if(typeof state === 'undefined') return;
+        if(state.room !== _prevRoom){
+          _prevRoom = state.room;
+          if(state.room !== 20){
+            var dst = document.getElementById('factory-front-fan-icon');
+            if(dst) dst.style.display = 'none';
+          }
+        }
+      }catch(e){}
+    }, 300);
+  })();
+})();
 
 // =========================================================
-// 10. ゲーム開始時にバルブ状態をリセット
+// 10. 屋外 ambience 工場前も対象に
+// =========================================================
+(function(){
+  var _origIsOutdoor = window._isOutdoorActive;
+  if(typeof _origIsOutdoor === 'function'){
+    window._isOutdoorActive = function(){
+      if(_origIsOutdoor()) return true;
+      try{
+        var ff = document.getElementById('room-factory-front');
+        if(ff && ff.classList.contains('active')) return true;
+        var fg = document.getElementById('room-factory-grounds');
+        if(fg && fg.classList.contains('active')) return true;
+      }catch(e){}
+      return false;
+    };
+  }
+})();
+
+// =========================================================
+// 11. ゲーム開始時にバルブ状態・工場前風表示をリセット
 // =========================================================
 (function(){
   var _origInitGame = window.initGame;
@@ -25446,6 +25587,11 @@ window.clickFactoryValvePit = function(){
         var bb = document.getElementById('factory-valve-boiler-body');
         if(lb) lb.classList.add('open');
         if(bb) bb.classList.add('open');
+        // 工場前排風機アイコンをリセット
+        try{
+          var ffi = document.getElementById('factory-front-fan-icon');
+          if(ffi) ffi.style.display = 'none';
+        }catch(e){}
       } catch(e) {}
     };
   }
