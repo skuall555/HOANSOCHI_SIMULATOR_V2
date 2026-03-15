@@ -4842,7 +4842,8 @@ const ITEMS_DEF = {
     valve: {
         name: "バルブ開閉器",
         icon: "<img src='https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%96%8B%E9%96%89%E5%99%A8.png' style='width:100%;height:100%;object-fit:contain;'>",
-        type: "coll"
+        type: "coll",
+        hasCount: true
     },
     cone: {
         name: "カラーコーン",
@@ -4852,7 +4853,8 @@ const ITEMS_DEF = {
     fan: {
         name: "排風機",
         icon: "<img src='https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%8E%92%E9%A2%A8%E6%A9%9F_%E8%BB%8A%E4%B8%A1.png' style='width:100%;height:100%;object-fit:contain;'>",
-        type: "coll"
+        type: "coll",
+        hasCount: true
     }
 };
 
@@ -4955,7 +4957,7 @@ state.room=0; state.x=30; state.y=15; isPaused = false; transitionCooldown = fal
 if(ventTimer) { clearInterval(ventTimer); ventTimer = null; }
 ventingLocation = null;
 state.inventory = []; state.vanStock = []; state.equipped = null;
-state.itemCounts = { alm:10, sign:10, fire:2 };
+state.itemCounts = { alm:10, sign:10, fire:2, valve:1, fan:1 };
 
 state.inventory.push('phone', 'memo');
 for (let key in ITEMS_DEF) { if (ITEMS_DEF[key].type === 'coll') state.vanStock.push(key); }
@@ -6576,7 +6578,7 @@ if(isPaused) return;
 // 状況突破画面が開いている間はゲームロジックをスキップ（ループ自体は継続）
 if(window._btPaused){ loopId = requestAnimationFrame(loop); return; }
 
-if(!transitionCooldown && !isDetectorMode && !isPlacementMode && !isVentMode) { if(input.l) state.x -= SPEED; if(input.r) state.x += SPEED; }
+if(!transitionCooldown && !isDetectorMode && !isPlacementMode && !isVentMode) { var _spd=(typeof getEffectiveSpeed==='function'?getEffectiveSpeed():SPEED); if(input.l) state.x -= _spd; if(input.r) state.x += _spd; }
 
 let moved = false;
 if(state.x < 0) {
@@ -25268,8 +25270,9 @@ window.applyWeatherToFactoryOutdoor = function(){
     if(typeof state !== 'undefined' && (state.room >= 20 && state.room <= 25)){
       // 移動入力のみ処理（loop内の移動ロジックを再現）
       if(!transitionCooldown && !isDetectorMode && !isPlacementMode && !isVentMode){
-        if(input.l) state.x -= SPEED;
-        if(input.r) state.x += SPEED;
+        var _spd=(typeof getEffectiveSpeed==='function'?getEffectiveSpeed():SPEED);
+        if(input.l) state.x -= _spd;
+        if(input.r) state.x += _spd;
       }
       // 左端遷移
       if(state.x < 0){
@@ -26365,6 +26368,330 @@ function closeClearStep1(){
     }
     tryHookCR9();
   })();
+
+})();
+</script>
+
+<script id="weight-valve-fan-patch-v1">
+/* ============================================================
+   重量・バルブ回収・排風機設置 パッチ v1
+   - バルブ開閉器/排風機の所持数(hasCount)対応済み
+   - 重量システム（吹き出し＋速度変化）
+   - バルブ閉止後の「バルブを開にしますか？」モーダル
+   - 排風機の前面道路設置＋回収
+   ============================================================ */
+(function(){
+'use strict';
+
+/* ---- 重量定義 ---- */
+var WEIGHT_DEF = { cone:10, fire:20, valve:70, fan:70, alm:1, sign:1 };
+var WEIGHT_OTHER = 5;
+
+/* ---- 総重量計算 ---- */
+function calcTotalWeight(){
+  try{
+    if(typeof state === 'undefined' || !state.inventory) return 0;
+    var w = 0;
+    state.inventory.forEach(function(key){
+      if(!ITEMS_DEF[key] || ITEMS_DEF[key].type !== 'coll') return;
+      var unitW = (WEIGHT_DEF[key] !== undefined) ? WEIGHT_DEF[key] : WEIGHT_OTHER;
+      var count;
+      if(ITEMS_DEF[key].hasCount && state.itemCounts && state.itemCounts[key] !== undefined){
+        count = state.itemCounts[key];
+      } else {
+        count = 1;
+      }
+      w += unitW * count;
+    });
+    return w;
+  }catch(e){ return 0; }
+}
+window.calcTotalWeight = calcTotalWeight;
+
+/* ---- 有効移動速度 ---- */
+function getEffectiveSpeed(){
+  var w = calcTotalWeight();
+  var s = (typeof SPEED !== 'undefined') ? SPEED : 1.0;
+  if(w > 120) return s * 0.2;
+  if(w > 100) return s * 0.4;
+  return s;
+}
+window.getEffectiveSpeed = getEffectiveSpeed;
+
+/* ---- 吹き出しUI ---- */
+var _bubbleTimer = null;
+var _lastWeight = -1;
+var _warnedOver100 = false;
+var _warnedOver120 = false;
+
+function initWeightBubble(){
+  var player = document.getElementById('player');
+  if(!player){ setTimeout(initWeightBubble, 500); return; }
+  if(document.getElementById('player-weight-bubble')) return;
+
+  if(!document.getElementById('weight-bubble-style')){
+    var style = document.createElement('style');
+    style.id = 'weight-bubble-style';
+    style.textContent = [
+      '#player-weight-bubble{',
+      '  position:absolute;bottom:105%;left:50%;',
+      '  transform:translateX(-50%);',
+      '  background:#fff;border:0.35vmin solid #333;border-radius:1vmin;',
+      '  padding:0.4vmin 1.2vmin;font-size:1.6vmin;font-weight:bold;',
+      '  white-space:nowrap;z-index:200;pointer-events:none;display:none;',
+      '  box-shadow:0 0.3vmin 0.8vmin rgba(0,0,0,0.25);',
+      '  min-width:14vmin;text-align:center;',
+      '}',
+      '#player-weight-bubble::after{',
+      '  content:"";position:absolute;top:100%;left:50%;',
+      '  transform:translateX(-50%);',
+      '  border:0.8vmin solid transparent;border-top-color:#333;',
+      '}'
+    ].join('');
+    document.head.appendChild(style);
+  }
+
+  var bubble = document.createElement('div');
+  bubble.id = 'player-weight-bubble';
+  player.appendChild(bubble);
+}
+
+function showWeightBubble(w){
+  var bubble = document.getElementById('player-weight-bubble');
+  if(!bubble) return;
+  bubble.textContent = '重量：' + w + ' / 100';
+  bubble.style.display = 'block';
+  clearTimeout(_bubbleTimer);
+  _bubbleTimer = setTimeout(function(){ bubble.style.display = 'none'; }, 3000);
+}
+
+function updateWeightDisplay(){
+  var w = calcTotalWeight();
+  if(w === _lastWeight) return;
+  _lastWeight = w;
+  showWeightBubble(w);
+  if(w > 120 && !_warnedOver120){
+    _warnedOver120 = true;
+    try{ showSystemMsg('所持重量が１２０を超えると、更に移動速度が遅くなります。'); }catch(e){}
+  } else if(w > 100 && !_warnedOver100){
+    _warnedOver100 = true;
+    try{ showSystemMsg('所持重量が１００を超えると、移動速度が遅くなります。必要なものを必要なタイミングで持ち出しましょう。'); }catch(e){}
+  }
+  if(w <= 100){ _warnedOver100 = false; _warnedOver120 = false; }
+  else if(w <= 120){ _warnedOver120 = false; }
+}
+window.updateWeightDisplay = updateWeightDisplay;
+
+/* ---- renderInventory ラップ → 重量表示更新 ---- */
+function hookRenderInventory(){
+  if(typeof window.renderInventory !== 'function'){ setTimeout(hookRenderInventory, 200); return; }
+  if(window.renderInventory.__wHooked) return;
+  var _orig = window.renderInventory;
+  window.renderInventory = function(){
+    _orig.apply(this, arguments);
+    updateWeightDisplay();
+  };
+  window.renderInventory.__wHooked = true;
+}
+
+/* ---- pickupItem ラップ → バルブ/排風機の所持数リセット ---- */
+function hookPickupItem(){
+  if(typeof window.pickupItem !== 'function'){ setTimeout(hookPickupItem, 200); return; }
+  if(window.pickupItem.__wHooked) return;
+  var _orig = window.pickupItem;
+  window.pickupItem = function(key){
+    _orig.apply(this, arguments);
+    if((key === 'valve' || key === 'fan') && typeof state !== 'undefined' && state.itemCounts){
+      state.itemCounts[key] = 1;
+      try{ renderInventory(); }catch(e){}
+    }
+  };
+  window.pickupItem.__wHooked = true;
+}
+
+/* ---- バルブ閉止時 所持数を0に ---- */
+function hookValveYes(){
+  var btn = document.getElementById('valve-yes');
+  if(!btn){ setTimeout(hookValveYes, 300); return; }
+  if(btn.__wHooked) return;
+  btn.__wHooked = true;
+  btn.addEventListener('click', function(){
+    if(typeof state === 'undefined' || !state.itemCounts) return;
+    state.itemCounts.valve = 0;
+    try{ renderInventory(); }catch(e){}
+  });
+}
+
+/* ---- バルブ「開にしますか？」モーダル ---- */
+function initValveReopenModal(){
+  if(document.getElementById('valve-reopen-modal')) return;
+  var modal = document.createElement('div');
+  modal.id = 'valve-reopen-modal';
+  modal.className = 'overlay-screen';
+  modal.innerHTML = [
+    '<div class="meter-modal-content">',
+    '<h3>バルブを開にしますか？</h3>',
+    '<button class="meter-modal-btn" id="valve-reopen-yes">はい</button>',
+    '<button class="meter-modal-btn no" id="valve-reopen-no">いいえ</button>',
+    '</div>'
+  ].join('');
+  document.body.appendChild(modal);
+
+  document.getElementById('valve-reopen-yes').addEventListener('click', function(){
+    var ve = document.getElementById('valve-shut-entrance');
+    if(ve) ve.style.display = 'none';
+    window.__valveClosed = false;
+    if(typeof state !== 'undefined' && state.itemCounts) state.itemCounts.valve = 1;
+    try{ renderInventory(); }catch(e){}
+    modal.classList.remove('active');
+    try{ window.isPaused = false; }catch(e){}
+    try{ window.__valveMode = false; }catch(e){}
+    try{ showSystemMsg('バルブを開にしました。バルブ開閉器を回収しました。'); }catch(e){}
+    try{ if(typeof window.loop === 'function') window.loop(); }catch(e){}
+  });
+
+  document.getElementById('valve-reopen-no').addEventListener('click', function(){
+    modal.classList.remove('active');
+    try{ window.isPaused = false; }catch(e){}
+    try{ window.__valveMode = false; }catch(e){}
+    try{ if(typeof window.loop === 'function') window.loop(); }catch(e){}
+  });
+}
+
+function hookValveModalObserver(){
+  var valveModal = document.getElementById('valve-modal');
+  if(!valveModal){ setTimeout(hookValveModalObserver, 300); return; }
+  if(valveModal.__reopenObs) return;
+  valveModal.__reopenObs = true;
+  initValveReopenModal();
+  var obs = new MutationObserver(function(mutations){
+    mutations.forEach(function(mut){
+      if(mut.type === 'attributes' && valveModal.classList.contains('active') && window.__valveClosed){
+        valveModal.classList.remove('active');
+        var reopenModal = document.getElementById('valve-reopen-modal');
+        if(reopenModal) reopenModal.classList.add('active');
+      }
+    });
+  });
+  obs.observe(valveModal, { attributes:true, attributeFilter:['class'] });
+}
+
+/* ---- 排風機: 前面道路に設置 ---- */
+function createPlacedFanElement(){
+  if(document.getElementById('placed-fan-road')) return;
+  var street = document.getElementById('room-street') || document.getElementById('app-container');
+  if(!street) return;
+  var el = document.createElement('div');
+  el.id = 'placed-fan-road';
+  el.className = 'placed-item';
+  el.dataset.type = 'fan';
+  el.style.cssText = [
+    'position:absolute;left:70%;bottom:18%;',
+    'transform:translate(-50%,-50%) scale(3);',
+    'z-index:50;width:3%;pointer-events:auto;cursor:pointer;'
+  ].join('');
+  el.innerHTML = (window.ITEMS_DEF && ITEMS_DEF.fan) ? ITEMS_DEF.fan.icon : '';
+  street.appendChild(el);
+}
+
+function removePlacedFanElement(){
+  var el = document.getElementById('placed-fan-road');
+  if(el) el.parentNode.removeChild(el);
+}
+
+/* ---- vent-overlay capture: 排風機設置時に所持数を減らす ---- */
+function hookVentOverlay(){
+  var ventOverlay = document.getElementById('vent-overlay');
+  if(!ventOverlay){ setTimeout(hookVentOverlay, 300); return; }
+  if(ventOverlay.__fanHooked) return;
+  ventOverlay.__fanHooked = true;
+
+  function onVentPlace(e){
+    if(window.__ventStage !== 'select') return;
+    if(typeof state === 'undefined' || state.room !== 1) return;
+    if(!state.itemCounts || state.itemCounts.fan <= 0){
+      try{ e.stopImmediatePropagation(); }catch(er){}
+      try{ showSystemMsg('排風機を持っていません。'); }catch(er2){}
+      return;
+    }
+    state.itemCounts.fan = 0;
+    try{ renderInventory(); }catch(er){}
+    createPlacedFanElement();
+  }
+
+  ventOverlay.addEventListener('click', onVentPlace, true);
+  ventOverlay.addEventListener('touchstart', function(e){ onVentPlace(e); }, {capture:true, passive:false});
+}
+
+/* ---- detector-overlay capture: 排風機モード時に排風機をクリックで回収 ---- */
+function hookDetectorOverlayForFan(){
+  var detOvEl = document.getElementById('detector-overlay');
+  if(!detOvEl){ setTimeout(hookDetectorOverlayForFan, 300); return; }
+  if(detOvEl.__fanCollectHooked) return;
+  detOvEl.__fanCollectHooked = true;
+
+  function tryCollectFan(cx, cy){
+    if(typeof isVentMode === 'undefined' || !isVentMode) return false;
+    var els = document.elementsFromPoint(cx, cy);
+    var fanEl = null;
+    for(var i = 0; i < els.length; i++){
+      if(els[i].classList && els[i].classList.contains('placed-item') && els[i].dataset.type === 'fan'){
+        fanEl = els[i]; break;
+      }
+    }
+    if(!fanEl) return false;
+    removePlacedFanElement();
+    if(typeof state !== 'undefined' && state.itemCounts) state.itemCounts.fan = 1;
+    try{ renderInventory(); }catch(er){}
+    try{ showSystemMsg('排風機を回収しました。'); }catch(er2){}
+    return true;
+  }
+
+  detOvEl.addEventListener('mousedown', function(e){
+    if(tryCollectFan(e.clientX, e.clientY)) e.stopImmediatePropagation();
+  }, true);
+  detOvEl.addEventListener('touchstart', function(e){
+    var t = e.touches && e.touches[0];
+    if(t && tryCollectFan(t.clientX, t.clientY)) e.stopImmediatePropagation();
+  }, {capture:true, passive:false});
+}
+
+/* ---- initGame フック: リセット時にパッチ変数もリセット ---- */
+function hookInitGame(){
+  if(typeof window.initGame !== 'function'){ setTimeout(hookInitGame, 200); return; }
+  if(window.initGame.__wHooked) return;
+  var _orig = window.initGame;
+  window.initGame = function(){
+    _warnedOver100 = false;
+    _warnedOver120 = false;
+    _lastWeight = -1;
+    removePlacedFanElement();
+    _orig.apply(this, arguments);
+    if(!state.itemCounts) state.itemCounts = {};
+    if(typeof state.itemCounts.valve === 'undefined') state.itemCounts.valve = 1;
+    if(typeof state.itemCounts.fan === 'undefined') state.itemCounts.fan = 1;
+    try{ renderInventory(); }catch(e){}
+  };
+  window.initGame.__wHooked = true;
+}
+
+/* ---- 初期化 ---- */
+function init(){
+  initWeightBubble();
+  hookRenderInventory();
+  hookPickupItem();
+  hookValveYes();
+  hookValveModalObserver();
+  hookVentOverlay();
+  hookDetectorOverlayForFan();
+  hookInitGame();
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 
 })();
 </script>
