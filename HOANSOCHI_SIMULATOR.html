@@ -15775,6 +15775,7 @@ try{
     var m = document.getElementById('valve-modal');
     if(m){ m.classList.remove('active'); }
     try{ window.isPaused=false; }catch(e){}
+    try{ if(typeof loopId!=='undefined'&&loopId){cancelAnimationFrame(loopId);loopId=null;} }catch(e){}
     try{ if(typeof window.loop==='function') window.loop(); }catch(e){}
   }
   function setValveShown(on){
@@ -26569,6 +26570,7 @@ function initValveReopenModal(){
     try{ window.isPaused = false; }catch(e){}
     try{ window.__valveMode = false; }catch(e){}
     try{ showSystemMsg('バルブを開にしました。バルブ開閉器を回収しました。'); }catch(e){}
+    try{ if(typeof loopId!=='undefined'&&loopId){cancelAnimationFrame(loopId);loopId=null;} }catch(e){}
     try{ if(typeof window.loop === 'function') window.loop(); }catch(e){}
   });
 
@@ -26576,6 +26578,7 @@ function initValveReopenModal(){
     modal.classList.remove('active');
     try{ window.isPaused = false; }catch(e){}
     try{ window.__valveMode = false; }catch(e){}
+    try{ if(typeof loopId!=='undefined'&&loopId){cancelAnimationFrame(loopId);loopId=null;} }catch(e){}
     try{ if(typeof window.loop === 'function') window.loop(); }catch(e){}
   });
 }
