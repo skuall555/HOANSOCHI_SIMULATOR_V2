@@ -9706,10 +9706,16 @@ function finalizePressureTest(id){
 
 function startPressureTestMode(){
   isPressureTestMode = true;
+  // カラーコーンモードと同様：操作パッド・プレイヤー画像を非表示
+  try{ document.querySelector('.controls-l').classList.add('hidden'); }catch(e){}
+  try{ document.querySelector('.controls-r').classList.add('hidden'); }catch(e){}
+  try{ document.getElementById('toolbar-container').classList.add('hidden-det'); }catch(e){}
+  try{ document.getElementById('player').style.display = 'none'; }catch(e){}
   // 上部バーを検知器モード風に流用
   try{
     var layer=document.getElementById('detector-layer');
     if(layer){
+      layer.style.display = '';
       layer.classList.add('active');
       var msg=document.getElementById('mode-msg');
       if(msg) msg.textContent='圧力保持試験モード - ガスメーターをタップ -';
@@ -9728,7 +9734,12 @@ function stopPressureTestMode(){
   if(otherMode){
     return;
   }
-  try{ var msg=document.getElementById('mode-msg'); if(msg) msg.textContent='検知器モード -ガスの反応がありそうな場所をタップ-'; }catch(e){}
+  // 操作パッド・プレイヤー画像を復元（startPressureTestModeで非表示にしたものを戻す）
+  try{ document.querySelector('.controls-l').classList.remove('hidden'); }catch(e){}
+  try{ document.querySelector('.controls-r').classList.remove('hidden'); }catch(e){}
+  try{ document.getElementById('toolbar-container').classList.remove('hidden-det'); }catch(e){}
+  try{ document.getElementById('player').style.display = 'block'; }catch(e){}
+  try{ var msg=document.getElementById('mode-msg'); if(msg) msg.textContent=''; }catch(e){}
   try{ var layer=document.getElementById('detector-layer'); if(layer) layer.classList.remove('active'); }catch(e){}
   try{ var ov=document.getElementById('detector-overlay'); if(ov) ov.classList.remove('active'); }catch(e){}
   try{ var tool=document.getElementById('detector-tool'); if(tool) tool.style.display='none'; }catch(e){}
@@ -26473,14 +26484,19 @@ function updateWeightDisplay(){
   showWeightBubble(w);
   if(w > 100 && !_warnedOver100){
     _warnedOver100 = true;
-    try{ showSystemMsg('所持重量が１００を超えると、移動速度が遅くなります。必要なものを必要なタイミングで持ち出しましょう。'); }catch(e){}
+    /* pickupItem の「回収しました」メッセージより後に表示されるよう遅延 */
+    setTimeout(function(){
+      try{ showSystemMsg('所持重量が１００を超えると、移動速度が遅くなります。必要なものを必要なタイミングで持ち出しましょう。'); }catch(e){}
+    }, 3100);
     if(w > 120 && !_warnedOver120){
       _warnedOver120 = true;
-      setTimeout(function(){ try{ showSystemMsg('所持重量が１２０を超えると、更に移動速度が遅くなります。'); }catch(e2){} }, 3200);
+      setTimeout(function(){ try{ showSystemMsg('所持重量が１２０を超えると、更に移動速度が遅くなります。'); }catch(e2){} }, 6400);
     }
   } else if(w > 120 && !_warnedOver120){
     _warnedOver120 = true;
-    try{ showSystemMsg('所持重量が１２０を超えると、更に移動速度が遅くなります。'); }catch(e){}
+    setTimeout(function(){
+      try{ showSystemMsg('所持重量が１２０を超えると、更に移動速度が遅くなります。'); }catch(e){}
+    }, 3100);
   }
   if(w <= 100){ _warnedOver100 = false; _warnedOver120 = false; }
   else if(w <= 120){ _warnedOver120 = false; }
@@ -26680,13 +26696,13 @@ function hookInitGame(){
   window.initGame.__wHooked = true;
 }
 
-/* ---- 前面道路(room-1)でのアイテム選択 → 車両に戻す ---- */
+/* ---- 駐車場(room-0)・前面道路(room-1)でのアイテム選択 → 車両に戻す ---- */
 function hookSelectItemForStreet(){
   if(typeof window.selectItem !== 'function'){ setTimeout(hookSelectItemForStreet, 200); return; }
   if(window.selectItem.__streetHooked) return;
   var _orig = window.selectItem;
   window.selectItem = function(key){
-    if(typeof state !== 'undefined' && state.room === 1 &&
+    if(typeof state !== 'undefined' && (state.room === 0 || state.room === 1) &&
        typeof ITEMS_DEF !== 'undefined' && ITEMS_DEF[key] && ITEMS_DEF[key].type === 'coll'){
       try{ playAudio('se_item', SE.item); }catch(e){}
       state.inventory = state.inventory.filter(function(k){ return k !== key; });
