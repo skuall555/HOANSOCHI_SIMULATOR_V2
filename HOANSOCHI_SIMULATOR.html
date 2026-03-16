@@ -14,7 +14,7 @@
 <style>
 
 body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; display: flex; align-items: center; justify-content: center; font-family: 'MS Gothic', 'Meiryo', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; }
-#app-container { position: fixed; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: 0 0; background: #333; overflow: hidden; box-shadow: 0 0 0 2px #111; font-size: 16px; container-type: size; container-name: game; }
+#app-container { position: fixed; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: 0 0; background: #333; overflow: hidden; box-shadow: 0 0 0 2px #111; font-size: 16px; container-type: size; container-name: game; touch-action: pan-y; }
 /* スクロール可能なモーダル内要素のタッチスクロールを許可 */
 #app-container [style*="overflow-y:auto"], #app-container [style*="overflow-y: auto"],
 #app-container [style*="overflow-y:scroll"], #app-container [style*="overflow:auto"],
@@ -4097,7 +4097,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 </div>
 
 <div class="controls-l" style=""><div class="d-btn" onmousedown="input.l=true" onmouseup="input.l=false" onmouseleave="input.l=false" ontouchstart="input.l=true;event.preventDefault()" ontouchend="input.l=false;event.preventDefault()">◀</div><div class="d-btn" onmousedown="input.r=true" onmouseup="input.r=false" onmouseleave="input.r=false" ontouchstart="input.r=true;event.preventDefault()" ontouchend="input.r=false;event.preventDefault()">▶</div></div>
-<div class="controls-r" style=""><div id="talk-btn" class="act-btn talk-btn" onmousedown="openCommWindow()" ontouchstart="openCommWindow();event.preventDefault()"><img id="talk-icon-img" alt="通報者" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div><div id="elevator-green-btn" class="act-btn elevator-green-btn" style="display: none; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; background: radial-gradient(circle, rgba(0, 200, 80, 0.55), rgba(0, 120, 60, 0.85)); border: 0.3cqmin solid rgb(255, 255, 255); border-radius: 50%; box-shadow: rgba(0, 0, 0, 0.5) 0px 0.5cqmin 1cqmin;" data-elev-was-prerendered="1" data-elev-bound="1"><img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Crect%20width%3D%2260%22%20height%3D%2260%22%20fill%3D%22%236d4c41%22%20rx%3D%224%22/%3E%3Crect%20x%3D%226%22%20y%3D%228%22%20width%3D%2222%22%20height%3D%2244%22%20fill%3D%22%235d4037%22/%3E%3Crect%20x%3D%2232%22%20y%3D%228%22%20width%3D%2222%22%20height%3D%2244%22%20fill%3D%22%235d4037%22/%3E%3Crect%20x%3D%2228%22%20y%3D%228%22%20width%3D%224%22%20height%3D%2244%22%20fill%3D%22%233a3a3a%22/%3E%3Ctext%20x%3D%2230%22%20y%3D%2258%22%20fill%3D%22%23fff%22%20font-size%3D%226%22%20text-anchor%3D%22middle%22%3EEV%3C/text%3E%3C/svg%3E" style="width: 70%; height: 70%; object-fit: contain; pointer-events: none;"></div><div id="action-btn" class="act-btn" onmousedown="handleAction()" onmouseup="input.j=false" onmouseleave="input.j=false" ontouchstart="handleAction();event.preventDefault()" ontouchend="input.j=false;event.preventDefault()"><span id="action-icon">🚪</span></div></div>
+<div class="controls-r" style=""><div id="talk-btn" class="act-btn talk-btn" onmousedown="openCommWindow()" ontouchstart="openCommWindow();event.preventDefault()"><img id="talk-icon-img" alt="通報者" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E5%95%8F%E8%A8%BA%E5%90%B9%E3%81%8D%E5%87%BA%E3%81%97.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div><div id="elevator-green-btn" class="act-btn elevator-green-btn" style="display: none; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; background: radial-gradient(circle, rgba(0, 200, 80, 0.55), rgba(0, 120, 60, 0.85)); border: 0.3cqmin solid rgb(255, 255, 255); border-radius: 50%; box-shadow: rgba(0, 0, 0, 0.5) 0px 0.5cqmin 1cqmin;" data-elev-was-prerendered="1"><img src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%3E%3Crect%20width%3D%2260%22%20height%3D%2260%22%20fill%3D%22%236d4c41%22%20rx%3D%224%22/%3E%3Crect%20x%3D%226%22%20y%3D%228%22%20width%3D%2222%22%20height%3D%2244%22%20fill%3D%22%235d4037%22/%3E%3Crect%20x%3D%2232%22%20y%3D%228%22%20width%3D%2222%22%20height%3D%2244%22%20fill%3D%22%235d4037%22/%3E%3Crect%20x%3D%2228%22%20y%3D%228%22%20width%3D%224%22%20height%3D%2244%22%20fill%3D%22%233a3a3a%22/%3E%3Ctext%20x%3D%2230%22%20y%3D%2258%22%20fill%3D%22%23fff%22%20font-size%3D%226%22%20text-anchor%3D%22middle%22%3EEV%3C/text%3E%3C/svg%3E" style="width: 70%; height: 70%; object-fit: contain; pointer-events: none;"></div><div id="action-btn" class="act-btn" onmousedown="handleAction()" onmouseup="input.j=false" onmouseleave="input.j=false" ontouchstart="handleAction();event.preventDefault()" ontouchend="input.j=false;event.preventDefault()"><span id="action-icon">🚪</span></div></div>
 </div>
 
 <div id="danger-panel" style="">
@@ -4106,7 +4106,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 <div class="danger-rate" id="danger-rate-text">上昇率: 3.80/秒</div>
 </div>
 <!-- ヒントボタン（臭気メーター左） -->
-<button id="hint-open-btn" onclick="openHintConfirm()" style="position: absolute; top: 0; right: 1.5cqmin; z-index: 201; display: none; pointer-events: auto; background: rgba(255, 200, 0, 0.92); border: 0.2cqmin solid rgb(200, 160, 0); border-radius: 0.6cqmin; color: rgb(51, 51, 51); font-size: 1.6cqmin; font-weight: bold; padding: 0.4cqmin 1cqmin; cursor: pointer; line-height: 1.4; white-space: nowrap;">💡ヒント</button>
+<button id="hint-open-btn" onclick="openHintConfirm()" style="position: absolute; top: 1.5cqmin; right: calc(17.5% + 3cqmin); z-index: 201; display: none; pointer-events: auto; background: rgba(255, 200, 0, 0.92); border: 0.2cqmin solid rgb(200, 160, 0); border-radius: 0.6cqmin; color: rgb(51, 51, 51); font-size: 1.6cqmin; font-weight: bold; padding: 0.4cqmin 1cqmin; cursor: pointer; line-height: 1.4; white-space: nowrap;">💡ヒント</button>
 
 <div id="odor-meter-panel" style="position: absolute; top: 0px; right: 1.5cqmin; z-index: 200; display: flex; flex-direction: column; align-items: center; pointer-events: none;">
   <div id="odor-meter-label" style="font-size:1.6cqmin;color:#fff;font-weight:bold;line-height:1.2;white-space:nowrap;background:rgba(0,0,0,0.6);padding:0.3cqmin 1cqmin;border-radius:0.5cqmin 0.5cqmin 0 0;width:100%;text-align:center;box-sizing:border-box;">＜臭気メーター＞</div>
@@ -19748,12 +19748,9 @@ window._tantouGenerateReply = function(rawText){
       var appRect = document.getElementById('app-container').getBoundingClientRect();
       var topPos = (dpRect.bottom - appRect.top);
       op.style.top = topPos + 'px';
-      // ヒントボタンを臭気メーターの下に配置・表示制御
+      // ヒントボタンの表示制御のみ（位置はCSSで固定: top:1.5cqmin; right:calc(17.5%+3cqmin)）
       var hb = document.getElementById('hint-open-btn');
       if(hb){
-        var op2 = document.getElementById('odor-meter-panel');
-        var opH = op2 ? (op2.offsetHeight || 60) : 60;
-        hb.style.top = (topPos + opH + 4) + 'px';
         try{
           var _isGameActive = !!(document.getElementById('scene-game') && document.getElementById('scene-game').classList.contains('active'));
           hb.style.display = _isGameActive ? 'block' : 'none';
@@ -22731,19 +22728,7 @@ function freezeCorrectLoop(){
 // 8. Hint button position — to the LEFT of odor meter, no overlap
 // ============================================================
 function positionHintBtn(){
-  try{
-    var hb = document.getElementById('hint-open-btn');
-    var op = document.getElementById('odor-meter-panel');
-    var app = document.getElementById('app-container');
-    if(!hb || !op || !app) return;
-    if(hb.style.display === 'none') return;
-    var appRect = app.getBoundingClientRect();
-    var opRect = op.getBoundingClientRect();
-    var cqmin = Math.min(window.innerWidth, window.innerHeight) / 100;
-    // right offset = how far from app right edge to odor meter left edge + small gap
-    var rightOff = (appRect.right - opRect.left) + 0.8 * cqmin;
-    hb.style.right = rightOff + 'px';
-  }catch(e){}
+  // ヒントボタン位置はCSSで固定 (top:1.5cqmin; right:calc(17.5%+3cqmin)) — JS不要
 }
 
 // ============================================================
