@@ -15,6 +15,10 @@
 
 body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; display: flex; align-items: center; justify-content: center; font-family: 'MS Gothic', 'Meiryo', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; }
 #app-container { position: fixed; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: 0 0; background: #333; overflow: hidden; box-shadow: 0 0 0 2px #111; font-size: 16px; }
+/* スクロール可能なモーダル内要素のタッチスクロールを許可 */
+#app-container [style*="overflow-y:auto"], #app-container [style*="overflow-y: auto"],
+#app-container [style*="overflow-y:scroll"], #app-container [style*="overflow:auto"],
+#app-container .se-overlay { touch-action: pan-y !important; -webkit-overflow-scrolling: touch !important; }
 
 /* ===== スマホ縦画面対応 =====
    縦持ち時はゲームを90度回転してランドスケープ表示（回転・スケールはJS管理） */
@@ -4182,11 +4186,11 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       <img class="street-tree outdoor-tree" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E8%A1%97%E8%B7%AF%E6%A8%B9.png" data-normal-src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E8%A1%97%E8%B7%AF%E6%A8%B9.png" data-snow-src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%9E%AF%E3%82%8C%E6%9C%A8.png" alt="街路樹">
       <img class="street-tree outdoor-tree" src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E8%A1%97%E8%B7%AF%E6%A8%B9.png" data-normal-src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E8%A1%97%E8%B7%AF%E6%A8%B9.png" data-snow-src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%9E%AF%E3%82%8C%E6%9C%A8.png" alt="街路樹">
     </div>
-</div><div class="mansion" style="border: none; background: transparent; left: 248px; top: 152px; width: 499.204px; height: 454.574px;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%81%88%E3%81%BE%E3%81%A8%E3%81%86%E6%94%B9%E9%80%A0.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="bldg-3" style="width: 217.065px; height: 572.417px; left: 7px; top: 17px;"><div class="b-window"></div><div class="b-window"></div><div class="b-window"></div></div><div class="asphalt" style="background-image: url(&quot;https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%81%93%E8%B7%AF.png&quot;); background-size: cover; background-position: center center;"></div><div class="npc" style="left: 75.6%;"><div class="npc-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%AD%A9%E8%A1%8C%E8%80%85_2.gif" style="width:100%; height:100%; object-fit:contain;"></div></div>
+</div><div class="mansion" style="border: none; background: transparent; left: 248px; top: 157px; width: 499.204px; height: 454.574px;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%81%88%E3%81%BE%E3%81%A8%E3%81%86%E6%94%B9%E9%80%A0.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="bldg-3" style="width: 217.065px; height: 572.417px; left: 7px; top: 40px;"><div class="b-window"></div><div class="b-window"></div><div class="b-window"></div></div><div class="asphalt" style="background-image: url(&quot;https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%81%93%E8%B7%AF.png&quot;); background-size: cover; background-position: center center;"></div><div class="npc" style="left: 75.6%;"><div class="npc-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%AD%A9%E8%A1%8C%E8%80%85_2.gif" style="width:100%; height:100%; object-fit:contain;"></div></div>
 <div id="street-wind-overlay" class="street-wind-overlay wind-right" style="left: -265px; top: 41px; width: 1633.5px; height: 335.785px;"></div>
 <div id="wind-direction-banner"></div>
 <div id="fan-placed-icon" style="display: none; position: absolute; top: 72%; width: 18%; aspect-ratio: 1 / 1; z-index: 50; pointer-events: auto; transform: translateX(-50%); cursor: pointer;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%8E%92%E9%A2%A8%E6%A9%9F_%E8%BB%8A%E4%B8%A1.png" style="width:100%;height:100%;object-fit:contain;"></div>
-<div id="se-img-OLD_House" style="position: absolute; left: 752px; top: 377px; width: 250.1px; height: 212.549px; z-index: 10;" class=""><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/OLD_HOUSE.png" alt="OLD_House" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;"></div><div id="se-img-NEW_House" style="position: absolute; left: 1000px; top: 364px; width: 230.102px; height: 226.546px; z-index: 10;" class=""><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/NEW_HOUSE.png" alt="NEW_House" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;"></div></div>
+<div id="se-img-OLD_House" style="position: absolute; left: 752px; top: 400px; width: 250.1px; height: 212.549px; z-index: 10;" class=""><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/OLD_HOUSE.png" alt="OLD_House" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;"></div><div id="se-img-NEW_House" style="position: absolute; left: 1000px; top: 385px; width: 230.102px; height: 226.546px; z-index: 10;" class=""><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/NEW_HOUSE.png" alt="NEW_House" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;"></div></div>
 
 <div id="room-entrance" class="room" style="">
 <div class="ent-wall"></div><div class="ent-floor"></div>
@@ -16256,8 +16260,8 @@ try{
       app.style.left = '0';
       app.style.top  = '0';
     } else {
-      // 横持ち・PC・タブレット: 通常スケーリング
-      var s  = Math.min(vw / 1280, vh / 720);
+      // 横持ち・PC・タブレット: 通常スケーリング（100%ズームを基準に最大1.0倍まで）
+      var s  = Math.min(1.0, Math.min(vw / 1280, vh / 720));
       var tx = (vw - 1280 * s) / 2;
       var ty = (vh - 720  * s) / 2;
       app.style.transform = 'scale(' + s + ')';
@@ -17874,9 +17878,9 @@ window._tantouGenerateReply = function(rawText){
     box.appendChild(btnYes);
     box.appendChild(btnNo);
     overlay.appendChild(box);
-    document.body.appendChild(overlay);
+    (document.getElementById('app-container')||document.body).appendChild(overlay);
 
-    function closeModal(){ try{ document.body.removeChild(overlay); }catch(_){} }
+    function closeModal(){ try{ overlay.remove(); }catch(_){} }
     // バブルフェーズのみ stopPropagation（ボタンへのイベントを遮断しない）
     overlay.addEventListener('click', function(e){ e.stopPropagation(); });
     btnYes.addEventListener('click', function(e){ e.stopPropagation(); closeModal(); onYes(); });
@@ -18498,7 +18502,7 @@ window._tantouGenerateReply = function(rawText){
     btn.style.cssText = 'position:absolute;bottom:1.5vmin;right:2vmin;background:#1565c0;color:#fff;border:none;padding:0.8vmin 3vmin;border-radius:0.5vmin;font-size:1.8vmin;font-weight:bold;cursor:pointer;';
     btn.onclick = function(){ ov.remove(); activatePoliceRestriction(); };
     box.appendChild(icon); box.appendChild(text); box.appendChild(btn);
-    ov.appendChild(box); document.body.appendChild(ov);
+    ov.appendChild(box); (document.getElementById('app-container')||document.body).appendChild(ov);
   }
 
   // ──────────────────────────────────────────────────────────────
@@ -18541,7 +18545,7 @@ window._tantouGenerateReply = function(rawText){
     btn.style.cssText = 'position:absolute;bottom:1.5vmin;right:2vmin;background:#c62828;color:#fff;border:none;padding:0.8vmin 3vmin;border-radius:0.5vmin;font-size:1.8vmin;font-weight:bold;cursor:pointer;';
     btn.onclick = function(){ ov.remove(); activateFireDept(); };
     box.appendChild(icon); box.appendChild(text); box.appendChild(btn);
-    ov.appendChild(box); document.body.appendChild(ov);
+    ov.appendChild(box); (document.getElementById('app-container')||document.body).appendChild(ov);
   }
 
   // ──────────────────────────────────────────────────────────────
@@ -18707,7 +18711,7 @@ window._tantouGenerateReply = function(rawText){
     inputRow.appendChild(input); inputRow.appendChild(sendBtn);
     win.appendChild(hdr); win.appendChild(gaugeRow); win.appendChild(knArea);
     win.appendChild(chatLog); win.appendChild(inputRow);
-    document.body.appendChild(win);
+    (document.getElementById('app-container')||document.body).appendChild(win);
   }
 
   function addMsg(log, text, isUser){
@@ -18742,7 +18746,7 @@ window._tantouGenerateReply = function(rawText){
       ov.remove();
       try{ window.__awardCard && window.__awardCard('カード_鍵'); }catch(e){}
     };
-    box.appendChild(btn); ov.appendChild(box); document.body.appendChild(ov);
+    box.appendChild(btn); ov.appendChild(box); (document.getElementById('app-container')||document.body).appendChild(ov);
   }
 
   // ──────────────────────────────────────────────────────────────
@@ -19271,7 +19275,7 @@ window._tantouGenerateReply = function(rawText){
     var t=document.createElement('div');
     t.style.cssText='position:fixed;bottom:5vmin;left:50%;transform:translateX(-50%);background:'+(col||'rgba(0,0,0,0.88)')+';color:#fff;padding:1.2vmin 2.5vmin;border-radius:1vmin;font-size:1.8vmin;font-family:sans-serif;z-index:299999;pointer-events:none;white-space:nowrap;box-shadow:0 0.5vmin 2vmin rgba(0,0,0,0.5);';
     t.textContent=msg;
-    document.body.appendChild(t);
+    (document.getElementById('app-container')||document.body).appendChild(t);
     setTimeout(function(){t.remove();},3500);
   }
   function mkBtn(txt,bg,fs){
@@ -19289,7 +19293,7 @@ window._tantouGenerateReply = function(rawText){
       el.id='_recInd_';
       el.style.cssText='position:fixed;top:1vmin;left:50%;transform:translateX(-50%);z-index:299999;display:flex;align-items:center;gap:0.5vmin;background:rgba(0,0,0,0.78);color:#fff;padding:0.5vmin 1.3vmin;border-radius:2vmin;font-size:1.5vmin;font-family:sans-serif;pointer-events:none;border:0.15vmin solid rgba(244,67,54,0.7);';
       el.innerHTML='<span style="width:1vmin;height:1vmin;background:#f44336;border-radius:50%;animation:recBl 1s infinite;display:inline-block;flex-shrink:0;"></span><span style="margin-left:0.3vmin;">REC</span>';
-      document.body.appendChild(el);
+      (document.getElementById('app-container')||document.body).appendChild(el);
     }
     el.style.display='flex';
   }
@@ -19402,7 +19406,7 @@ window._tantouGenerateReply = function(rawText){
       +'<button id="_recGo_" style="padding:1.2vmin 2.8vmin;background:linear-gradient(135deg,#e53935,#b71c1c);color:#fff;border:none;border-radius:0.8vmin;font-size:1.9vmin;font-weight:bold;cursor:pointer;box-shadow:0 0.3vmin 1vmin rgba(229,57,53,0.5);">🎥 録画して開始</button>'
       +'<button id="_recSkip_" style="padding:1.2vmin 2.8vmin;background:#37474f;color:#fff;border:none;border-radius:0.8vmin;font-size:1.9vmin;cursor:pointer;">録画なしで開始</button>'
       +'</div></div>';
-    document.body.appendChild(ov);
+    (document.getElementById('app-container')||document.body).appendChild(ov);
     document.getElementById('_recGo_').onclick=function(){ov.remove();onRec();};
     document.getElementById('_recSkip_').onclick=function(){ov.remove();onSkip();};
   }
@@ -19445,7 +19449,7 @@ window._tantouGenerateReply = function(rawText){
         +'</div>'
         +'<div style="flex:1;overflow-y:auto;padding:1.5vmin 2vmin;">'+listHtml+'</div>'
         +'</div>';
-      document.body.appendChild(ov);
+      (document.getElementById('app-container')||document.body).appendChild(ov);
     }).catch(function(e){toast('録画一覧の取得に失敗しました');});
   }
 
@@ -19507,7 +19511,7 @@ window._tantouGenerateReply = function(rawText){
       ov.appendChild(tc);
       ov.appendChild(vid);
       ov.appendChild(cb);
-      document.body.appendChild(ov);
+      (document.getElementById('app-container')||document.body).appendChild(ov);
 
       // タイトルカード → 動画へ遷移（3秒後）
       setTimeout(function(){
@@ -19890,7 +19894,7 @@ window._tantouGenerateReply = function(rawText){
 <!-- ============================= -->
 <style>
 /* === ステージエディタ共通 === */
-.se-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:900;display:none;flex-direction:column;align-items:center;overflow-y:auto;}
+.se-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9800;display:none;flex-direction:column;align-items:center;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;}
 .se-overlay.active{display:flex!important;}
 .se-header{width:100%;background:#1a1a2e;color:#fff;padding:1.5vmin 2vmin;display:flex;align-items:center;gap:2vmin;flex-shrink:0;box-sizing:border-box;}
 .se-header h2{margin:0;font-size:2.5vmin;flex:1;}
@@ -20177,9 +20181,11 @@ function createMapThumbnail(roomEl) {
 
 // ─── body直下に移動 ───
 function ensureOverlaysInBody() {
+  // se-overlay はゲームコンテナ内に保持し transform:scale に追従させる
+  var target = document.getElementById('app-container') || document.body;
   ['scene-stage-editor','scene-map-list','scene-map-editor','scene-stage-list','scene-stage-composer','se-connect-wizard'].forEach(function(id){
     var el = document.getElementById(id);
-    if(el && el.parentElement !== document.body) document.body.appendChild(el);
+    if(el && el.parentElement !== target) target.appendChild(el);
   });
 }
 
@@ -20395,7 +20401,7 @@ function selectElement(el) {
     '<button class="se-btn se-btn-purple" onclick="window._seReplaceImg()">画像の差し替え</button>' +
     '<button class="se-btn se-btn-danger" onclick="window._seDeleteEl()">削除</button>' +
     '<button class="se-btn se-btn-secondary" onclick="window._seDeselectEl()">選択解除</button>';
-  document.body.appendChild(panel);
+  (document.getElementById('app-container')||document.body).appendChild(panel);
 }
 
 function getElementName(el) {
@@ -20450,7 +20456,7 @@ function showModeBadge(text, cls) {
   badge.className = 'se-mode-badge ' + cls;
   badge.id = 'se-mode-badge';
   badge.textContent = text;
-  document.body.appendChild(badge);
+  (document.getElementById('app-container')||document.body).appendChild(badge);
 }
 
 function escHtml(s) { var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
@@ -20594,7 +20600,7 @@ window.toggleLayerWindow = function() {
     win.className = 'se-layer-win';
     win.id = 'se-layer-win';
     win.innerHTML = '<div class="se-layer-win-header"><span>レイヤー順序（上=前面）</span><button class="se-btn se-btn-secondary" style="padding:0.3vmin 0.6vmin;font-size:1.2vmin;" onclick="toggleLayerWindow()">✕</button></div><div class="se-layer-win-body" id="se-layer-body"></div>';
-    document.body.appendChild(win);
+    (document.getElementById('app-container')||document.body).appendChild(win);
   }
   if(win.classList.contains('active')) {
     win.classList.remove('active');
@@ -20975,7 +20981,7 @@ window.stageComposerAddMap = function() {
   btnRow.appendChild(okBtn);
   dialog.appendChild(btnRow);
   backdrop.appendChild(dialog);
-  document.body.appendChild(backdrop);
+  (document.getElementById('app-container')||document.body).appendChild(backdrop);
 
   function closeDialog(){ backdrop.remove(); }
   cancelBtn.onclick = closeDialog;
@@ -21263,7 +21269,7 @@ function showNodeContextMenu(e, mapName, stage) {
     mi.onclick=function(){ closeContextMenu(); it.action(); };
     menu.appendChild(mi);
   });
-  document.body.appendChild(menu);
+  (document.getElementById('app-container')||document.body).appendChild(menu);
   setTimeout(function(){ document.addEventListener('click',closeContextMenu,{once:true}); },10);
 }
 
@@ -21561,7 +21567,7 @@ function showDialog(title, fields, onSubmit) {
   });
   html+='<div class="se-dialog-actions"><button class="se-btn se-btn-secondary" id="se-dlg-cancel">キャンセル</button><button class="se-btn se-btn-primary" id="se-dlg-ok">OK</button></div>';
   dg.innerHTML=html;
-  document.body.appendChild(bd); document.body.appendChild(dg);
+  (document.getElementById('app-container')||document.body).appendChild(bd); (document.getElementById('app-container')||document.body).appendChild(dg);
   document.getElementById('se-dlg-cancel').onclick=function(){ bd.remove(); dg.remove(); };
   bd.onclick=function(){ bd.remove(); dg.remove(); };
   document.getElementById('se-dlg-ok').onclick=function(){
@@ -22805,7 +22811,7 @@ function createCharSelectUI(){
   d.appendChild(hint);
   _buildCharCard('A', row);
   _buildCharCard('B', row);
-  document.body.appendChild(d);
+  (document.getElementById('app-container')||document.body).appendChild(d);
 }
 
 window._r6SelectChar = function(key){
@@ -23079,7 +23085,7 @@ function _ensureDrawer(){
       +'<button class="_tm-drawer-close" onclick="window._tmCloseDrawer()">×</button>'
     +'</div>'
     +'<div id="_tm-drawer-row"></div>';
-  document.body.appendChild(panel);
+  (document.getElementById('app-container')||document.body).appendChild(panel);
 }
 
 window._tmOpenDrawer = function(){
@@ -23397,7 +23403,7 @@ function _spawnOenChar(){
 function _showRedBanner(text){
   try{ if(typeof showSystemMsg==='function') showSystemMsg(text); }catch(e){}
   var d=document.createElement('div'); d.className='_tm-red-banner'; d.textContent=text;
-  document.body.appendChild(d);
+  (document.getElementById('app-container')||document.body).appendChild(d);
   setTimeout(function(){ try{d.remove();}catch(e){} },7000);
 }
 
@@ -23481,7 +23487,7 @@ function _showModeOverlay(onCard,onText){
     '<div style="color:#fff;font-size:3vmin;font-weight:bold;text-shadow:0 2px 8px rgba(0,0,0,0.8);margin-bottom:1vmin;">報告方法を選択してください</div>'
    +'<button class="_tm-mode-btn" id="_tm-btn-card">カードを使用して報告する<br><span style="font-size:70%;font-weight:normal;">（難易度：低）</span></button>'
    +'<button class="_tm-mode-btn txt" id="_tm-btn-text">文章を入力して報告する<br><span style="font-size:70%;font-weight:normal;">（難易度：高）</span></button>';
-  document.body.appendChild(ov);
+  (document.getElementById('app-container')||document.body).appendChild(ov);
   document.getElementById('_tm-btn-card').onclick=function(){ ov.remove(); onCard(); };
   document.getElementById('_tm-btn-text').onclick=function(){ ov.remove(); onText(); };
 }
@@ -23682,7 +23688,7 @@ function _sbEnsureDrawer(){
       +'<button style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;font-size:2.5vmin;cursor:pointer;color:#fff;padding:0.2vmin 0.8vmin;line-height:1;" onclick="window._sbCloseDrawer()">×</button>'
     +'</div>'
     +'<div id="_sb-drawer-row" style="display:flex;gap:2vmin;overflow-x:auto;flex:1;align-items:center;padding:1.5vmin 0.5vmin;min-height:calc(var(--bt-card-w,14vmin)*4/3 + 2vmin);"></div>';
-  document.body.appendChild(panel);
+  (document.getElementById('app-container')||document.body).appendChild(panel);
 }
 
 window._sbOpenDrawer = function(){
@@ -23789,7 +23795,7 @@ function _sbShowModeOverlay(onCard, onText){
     '<div style="color:#fff;font-size:3vmin;font-weight:bold;text-shadow:0 2px 8px rgba(0,0,0,0.8);margin-bottom:1vmin;">消防への報告方法を選択してください</div>'
    +'<button id="_sb-btn-card" style="background:#c0392b;color:#fff;border:none;border-radius:1.8vmin;padding:2.5vmin 4.5vmin;font-size:2.4vmin;cursor:pointer;font-weight:bold;box-shadow:0 4px 16px rgba(0,0,0,0.4);min-width:52vmin;text-align:center;line-height:1.7;">カードを使用して報告する<br><span style="font-size:70%;font-weight:normal;">（難易度：低）</span></button>'
    +'<button id="_sb-btn-text" style="background:#455a64;color:#fff;border:none;border-radius:1.8vmin;padding:2.5vmin 4.5vmin;font-size:2.4vmin;cursor:pointer;font-weight:bold;box-shadow:0 4px 16px rgba(0,0,0,0.4);min-width:52vmin;text-align:center;line-height:1.7;">文章を入力して報告する<br><span style="font-size:70%;font-weight:normal;">（難易度：高）</span></button>';
-  document.body.appendChild(ov);
+  (document.getElementById('app-container')||document.body).appendChild(ov);
   document.getElementById('_sb-btn-card').onclick=function(){ ov.remove(); onCard(); };
   document.getElementById('_sb-btn-text').onclick=function(){ ov.remove(); onText(); };
 }
@@ -25934,7 +25940,7 @@ window.clickFactoryValvePit = function(){
     var modal = document.createElement('div');
     modal.id = 'scene-char-settings-modal';
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999999;background:rgba(20,20,30,0.97);overflow-y:auto;box-sizing:border-box;';
-    document.body.appendChild(modal);
+    (document.getElementById('app-container')||document.body).appendChild(modal);
     buildSettingsUI(modal);
     try{ isPaused = true; }catch(e){}
   };
@@ -26582,7 +26588,7 @@ window.clickFactoryValvePit = function(){
         card.style.position = 'fixed'; card.style.left = rect.left + 'px'; card.style.top = rect.top + 'px';
         card.style.width = rect.width + 'px'; card.style.height = rect.height + 'px';
         card.style.zIndex = '9999'; card.style.opacity = '0.85'; card.style.pointerEvents = 'none';
-        document.body.appendChild(card);
+        (document.getElementById('app-container')||document.body).appendChild(card);
       });
       hand.appendChild(card);
     });
@@ -26941,7 +26947,7 @@ function initValveReopenModal(){
     '<button class="meter-modal-btn no" id="valve-reopen-no">いいえ</button>',
     '</div>'
   ].join('');
-  document.body.appendChild(modal);
+  (document.getElementById('app-container')||document.body).appendChild(modal);
 
   document.getElementById('valve-reopen-yes').addEventListener('click', function(){
     var ve = document.getElementById('valve-shut-entrance');
@@ -27191,7 +27197,7 @@ if(document.readyState === 'loading'){
   function showRetrieveDialog(itemName, onYes){
     // 既存ダイアログがあれば閉じる
     var existing = document.getElementById('retrieve-confirm-overlay');
-    if(existing) try{ document.body.removeChild(existing); }catch(_){}
+    if(existing) try{ existing.remove(); }catch(_){}
 
     var overlay = document.createElement('div');
     overlay.id = 'retrieve-confirm-overlay';
@@ -27208,9 +27214,9 @@ if(document.readyState === 'loading'){
     box.appendChild(btnYes);
     box.appendChild(btnNo);
     overlay.appendChild(box);
-    document.body.appendChild(overlay);
+    (document.getElementById('app-container')||document.body).appendChild(overlay);
 
-    function close(){ try{ document.body.removeChild(overlay); }catch(_){} }
+    function close(){ try{ overlay.remove(); }catch(_){} }
     overlay.addEventListener('click', function(e){ e.stopPropagation(); });
     btnYes.addEventListener('click', function(e){ e.stopPropagation(); close(); onYes(); });
     btnNo.addEventListener('click',  function(e){ e.stopPropagation(); close(); });
