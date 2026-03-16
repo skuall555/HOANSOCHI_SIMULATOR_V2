@@ -14,27 +14,12 @@
 <style>
 
 body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; display: flex; align-items: center; justify-content: center; font-family: 'MS Gothic', 'Meiryo', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; }
-#app-container { position: relative; aspect-ratio: 16 / 9; width: 100vw; height: auto; max-width: min(177.78vh, 1280px); max-height: min(100vh, 720px); background: #333; overflow: hidden; box-shadow: 0 0 0 2px #111; font-size: min(2vw, 25.6px); }
-@media (min-aspect-ratio: 16/9) { #app-container { font-size: min(3.55vh, 25.56px); } }
+#app-container { position: fixed; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: 0 0; background: #333; overflow: hidden; box-shadow: 0 0 0 2px #111; font-size: 16px; }
 
 /* ===== スマホ縦画面対応 =====
-   縦持ち時はゲームを90度回転してランドスケープ表示 */
+   縦持ち時はゲームを90度回転してランドスケープ表示（回転・スケールはJS管理） */
 @media screen and (max-aspect-ratio: 1/1) and (max-width: 900px) {
   body, html { overflow: hidden; }
-  #app-container {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    /* 縦画面の幅=短辺、高さ=長辺 → 回転後は幅が長辺になる */
-    aspect-ratio: 16 / 9;
-    width: 100vh;
-    height: auto;
-    max-width: none;
-    max-height: none;
-    transform: translate(-50%, -50%) rotate(90deg);
-    transform-origin: center center;
-    font-size: 3.55vh;
-  }
 }
 /* 縦画面ローテーション案内バナー */
 #rotate-hint {
@@ -2833,7 +2818,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   #scene-clear, #scene-clear * { visibility: visible !important; }
   body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
   body > * { display: none !important; }
-  #app-container { display: block !important; width: 100% !important; height: auto !important; max-width: none !important; max-height: none !important; box-shadow: none !important; position: static !important; background: #fff !important; }
+  #app-container { display: block !important; width: 100% !important; height: auto !important; max-width: none !important; max-height: none !important; box-shadow: none !important; position: static !important; background: #fff !important; transform: none !important; }
   #scene-clear { display: flex !important; position: static !important; width: 100% !important; height: auto !important; background: #fff !important; opacity: 1 !important; align-items: flex-start !important; justify-content: flex-start !important; backdrop-filter: none !important; }
   #clear-inner { width: 100% !important; height: auto !important; display: block !important; }
   #clear-step1 { display: none !important; }
@@ -3488,7 +3473,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
   </div>
 
   <!-- Step 2: 結果・レーダーチャート画面 -->
-  <div id="clear-step2" style="display:none;width:98vw;max-width:none;height:96vh;max-height:none;background:linear-gradient(145deg,#0d1b2a,#1a2a3a);border-radius:1vmin;border:0.3vmin solid #2a4a6a;overflow:hidden;flex-direction:column;box-sizing:border-box;pointer-events:auto;">
+  <div id="clear-step2" style="display:none;position:relative;width:98vw;max-width:none;height:96vh;max-height:none;background:linear-gradient(145deg,#0d1b2a,#1a2a3a);border-radius:1vmin;border:0.3vmin solid #2a4a6a;overflow:hidden;flex-direction:column;box-sizing:border-box;pointer-events:auto;">
     <!-- ヘッダー -->
     <div style="background:linear-gradient(90deg,#1565c0,#283593);padding:1.5vmin 3vmin;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
       <div style="font-size:2.8vmin;font-weight:bold;color:#fff;letter-spacing:0.1em;">📋 シミュレーション結果</div>
@@ -3517,6 +3502,18 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;padding:1vmin 0;">
           <div id="clear-grade-badge" style="font-size:4vmin;font-weight:bold;width:10vmin;height:10vmin;border-radius:50%;display:flex;align-items:center;justify-content:center;border:0.5vmin solid;box-shadow:0 0 2vmin;"></div>
           <div id="clear-grade-label" style="font-size:1.8vmin;color:#90caf9;margin-top:0.8vmin;"></div>
+          <button onclick="showRadarDetails()" style="margin-top:1.5vmin;padding:1vmin 3vmin;background:linear-gradient(135deg,#7b1fa2,#9c27b0);color:#fff;border:none;border-radius:1vmin;font-size:2vmin;font-weight:bold;cursor:pointer;box-shadow:0 0.4vmin 1.2vmin rgba(123,31,162,0.5);">詳細</button>
+        </div>
+      </div>
+
+      <!-- 詳細パネル（オーバーレイ） -->
+      <div id="radar-details-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:center;justify-content:center;">
+        <div style="background:linear-gradient(145deg,#0d1b2a,#1a2a3a);border-radius:1.5vmin;border:0.3vmin solid #4a6a9a;width:min(90vw,700px);max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 2vmin 6vmin rgba(0,0,0,0.8);">
+          <div style="background:linear-gradient(90deg,#1565c0,#283593);padding:1.5vmin 2vmin;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+            <div style="font-size:2.2vmin;font-weight:bold;color:#fff;letter-spacing:0.08em;">📋 評価詳細</div>
+            <button onclick="hideRadarDetails()" style="background:none;border:none;color:#fff;font-size:3vmin;cursor:pointer;line-height:1;">✕</button>
+          </div>
+          <div id="radar-details-content" style="overflow-y:auto;padding:2vmin;display:flex;flex-direction:column;gap:1.5vmin;font-size:1.8vmin;color:#cfd8dc;-webkit-overflow-scrolling:touch;touch-action:pan-y;"></div>
         </div>
       </div>
 
@@ -4187,6 +4184,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
     </div>
 </div><div class="mansion" style="border: none; background: transparent; left: 248px; top: 152px; width: 499.204px; height: 454.574px;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E3%81%88%E3%81%BE%E3%81%A8%E3%81%86%E6%94%B9%E9%80%A0.png" style="width:100%; height:100%; object-fit:contain;"></div><div class="bldg-3" style="width: 217.065px; height: 572.417px; left: 7px; top: 17px;"><div class="b-window"></div><div class="b-window"></div><div class="b-window"></div></div><div class="asphalt" style="background-image: url(&quot;https://raw.githubusercontent.com/skuall555/game-assets/main/%E9%81%93%E8%B7%AF.png&quot;); background-size: cover; background-position: center center;"></div><div class="npc" style="left: 75.6%;"><div class="npc-visual"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%AD%A9%E8%A1%8C%E8%80%85_2.gif" style="width:100%; height:100%; object-fit:contain;"></div></div>
 <div id="street-wind-overlay" class="street-wind-overlay wind-right" style="left: -265px; top: 41px; width: 1633.5px; height: 335.785px;"></div>
+<div id="wind-direction-banner"></div>
 <div id="fan-placed-icon" style="display: none; position: absolute; top: 72%; width: 18%; aspect-ratio: 1 / 1; z-index: 50; pointer-events: auto; transform: translateX(-50%); cursor: pointer;"><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/%E6%8E%92%E9%A2%A8%E6%A9%9F_%E8%BB%8A%E4%B8%A1.png" style="width:100%;height:100%;object-fit:contain;"></div>
 <div id="se-img-OLD_House" style="position: absolute; left: 752px; top: 377px; width: 250.1px; height: 212.549px; z-index: 10;" class=""><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/OLD_HOUSE.png" alt="OLD_House" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;"></div><div id="se-img-NEW_House" style="position: absolute; left: 1000px; top: 364px; width: 230.102px; height: 226.546px; z-index: 10;" class=""><img src="https://raw.githubusercontent.com/skuall555/game-assets/main/NEW_HOUSE.png" alt="NEW_House" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;"></div></div>
 
@@ -5110,7 +5108,12 @@ window._gameStats = {
   alarmsUsedUp: false,     // 警報器使い切り
   signsUsedUp: false,      // 表示シート使い切り
   noGasConfirmed: 0,       // 滞留ガスなし確認数
-  safetyAwarenessPenalty: 0 // 安全意識ペナルティ（レーダーチャート用）
+  safetyAwarenessPenalty: 0, // 安全意識ペナルティ（レーダーチャート用）
+  dangerRateRiseCount: 0,  // 危険度上昇率が上昇した数
+  validKeywordsNonDisp: 0, // 有効な会話数（通信担当者・消防大隊長以外）
+  customerSatisfactionDecreases: 0, // お客さまが不満に感じた回数
+  cardsDroppedToDisp: 0,   // カードのドロップ枚数（通信担当者・消防大隊長へ）
+  dangerValueAtClear: 0    // 完了時の危険度
 };
 
 if(dangerTimer) clearInterval(dangerTimer);
@@ -5271,6 +5274,8 @@ function completeSafetyMeasures() {
       try{ stopCityGasAlarm(); }catch(e){}
       // クリア時刻記録
       try{ if(window._gameStats) window._gameStats.endTime = Date.now(); }catch(e){}
+      // 完了時の危険度を記録
+      try{ if(window._gameStats) window._gameStats.dangerValueAtClear = dangerValue; }catch(e){}
 
       // 保存ボタンを初期状態に戻す
       try{
@@ -5401,65 +5406,95 @@ function _drawRadarChart(){
     var stats = window._gameStats || {};
     var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
 
-    // ===== 評価計算 =====
+    // ===== 評価計算（新仕様） =====
+    var diff = sc ? String(sc.difficulty||'B級') : 'B級';
+
     // ①安全意識（0-100）
+    // = (100 - 完了時危険度) - (危険度上昇率上昇数×5) + (通報宅の窓全開数×10 ※最大30) - (ポケット警報機所持数 + 火気厳禁シート所持数)
     var score1 = 0;
-    // 換気：窓を1つ以上開けた
+    var dangerAtClear = stats.dangerValueAtClear || dangerValue || 0;
+    score1 = (100 - dangerAtClear);
+    // 危険度上昇率が上昇した数ペナルティ
+    score1 -= (stats.dangerRateRiseCount||0) * 5;
+    // 通報宅の窓全開ボーナス（最大30）
     var windowCount = 0;
     try{
       var sm = safetyMeasures.windows;
       for(var k in sm){ if(sm[k]) windowCount++; }
     }catch(e){}
-    if(windowCount >= 1) score1 += 25;
-    if(windowCount >= 3) score1 += 15;
-    // 爆発なし
-    if(!stats.explosionOccurred) score1 += 30;
-    // 警報器・表示シート設置
-    if(stats.alarmsPlaced >= 1) score1 += 15;
-    if(stats.signsPlaced >= 1) score1 += 15;
-    // 安全意識ペナルティ（配達員インターホン、滞留ガス未確認等）
-    try{ if(stats.safetyAwarenessPenalty) score1 -= stats.safetyAwarenessPenalty; }catch(e){}
+    score1 += Math.min(30, windowCount * 10);
+    // 完了時の手持ちアイテムペナルティ（使わなかった分）
+    try{
+      var alarmsInHand = (typeof state !== 'undefined' && state.itemCounts) ? (state.itemCounts.alm||0) : 0;
+      var signsInHand  = (typeof state !== 'undefined' && state.itemCounts) ? (state.itemCounts.sign||0) : 0;
+      score1 -= (alarmsInHand + signsInHand);
+    }catch(e){}
     score1 = Math.max(0, Math.min(100, score1));
 
-    // ②社内情報共有（固定60点：未実装）
-    var score2 = 60;
-
-    // ③迅速な調査（クリア時間ベース）
-    var score3 = 50;
-    if(stats.startTime && stats.endTime){
-      var elapsed = (stats.endTime - stats.startTime) / 1000; // 秒
-      if(elapsed < 120) score3 = 100;
-      else if(elapsed < 240) score3 = 80;
-      else if(elapsed < 480) score3 = 60;
-      else if(elapsed < 900) score3 = 40;
-      else score3 = 20;
+    // ②社内情報共有（0-100）
+    // カードで報告の場合：ドロップしたカード枚数×10
+    // テキストで報告の場合：通信担当者＋消防大隊長への有効キーワード送信数×5
+    var score2 = 0;
+    var isCardMode = (stats.cardsDroppedToDisp||0) > 0;
+    if(isCardMode){
+      score2 = Math.min(100, (stats.cardsDroppedToDisp||0) * 10);
+    } else {
+      var tantouValidCount = (typeof _tantouStats !== 'undefined') ? Math.round((_tantouStats.c||0)/5) : 0;
+      var fcmdValidCount = (typeof window._fcmdGetGauge === 'function') ? Math.round(window._fcmdGetGauge()/10) : 0;
+      score2 = Math.min(100, (tantouValidCount + fcmdValidCount) * 5);
     }
 
-    // ④調査の密度（滞留ガス確認・圧力試験・メーター閉止）
+    // ③迅速な調査（目標タイム基準）
+    // C=5分,B=10分,A/S=15分。実際時間が目標の50%未満→100, 70%未満→70, 90%未満→50, 90%以上→30
+    var score3 = 30;
+    var targetTimeSec = 600; // デフォルトB級 10分
+    if(diff === 'C級') targetTimeSec = 300;
+    else if(diff === 'B級') targetTimeSec = 600;
+    else targetTimeSec = 900; // A級・S級
+    if(stats.startTime && stats.endTime){
+      var elapsed = (stats.endTime - stats.startTime) / 1000;
+      var ratio = elapsed / targetTimeSec;
+      if(ratio < 0.5)       score3 = 100;
+      else if(ratio < 0.7)  score3 = 70;
+      else if(ratio < 0.9)  score3 = 50;
+      else                  score3 = 30;
+    }
+
+    // ④調査の密度（0-100）
+    // C級：(滞留ガス確認箇所数×10)+(カード取得枚数×5) 　B/A/S：(×5)+(×5)
     var score4 = 0;
-    if(stats.noGasConfirmed >= 1) score4 += 30;
-    if(stats.noGasConfirmed >= 3) score4 += 20;
-    if(stats.pressureTestDone) score4 += 30;
-    if(stats.meterClosedDone) score4 += 20;
+    var cardsAcquiredCount = 0;
+    try{ if(typeof window.__getOwnedCardIds === 'function') cardsAcquiredCount = window.__getOwnedCardIds().length; }catch(e){}
+    if(diff === 'C級'){
+      score4 = (stats.noGasConfirmed||0) * 10 + cardsAcquiredCount * 5;
+    } else {
+      score4 = (stats.noGasConfirmed||0) * 5 + cardsAcquiredCount * 5;
+    }
     score4 = Math.min(100, score4);
 
-    // ⑤お客さま対応（コミュニケーション回数）
+    // ⑤お客さま対応（0-100）
+    // = (通信担当者・消防大隊長以外への有効キーワード数×10 ※最大100)
+    //   - (お客さま不満回数×10)
+    //   - (会話したキャラクターの精神状態の平均ペナルティ: 興奮=30, 不安=15, 平静=0)
     var score5 = 0;
-    var totalComm = 0;
-    try{ totalComm = (stats.commCount.reporter||0)+(stats.commCount.alarmB||0)+(stats.commCount.manager||0); }catch(e){}
-    var hasAlarmB = sc && (sc.alarm && sc.alarm !== 'なし');
-    var hasManager = sc && (sc.alarmEntry && sc.alarmEntry !== 'なし');
-    var maxComm = 1 + (hasAlarmB ? 1 : 0) + (hasManager ? 1 : 0);
-    score5 = Math.min(100, Math.round(totalComm / maxComm * 100));
-    // 店主許可なしメーター閉止ペナルティ
-    try{ score5 = Math.max(0, score5 - (typeof _shopGasPenalty !== 'undefined' ? _shopGasPenalty : 0)); }catch(ep){}
-    // 通報者あいさつ前のガスメーター閉止ペナルティ
-    try{ score5 = Math.max(0, score5 - (typeof _meterBeforeGreetPenalty !== 'undefined' ? _meterBeforeGreetPenalty : 0)); }catch(ep2){}
-    // 通報者あいさつ前のバルブ閉止ペナルティ
-    try{ score5 = Math.max(0, score5 - (typeof _valveBeforeGreetPenalty !== 'undefined' ? _valveBeforeGreetPenalty : 0)); }catch(ep3){}
-    // 通報者関連のお客様対応力ボーナス/ペナルティ（入室・棚調査許可）
-    try{ score5 = Math.min(100, score5 + (typeof _reporterCustomerBonus !== 'undefined' ? _reporterCustomerBonus : 0)); }catch(eb){}
-    try{ score5 = Math.max(0, score5 - (typeof _reporterCustomerPenalty !== 'undefined' ? _reporterCustomerPenalty : 0)); }catch(ep4){}
+    score5 = Math.min(100, (stats.validKeywordsNonDisp||0) * 10);
+    score5 -= (stats.customerSatisfactionDecreases||0) * 10;
+    // 精神状態ペナルティ
+    try{
+      var stressMap = window._commStress || {};
+      var partnerKeys = ['reporter','alarmB','manager','kanrisha','yakitoriMaster','ramenMaster'];
+      var totalPenalty = 0, conversedCount = 0;
+      partnerKeys.forEach(function(p){
+        if(commLogs && commLogs[p] && commLogs[p].length > 0){
+          var sv = (stressMap[p] !== undefined) ? stressMap[p] : 50;
+          var pen = (sv > 60) ? 30 : (sv > 25) ? 15 : 0;
+          totalPenalty += pen;
+          conversedCount++;
+        }
+      });
+      if(conversedCount > 0) score5 -= Math.round(totalPenalty / conversedCount);
+    }catch(e){}
+    score5 = Math.max(0, Math.min(100, score5));
 
     var scores = [score1, score2, score3, score4, score5];
     var labels = ['安全意識','社内情報共有','迅速な調査','調査の密度','お客さま対応'];
@@ -5584,6 +5619,111 @@ function _drawRadarChart(){
     }
     ctx.restore();
   }catch(e){ console.error('radar chart error', e); }
+}
+
+function showRadarDetails(){
+  try{
+    var overlay = document.getElementById('radar-details-overlay');
+    if(!overlay) return;
+    overlay.style.display = 'flex';
+    var content = document.getElementById('radar-details-content');
+    if(!content) return;
+    var stats = window._gameStats || {};
+    var sc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+    var diff = sc ? String(sc.difficulty||'B級') : 'B級';
+
+    // 経過時間
+    var elapsedSec = 0;
+    if(stats.startTime && stats.endTime) elapsedSec = Math.round((stats.endTime - stats.startTime) / 1000);
+    var elapsedMin = Math.floor(elapsedSec / 60);
+    var elapsedRemSec = elapsedSec % 60;
+
+    // 通報宅の換気率
+    var windowCount = 0, windowTotal = 0;
+    try{
+      var sm = safetyMeasures.windows;
+      for(var k in sm){ windowTotal++; if(sm[k]) windowCount++; }
+    }catch(e){}
+    var ventRate = windowTotal > 0 ? Math.round(windowCount / windowTotal * 100) : 0;
+
+    // ポケット警報機の使用数・火気厳禁シートの使用数
+    var alarmsUsed = stats.alarmsPlaced || 0;
+    var signsUsed = stats.signsPlaced || 0;
+
+    // 会話相手の精神状態（会話したキャラクターのストレス）
+    var conversedPartners = [];
+    var mentalStateStr = '（会話なし）';
+    try{
+      var partnerNames = {reporter:'通報者', alarmB:'居住者B', manager:'管理人', kanrisha:'管理会社', yakitoriMaster:'焼き鳥屋店主', ramenMaster:'ラーメン屋店主'};
+      var stressMap = window._commStress || {};
+      var stateLines = [];
+      for(var p in partnerNames){
+        if(commLogs && commLogs[p] && commLogs[p].length > 0){
+          var sv = (stressMap[p] !== undefined) ? stressMap[p] : 50;
+          var stateTxt = (sv > 60) ? '興奮' : (sv > 25) ? '不安' : '平静';
+          stateLines.push(partnerNames[p] + '：' + stateTxt);
+        }
+      }
+      if(stateLines.length > 0) mentalStateStr = stateLines.join('、');
+    }catch(e){}
+
+    // カードの取得枚数
+    var cardsAcquired = 0;
+    try{ if(typeof window.__getOwnedCardIds === 'function') cardsAcquired = window.__getOwnedCardIds().length; }catch(e){}
+
+    // 社内情報共有モード判定
+    var isCardMode = (stats.cardsDroppedToDisp||0) > 0;
+
+    function _row(label, value){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6vmin 0;border-bottom:0.15vmin solid rgba(255,255,255,0.08);">'
+        + '<span style="color:#90caf9;">' + label + '</span>'
+        + '<span style="color:#ffd54f;font-weight:bold;">' + value + '</span>'
+        + '</div>';
+    }
+    function _section(title){
+      return '<div style="font-size:2vmin;font-weight:bold;color:#42a5f5;margin-top:1vmin;padding:0.5vmin 0;border-bottom:0.3vmin solid #42a5f5;">' + title + '</div>';
+    }
+
+    var html = '';
+    // 安全意識
+    html += _section('＜安全意識＞');
+    html += _row('完了時の危険度', (stats.dangerValueAtClear||0).toFixed(1) + '％');
+    html += _row('通報宅の換気率', ventRate + '％');
+    html += _row('ポケット警報機の使用数', alarmsUsed + '個');
+    html += _row('火気厳禁表示シートの使用数', signsUsed + '個');
+    html += _row('危険度が上昇した数', (stats.dangerRateRiseCount||0) + '回');
+    // お客さま対応
+    html += _section('＜お客さま対応＞');
+    html += _row('有効な会話数', (stats.validKeywordsNonDisp||0) + '回');
+    html += _row('お客さまが不満に感じた回数', (stats.customerSatisfactionDecreases||0) + '回');
+    html += _row('会話相手の精神状態', mentalStateStr);
+    // 迅速な調査
+    html += _section('＜迅速な調査＞');
+    html += _row('調査時間', elapsedMin + '分' + elapsedRemSec + '秒');
+    // 調査の密度
+    html += _section('＜調査の密度＞');
+    html += _row('滞留ガスの確認箇所', (stats.noGasConfirmed||0) + '箇所');
+    html += _row('カードの取得枚数', cardsAcquired + '枚');
+    // 社内情報共有
+    html += _section('＜社内情報共有＞');
+    if(isCardMode){
+      html += _row('カードのドロップ枚数', (stats.cardsDroppedToDisp||0) + '枚');
+    } else {
+      var tantouValidCount = (typeof _tantouStats !== 'undefined') ? Math.round((_tantouStats.c||0)/5) : 0;
+      var fcmdValidCount = (typeof window._fcmdGetGauge === 'function') ? Math.round(window._fcmdGetGauge()/10) : 0;
+      var totalDispKeywords = tantouValidCount + fcmdValidCount;
+      html += _row('有効な報告数', totalDispKeywords + '回');
+    }
+
+    content.innerHTML = html;
+  }catch(e){ console.error('showRadarDetails error', e); }
+}
+
+function hideRadarDetails(){
+  try{
+    var overlay = document.getElementById('radar-details-overlay');
+    if(overlay) overlay.style.display = 'none';
+  }catch(e){}
 }
 
 function gameOver(reason) {
@@ -7594,6 +7734,7 @@ if (isWindow) {
                 dangerRate += 0.4;
                 updateDangerUI();
                 if(window._gameStats) window._gameStats.safetyAwarenessPenalty = (window._gameStats.safetyAwarenessPenalty||0) + 5;
+                if(window._gameStats) window._gameStats.dangerRateRiseCount = (window._gameStats.dangerRateRiseCount||0) + 1;
               }catch(_eWarn){}
             }
             return;
@@ -10606,10 +10747,12 @@ function resumeLoopSafe(){
         try{
           if(selectedMeterId===5 && !_yakitoriGasOk){
             _shopGasPenalty = (_shopGasPenalty||0) + 10;
+            if(window._gameStats) window._gameStats.customerSatisfactionDecreases = (window._gameStats.customerSatisfactionDecreases||0) + 1;
             showSystemMsg('お客さま対応力が減少した（焼き鳥屋店主の許可なくガスを閉止しました）');
             _penaltyShown = true;
           } else if(selectedMeterId===6 && !_ramenGasOk){
             _shopGasPenalty = (_shopGasPenalty||0) + 10;
+            if(window._gameStats) window._gameStats.customerSatisfactionDecreases = (window._gameStats.customerSatisfactionDecreases||0) + 1;
             showSystemMsg('お客さま対応力が減少した（ラーメン屋店主の許可なくガスを閉止しました）');
             _penaltyShown = true;
           }
@@ -10618,6 +10761,7 @@ function resumeLoopSafe(){
         try{
           if(!window.roomOpened && !window._reporterGreetedFlag){
             window._meterBeforeGreetPenalty = (window._meterBeforeGreetPenalty||0) + 10;
+            if(window._gameStats) window._gameStats.customerSatisfactionDecreases = (window._gameStats.customerSatisfactionDecreases||0) + 1;
             showSystemMsg('お客さま対応力が減少した（通報者へのあいさつ前にガスメーターを閉止しました）');
             _penaltyShown = true;
           }
@@ -10789,7 +10933,7 @@ function resumeLoopSafe(){
     createPlacedItemElement = function(item){
       _origCreate2(item);
       try{
-        if(item.room !== 1) return;                               // 前面道路のみ
+        if(item.room !== 1 && item.room !== 20) return;           // 前面道路・工場前のみ
         if(['cone','alm','fire','sign'].indexOf(item.type) < 0) return;  // 対象アイテム
         var el = document.getElementById(item.id);
         if(!el) return;
@@ -12297,6 +12441,21 @@ function sendComm(){
     addUserMsg(text);
     // 吹き出しキーワード判定
     try{ window._thoughtCheckInput(text); }catch(te){}
+    // 有効な会話数カウント（通信担当者・消防大隊長以外のパートナーへの有効キーワード送信）
+    try{
+      var _partner = (commContext && commContext.partner) ? commContext.partner : '';
+      if(_partner && _partner !== 'tantou' && _partner !== 'fireCommander'){
+        var _reply = generateCommReply(text);
+        // 返信がデフォルト応答でない場合（キーワードにマッチした）は有効
+        var _defaultReplies = ['はい、ご用件をお聞かせください。', '承知しました。引き続きよろしくお願いします。'];
+        var _isDefault = _defaultReplies.indexOf(_reply) >= 0;
+        if(!_isDefault && window._gameStats){
+          window._gameStats.validKeywordsNonDisp = (window._gameStats.validKeywordsNonDisp||0) + 1;
+        }
+        setTimeout(function(){ addReporterMsg(_reply); }, 200);
+        return;
+      }
+    }catch(te2){}
     setTimeout(function(){ addReporterMsg(generateCommReply(text)); }, 200);
   }catch(e){}
 }
@@ -13902,6 +14061,7 @@ try{
             if(typeof dangerRate!=='undefined') dangerRate = dangerRate + 0.2;
             if(typeof updateDangerUI==='function') updateDangerUI();
             if(window._gameStats) window._gameStats.safetyAwarenessPenalty = (window._gameStats.safetyAwarenessPenalty||0) + 5;
+            if(window._gameStats) window._gameStats.dangerRateRiseCount = (window._gameStats.dangerRateRiseCount||0) + 1;
           }catch(e){}
           scheduleNext();
         }
@@ -15931,6 +16091,7 @@ try{
             var needShopOk = (hasYakitori && !window._yakitoriGasOk) || (hasRamen && !window._ramenGasOk);
             if(needShopOk){
               window._valveBeforeGreetPenalty = (window._valveBeforeGreetPenalty||0) + 30;
+              if(window._gameStats) window._gameStats.customerSatisfactionDecreases = (window._gameStats.customerSatisfactionDecreases||0) + 1;
               if(typeof showSystemMsg === 'function') showSystemMsg('お客さま対応力が30%減少した（通報者へのあいさつ前かつ店舗のガス止め許可なくバルブを閉止しました）');
             }
           }
@@ -16073,16 +16234,47 @@ try{
     e.preventDefault();
   }, { passive: false });
 
-  // 画面サイズ変更時にゲームコンテナをリサイズ（デバイス回転時）
-  function onResize(){
-    var container = document.getElementById('app-container');
-    if(!container) return;
-    // orientationchangeでのレイアウト再計算を促す
-    container.style.opacity = '0.99';
-    setTimeout(function(){ container.style.opacity = '1'; }, 50);
+  // ゲーム画面全体をスケーリング（モニターサイズに依存せず均一表示）
+  // 1280×720固定キャンバスを transform:scale でビューポートに合わせる
+  function rescaleApp(){
+    var app = document.getElementById('app-container');
+    if(!app) return;
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var isPortrait = (vw < vh) && (vw <= 900);
+
+    if(isPortrait){
+      // 縦持ちスマホ: コンテナを90度回転しランドスケープ表示
+      // rotate後の視覚サイズ: 720×1280 → スケール係数 s = min(vw/720, vh/1280)
+      var s = Math.min(vw / 720, vh / 1280);
+      // コンテナ中心(640,360)がビューポート中心(vw/2,vh/2)に来るよう配置
+      app.style.transform =
+        'translate(' + (vw/2) + 'px,' + (vh/2) + 'px)' +
+        ' rotate(90deg)' +
+        ' scale(' + s + ')' +
+        ' translate(-640px,-360px)';
+      app.style.left = '0';
+      app.style.top  = '0';
+    } else {
+      // 横持ち・PC・タブレット: 通常スケーリング
+      var s  = Math.min(vw / 1280, vh / 720);
+      var tx = (vw - 1280 * s) / 2;
+      var ty = (vh - 720  * s) / 2;
+      app.style.transform = 'scale(' + s + ')';
+      app.style.left = tx + 'px';
+      app.style.top  = ty + 'px';
+    }
   }
-  window.addEventListener('orientationchange', function(){ setTimeout(onResize, 400); });
-  window.addEventListener('resize', onResize);
+  window._rescaleApp = rescaleApp;
+  window.addEventListener('resize', rescaleApp);
+  window.addEventListener('orientationchange', function(){ setTimeout(rescaleApp, 200); });
+  document.addEventListener('fullscreenchange', function(){ setTimeout(rescaleApp, 100); });
+  document.addEventListener('webkitfullscreenchange', function(){ setTimeout(rescaleApp, 100); });
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', rescaleApp);
+  } else {
+    rescaleApp();
+  }
 })();
 
 
@@ -17556,6 +17748,11 @@ window._tantouGenerateReply = function(rawText){
     if(!el) return;
     el.classList.remove('wind-right','wind-left');
     el.classList.add(window._windDirection === 'right' ? 'wind-right' : 'wind-left');
+    // 前面道路の風向きバナーを更新
+    var banner = document.getElementById('wind-direction-banner');
+    if(banner) banner.textContent = window._windDirection === 'right' ? '風向き: → (右)' : '風向き: ← (左)';
+    var streetRoom = document.getElementById('room-street');
+    if(streetRoom) streetRoom.classList.add('wind-active');
   }
 
   // DOM準備後に適用
@@ -17766,7 +17963,16 @@ window._tantouGenerateReply = function(rawText){
             try{ renderInventory(); }catch(_){}
             try{ showSystemMsg('排風機を風下に設置しました。'); }catch(_){}
           } else {
-            setTimeout(function(){ try{ badEnd('排風機を風上に設置してしまいました。'); }catch(_){} }, 80);
+            // 風上設置 → 爆発ENDではなく危険度上昇率+0.4
+            window._fanPlaced     = true;
+            window._fanPlacedRoom = 1;
+            window._fanPlacedX    = xPct;
+            showFanIcon(xPct, yPct);
+            if(typeof state !== 'undefined' && state.itemCounts) state.itemCounts.fan = 0;
+            try{ renderInventory(); }catch(_){}
+            try{ dangerRate += 0.4; updateDangerUI(); }catch(_){}
+            try{ if(window._gameStats) window._gameStats.dangerRateRiseCount = (window._gameStats.dangerRateRiseCount||0)+1; }catch(_){}
+            try{ showSystemMsg('警告：排風機を風上に設置しました。危険度上昇率が上がります。'); }catch(_){}
           }
         },
         function(){
@@ -21509,6 +21715,7 @@ window.stageEditorExportHTML = function() {
           if(!window._reporterRoomPenaltyApplied[roomKey]){
             window._reporterRoomPenaltyApplied[roomKey] = true;
             window._reporterCustomerPenalty = (window._reporterCustomerPenalty||0) + 5;
+            if(window._gameStats) window._gameStats.customerSatisfactionDecreases = (window._gameStats.customerSatisfactionDecreases||0) + 1;
             try{ showSystemMsg('お客様対応力が5%減少した（入室許可を得ずに' + restrictedRooms[r] + 'に入室しました）'); }catch(e){}
           }
         }
@@ -21542,6 +21749,7 @@ window.stageEditorExportHTML = function() {
               if(!window._reporterShelfPenaltyApplied[shelfKey]){
                 window._reporterShelfPenaltyApplied[shelfKey] = true;
                 window._reporterCustomerPenalty = (window._reporterCustomerPenalty||0) + 5;
+                if(window._gameStats) window._gameStats.customerSatisfactionDecreases = (window._gameStats.customerSatisfactionDecreases||0) + 1;
                 try{ showSystemMsg('お客様対応力が5%減少した（調査許可を得ずに棚・点検口を開けました）'); }catch(e){}
               }
             }catch(e){}
@@ -23052,6 +23260,8 @@ if(!window.__tmDragInstalled){
 function _handleCardDrop(cardId){
   if(!cardId||_has(_reported,cardId)) return;
   _reported.push(cardId);
+  // カードドロップ統計（通信担当者・消防大隊長へのドロップ）
+  try{ if(window._gameStats) window._gameStats.cardsDroppedToDisp = (window._gameStats.cardsDroppedToDisp||0) + 1; }catch(_){}
   // ドロワーを即閉じる（1枚ドラッグごとに非表示）
   window._tmCloseDrawer();
   _renderReported();
