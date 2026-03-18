@@ -3318,6 +3318,7 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
 </div>
 
 <div id="scene-menu" class="overlay-screen">
+<div style="position:absolute;top:1.5cqmin;left:1.5cqmin;font-size:1.3cqmin;color:rgba(147,197,253,0.55);font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;letter-spacing:0.05em;pointer-events:none;user-select:none;">Ver1.0</div>
 <div class="menu-panel">
 <div style="margin:0 0 3.5% 0;padding-bottom:2.5%;border-bottom:0.1cqmin solid rgba(148,215,255,0.15);">
   <div style="font-size:2.8cqmin;font-weight:900;color:#e8f4ff;letter-spacing:0.12em;font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;">保安措置シミュレーター</div>
@@ -27508,4 +27509,58 @@ if(document.readyState === 'loading'){
 })();
 </script>
 
-<div id="valve-reopen-modal" class="overlay-screen"><div class="meter-modal-content"><h3>バルブを開にしますか？</h3><button class="meter-modal-btn" id="valve-reopen-yes">はい</button><button class="meter-modal-btn no" id="valve-reopen-no">いいえ</button></div></div></body></html>
+<div id="valve-reopen-modal" class="overlay-screen"><div class="meter-modal-content"><h3>バルブを開にしますか？</h3><button class="meter-modal-btn" id="valve-reopen-yes">はい</button><button class="meter-modal-btn no" id="valve-reopen-no">いいえ</button></div></div>
+
+<script id="mc-toolbar-ios-scroll">
+// iOSでツールボックスを横スクロールできるようにするJSタッチハンドラ
+// touch-action:pan-yの制約をbypassするため、touchmoveをpassive:falseで手動処理する
+(function(){
+  'use strict';
+  function initToolbarTouchScroll(){
+    var toolbar = document.getElementById('toolbar');
+    if(!toolbar || toolbar._iosTouchScrollInit) return;
+    toolbar._iosTouchScrollInit = true;
+
+    var startX=0, startY=0, startScrollLeft=0;
+    var isTracking=false, isHorizontal=null;
+
+    toolbar.addEventListener('touchstart', function(e){
+      if(e.touches.length !== 1) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startScrollLeft = toolbar.scrollLeft;
+      isTracking = true;
+      isHorizontal = null;
+    }, {passive:true});
+
+    toolbar.addEventListener('touchmove', function(e){
+      if(!isTracking || e.touches.length !== 1) return;
+      var dx = e.touches[0].clientX - startX;
+      var dy = e.touches[0].clientY - startY;
+      if(isHorizontal === null){
+        // 初回移動で方向を確定（10px以上動いてから判定）
+        if(Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+        isHorizontal = Math.abs(dx) >= Math.abs(dy);
+      }
+      if(isHorizontal){
+        e.preventDefault();
+        e.stopPropagation();
+        toolbar.scrollLeft = startScrollLeft - dx;
+      }
+    }, {passive:false});
+
+    toolbar.addEventListener('touchend', function(){
+      isTracking = false;
+      isHorizontal = null;
+    }, {passive:true});
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initToolbarTouchScroll);
+  } else {
+    initToolbarTouchScroll();
+  }
+})();
+</script>
+
+</body></html>
