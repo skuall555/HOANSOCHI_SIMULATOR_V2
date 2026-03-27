@@ -25552,18 +25552,8 @@ var TUTORIAL_STEPS = {
         }catch(e){ return false; }
       }
     },
-    /* Step 15: 警報停止確認 */
-    {
-      msg: '窓を全開にしました！警報器が停止するまで待ちましょう。',
-      icon: '⏱️',
-      highlightFn: null,
-      nextBtn: false,
-      checkFn: function(){
-        return typeof window._cityGasAlarmActive !== 'undefined' && !window._cityGasAlarmActive;
-      }
-    },
-    /* Step 16: クリア説明 */
-    { msg: '警報器が停止しました！鍵の入手から入室、換気による警報停止の一連の流れを学びました。', icon: '🎉', highlightFn: null, nextBtn: true, checkFn: null },
+    /* Step 15: クリア説明 */
+    { msg: '窓を全開にしました！鍵の入手から入室、換気による一連の流れを学びました。', icon: '🎉', highlightFn: null, nextBtn: true, checkFn: null },
     { isClear: true }
   ]
 };
