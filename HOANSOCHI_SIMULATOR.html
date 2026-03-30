@@ -5634,7 +5634,7 @@ function _drawRadarChart(){
     var _ventTotal = 0, _ventCnt = 0;
     _ventOpenPcts.forEach(function(v){ if(v.found){ _ventTotal += v.pct; _ventCnt++; } });
     var ventScore = _ventCnt > 0 ? Math.round(_ventTotal / _ventCnt) : 0;
-    score1 += ventScore;
+    score1 += Math.floor(ventScore / 3); // 最大+33pt（換気率100%で+33）
     window._radarVentData = _ventOpenPcts;
 
     // アイテム配置チェック（①-⑥、各5点減点）
@@ -5738,11 +5738,13 @@ function _drawRadarChart(){
     } else {
       score4 = (stats.noGasConfirmed||0) * 2 + cardsAcquiredCount * 5;
     }
-    // 反応箇所発見チェック（未発見は-10pt）
+    // 反応箇所発見チェック（カード入手で判定、未発見は-10pt）
     var _hs1Set4 = sc && sc.leak1 && sc.leak1 !== 'なし' && sc.leak1 !== '';
-    var _hs1Found4 = !!(typeof hotspotFound1 !== 'undefined' && hotspotFound1) || !!(typeof hs1Discovered !== 'undefined' && hs1Discovered);
+    var _hs1Found4 = false;
+    try{ if(typeof window.__getOwnedCardIds === 'function') _hs1Found4 = window.__getOwnedCardIds().indexOf('カード_検知器反応') !== -1; }catch(e){}
     var _hs2Set4 = sc && sc.leak2 && sc.leak2 !== 'なし' && sc.leak2 !== '';
-    var _hs2Found4 = !!(typeof hotspotFound2 !== 'undefined' && hotspotFound2) || !!(typeof hs2Discovered !== 'undefined' && hs2Discovered);
+    var _hs2Found4 = false;
+    try{ if(typeof window.__getOwnedCardIds === 'function') _hs2Found4 = window.__getOwnedCardIds().indexOf('カード_広範囲') !== -1; }catch(e){}
     if(_hs1Set4 && !_hs1Found4) score4 -= 10;
     if(_hs2Set4 && !_hs2Found4) score4 -= 10;
     // 高濃度ガス識別検知器でガス種別を確認できた場合は+5pt
@@ -6048,9 +6050,11 @@ function showRadarDetails(){
     // 反応箇所発見チェック
     var _detSc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
     var _detHs1Set = _detSc && _detSc.leak1 && _detSc.leak1 !== 'なし' && _detSc.leak1 !== '';
-    var _detHs1Found = !!(typeof hotspotFound1 !== 'undefined' && hotspotFound1) || !!(typeof hs1Discovered !== 'undefined' && hs1Discovered);
+    var _detHs1Found = false;
+    try{ if(typeof window.__getOwnedCardIds === 'function') _detHs1Found = window.__getOwnedCardIds().indexOf('カード_検知器反応') !== -1; }catch(e){}
     var _detHs2Set = _detSc && _detSc.leak2 && _detSc.leak2 !== 'なし' && _detSc.leak2 !== '';
-    var _detHs2Found = !!(typeof hotspotFound2 !== 'undefined' && hotspotFound2) || !!(typeof hs2Discovered !== 'undefined' && hs2Discovered);
+    var _detHs2Found = false;
+    try{ if(typeof window.__getOwnedCardIds === 'function') _detHs2Found = window.__getOwnedCardIds().indexOf('カード_広範囲') !== -1; }catch(e){}
     if(_detHs1Set){
       html += _row('反応箇所１の発見', _detHs1Found
         ? '<span style="color:#66bb6a;font-weight:bold;">○</span>'
@@ -12011,8 +12015,8 @@ function openCommWindow(mode, partner){
     // partner: 'reporter' or 'alarmB'
     if(partner){
       commContext.partner = partner;
-    } else if(!commContext.partner || commContext.partner==='fireCommander' || commContext.partner==='shobo'){
-      // stale な消防系パートナーをリセット
+    } else if(!commContext.partner || commContext.partner==='fireCommander' || commContext.partner==='shobo' || commContext.partner==='tantou' || commContext.partner==='manager' || commContext.partner==='kanrisha'){
+      // stale な非住民系パートナーをリセット
       commContext.partner = (currentApartmentOwner==='B' ? 'alarmB' : 'reporter');
     }
 
@@ -14073,6 +14077,8 @@ try{
   function isReporterHallway(){
     try{
       if(!window.state) return false;
+      // 通報者が避難済みの場合は煙草を吸わない
+      if(typeof reporterRoom !== 'undefined' && reporterRoom === -1) return false;
       // 仕様：room=5 が室内廊下
       if(window.state.room!==5) return false;
       // 通報者宅＝A
@@ -20611,6 +20617,8 @@ window._tantouGenerateReply = function(rawText){
   function getPlayerProximityToReaction(){
     try{
       if(typeof isPaused!=='undefined' && isPaused) return 0;
+      // ガスメーター閉止後は臭気なし
+      if(typeof safetyMeasures!=='undefined' && safetyMeasures && safetyMeasures.meterClosed) return 0;
       var playerEl = document.getElementById('player');
       if(!playerEl || playerEl.style.display==='none') return 0;
       var appCont = document.getElementById('app-container');
