@@ -5237,6 +5237,7 @@ window._yakitoriEvacuated = false;         // 焼き鳥屋店主が避難した�
 window._ramenEvacuated = false;            // ラーメン屋店主が避難したか
 window._yakitoriPenaltyApplied = false;    // 焼き鳥屋：許可なしメーター閉止ペナルティ発生
 window._ramenPenaltyApplied = false;       // ラーメン屋：許可なしメーター閉止ペナルティ発生
+window._gasKindConfirmed = false;          // 高濃度ガス識別検知器でガス種別を確認済みか
 window._gameStats = {
   startTime: Date.now(),
   explosionOccurred: false,
@@ -5255,7 +5256,8 @@ window._gameStats = {
   validKeywordsNonDisp: 0, // 有効な会話数（通信担当者・消防大隊長以外）
   customerSatisfactionDecreases: 0, // お客さまが不満に感じた回数
   cardsDroppedToDisp: 0,   // カードのドロップ枚数（通信担当者・消防大隊長へ）
-  dangerValueAtClear: 0    // 完了時の危険度
+  dangerValueAtClear: 0,   // 完了時の危険度
+  maxDangerValue: 0        // シミュレーション中の最大危険度
 };
 
 if(dangerTimer) clearInterval(dangerTimer);
@@ -5285,6 +5287,7 @@ updateDangerUI();
 }
 
 function updateDangerUI() {
+try{ if(window._gameStats && dangerValue > (window._gameStats.maxDangerValue||0)) window._gameStats.maxDangerValue = dangerValue; }catch(e){}
 const bar=document.getElementById('danger-bar'); const num=document.getElementById('danger-num'); const icon=document.getElementById('danger-icon');
 num.textContent = dangerValue.toFixed(3);
 bar.style.width = dangerValue + '%';
@@ -5598,7 +5601,7 @@ function _drawRadarChart(){
     // ①安全意識（0-100）
     // = (100 - 完了時危険度) - (危険度上昇率上昇数×5) + 換気率（7扉/窓の平均開閉度）- アイテム配置チェック（①-⑥、各5点減点）
     var score1 = 0;
-    var dangerAtClear = stats.dangerValueAtClear || dangerValue || 0;
+    var dangerAtClear = stats.maxDangerValue || stats.dangerValueAtClear || dangerValue || 0;
     score1 = (100 - dangerAtClear);
     // 危険度上昇率が上昇した数ペナルティ
     score1 -= (stats.dangerRateRiseCount||0) * 5;
@@ -5690,6 +5693,10 @@ function _drawRadarChart(){
       if(!_c6) score1 -= 5;
     }catch(e){}
     window._radarItemChecks = _itemChecks;
+    // 都市ガス警報器が鳴り続けている場合は-40点
+    var _alarmStillRinging = !!(window._cityGasAlarmActive || (typeof _cityGasAlarmActive !== 'undefined' && _cityGasAlarmActive));
+    window._radarAlarmActive = _alarmStillRinging;
+    if(_alarmStillRinging) score1 -= 40;
     score1 = Math.max(0, Math.min(100, score1));
 
     // ②社内情報共有（0-100）
@@ -5731,7 +5738,16 @@ function _drawRadarChart(){
     } else {
       score4 = (stats.noGasConfirmed||0) * 2 + cardsAcquiredCount * 5;
     }
-    score4 = Math.min(100, score4);
+    // 反応箇所発見チェック（未発見は-10pt）
+    var _hs1Set4 = sc && sc.leak1 && sc.leak1 !== 'なし' && sc.leak1 !== '';
+    var _hs1Found4 = (typeof hotspotFound1 !== 'undefined') ? hotspotFound1 : false;
+    var _hs2Set4 = sc && sc.leak2 && sc.leak2 !== 'なし' && sc.leak2 !== '';
+    var _hs2Found4 = (typeof hotspotFound2 !== 'undefined') ? hotspotFound2 : false;
+    if(_hs1Set4 && !_hs1Found4) score4 -= 10;
+    if(_hs2Set4 && !_hs2Found4) score4 -= 10;
+    // 高濃度ガス識別検知器でガス種別を確認できた場合は+5pt
+    if(window._gasKindConfirmed) score4 += 5;
+    score4 = Math.min(100, Math.max(0, score4));
 
     // ⑤お客さま対応（0-100）
     // ①有効な会話数×5（最大100）
@@ -5953,7 +5969,7 @@ function showRadarDetails(){
     var html = '';
     // 安全意識
     html += _section('＜安全意識＞');
-    html += _row('完了時の危険度', (stats.dangerValueAtClear||0).toFixed(1) + '％');
+    html += _row('シミュレーション中の最大危険度', (stats.maxDangerValue||stats.dangerValueAtClear||0).toFixed(1) + '％');
     html += _row('危険度が上昇した数', (stats.dangerRateRiseCount||0) + '回');
     // 7扉/窓の開閉度
     var _ventData = window._radarVentData || [];
@@ -5982,6 +5998,11 @@ function showRadarDetails(){
           + '</div>';
       });
     }
+    // 都市ガス警報器チェック
+    var _alarmDetVal = !!(window._radarAlarmActive);
+    html += _row('都市ガス警報器が鳴り続けていないか', _alarmDetVal
+      ? '<span style="color:#ef5350;font-weight:bold;">× （－40pt）</span>'
+      : '<span style="color:#66bb6a;font-weight:bold;">○</span>');
     // お客さま対応
     html += _section('＜お客さま対応＞');
     html += _row('有効な会話数', (stats.validKeywordsNonDisp||0) + '回（＋' + Math.min(100,(stats.validKeywordsNonDisp||0)*5) + 'pt）');
@@ -6024,6 +6045,31 @@ function showRadarDetails(){
     html += _section('＜調査の密度＞');
     html += _row('滞留ガスの確認箇所', (stats.noGasConfirmed||0) + '箇所');
     html += _row('カードの取得枚数', cardsAcquired + '枚');
+    // 反応箇所発見チェック
+    var _detSc = (typeof activeScenario !== 'undefined') ? activeScenario : null;
+    var _detHs1Set = _detSc && _detSc.leak1 && _detSc.leak1 !== 'なし' && _detSc.leak1 !== '';
+    var _detHs1Found = (typeof hotspotFound1 !== 'undefined') ? hotspotFound1 : false;
+    var _detHs2Set = _detSc && _detSc.leak2 && _detSc.leak2 !== 'なし' && _detSc.leak2 !== '';
+    var _detHs2Found = (typeof hotspotFound2 !== 'undefined') ? hotspotFound2 : false;
+    if(_detHs1Set){
+      html += _row('反応箇所１の発見', _detHs1Found
+        ? '<span style="color:#66bb6a;font-weight:bold;">○</span>'
+        : '<span style="color:#ef5350;font-weight:bold;">× （－10pt）</span>');
+    } else {
+      html += _row('反応箇所１の発見', '<span style="color:#888;">設定なし</span>');
+    }
+    if(_detHs2Set){
+      html += _row('反応箇所２の発見', _detHs2Found
+        ? '<span style="color:#66bb6a;font-weight:bold;">○</span>'
+        : '<span style="color:#ef5350;font-weight:bold;">× （－10pt）</span>');
+    } else {
+      html += _row('反応箇所２の発見', '<span style="color:#888;">設定なし</span>');
+    }
+    // 高濃度ガス識別
+    var _detGasId = !!(window._gasKindConfirmed);
+    html += _row('高濃度ガス識別', _detGasId
+      ? '<span style="color:#66bb6a;font-weight:bold;">○ （＋5pt）</span>'
+      : '<span style="color:#888;">－</span>');
     // 社内情報共有
     html += _section('＜社内情報共有＞');
     if(isCardMode){
@@ -10561,6 +10607,8 @@ function ensureGasResultBox(){
 
 var _gasBoxTimer=null;
 function showGasResultBox(text, isRed){
+  // ガス種識別確認フラグ（識別不可でない場合にtrueにする）
+  try{ if(text && text.indexOf('識別不可') === -1 && text.indexOf('ガス種別') !== -1) window._gasKindConfirmed = true; }catch(e){}
   var box=ensureGasResultBox();
   box.style.color = isRed ? '#c62828' : '#111';
   box.textContent = text;
@@ -10593,6 +10641,12 @@ function getLELForMsgBox(){
     if(typeof getLel2==='function' && typeof hs2FoundAt!=='undefined' && hs2FoundAt){
       var p=getLel2();
       if(isFinite(p)) return p;
+    }
+  }catch(e){}
+  try{
+    if(typeof getLel1==='function' && typeof hs1FoundAt!=='undefined' && hs1FoundAt){
+      var p1=getLel1();
+      if(isFinite(p1)) return p1;
     }
   }catch(e){}
   try{ return getLELPercent(); }catch(e2){ return 0; }
@@ -22568,6 +22622,7 @@ window.stageEditorExportHTML = function() {
       window._ramenEvacuated = false;
       window._yakitoriPenaltyApplied = false;
       window._ramenPenaltyApplied = false;
+      window._gasKindConfirmed = false;
       return _origInit.apply(this, arguments);
     };
     window.initGame.__permResetHooked = true;
