@@ -5233,6 +5233,10 @@ window._reporterRoomPenaltyApplied = {};   // 部屋ごとのペナルティ適�
 window._reporterShelfPenaltyApplied = {};  // 棚・点検口ごとのペナルティ適用済みフラグ
 window._reporterCustomerPenalty = 0;       // 通報者関連のお客様対応力ペナルティ（%）
 window._reporterCustomerBonus = 0;         // 通報者関連のお客様対応力ボーナス（%）
+window._yakitoriEvacuated = false;         // 焼き鳥屋店主が避難したか
+window._ramenEvacuated = false;            // ラーメン屋店主が避難したか
+window._yakitoriPenaltyApplied = false;    // 焼き鳥屋：許可なしメーター閉止ペナルティ発生
+window._ramenPenaltyApplied = false;       // ラーメン屋：許可なしメーター閉止ペナルティ発生
 window._gameStats = {
   startTime: Date.now(),
   explosionOccurred: false,
@@ -5592,25 +5596,100 @@ function _drawRadarChart(){
     var diff = sc ? String(sc.difficulty||'B級') : 'B級';
 
     // ①安全意識（0-100）
-    // = (100 - 完了時危険度) - (危険度上昇率上昇数×5) + (通報宅の窓全開数×10 ※最大30) - (ポケット警報機所持数 + 火気厳禁シート所持数)
+    // = (100 - 完了時危険度) - (危険度上昇率上昇数×5) + 換気率（7扉/窓の平均開閉度）- アイテム配置チェック（①-⑥、各5点減点）
     var score1 = 0;
     var dangerAtClear = stats.dangerValueAtClear || dangerValue || 0;
     score1 = (100 - dangerAtClear);
     // 危険度上昇率が上昇した数ペナルティ
     score1 -= (stats.dangerRateRiseCount||0) * 5;
-    // 通報宅の窓全開ボーナス（最大30）
-    var windowCount = 0;
+
+    // 通報宅の換気率（廊下扉×2・脱衣所扉・台所扉・窓×3、計7箇所の平均開度）
+    var _ventOpenPcts = [];
     try{
-      var sm = safetyMeasures.windows;
-      for(var k in sm){ if(sm[k]) windowCount++; }
+      var _ventTargets = [
+        {id:'door-wc-slider',               label:'廊下の扉（トイレ）'},
+        {id:'door-bath-slider',             label:'廊下の扉（脱衣所）'},
+        {id:'bath-glass-door',              label:'脱衣所の扉（浴室）'},
+        {id:'kit-bed-door',                 label:'台所の扉（寝室）'},
+        {query:'#room-kitchen .window-pane',label:'台所の窓'},
+        {query:'#room-bath .window-pane',   label:'浴室の窓'},
+        {query:'#room-bedroom .window-pane',label:'寝室の窓'}
+      ];
+      _ventTargets.forEach(function(d){
+        var el = d.id ? document.getElementById(d.id) : document.querySelector(d.query);
+        var pct = 0;
+        if(el){
+          var ms = el.dataset.maxSlide ? parseInt(el.dataset.maxSlide) : 150;
+          var tr = el.style.transform || '';
+          var mm = tr.match(/translateX\(([+-]?\d+(?:\.\d+)?)px\)/);
+          var cur = mm ? parseFloat(mm[1]) : 0;
+          pct = Math.min(100, Math.max(0, Math.round(cur / ms * 100)));
+        }
+        _ventOpenPcts.push({label: d.label, pct: pct, found: !!el});
+      });
     }catch(e){}
-    score1 += Math.min(30, windowCount * 10);
-    // 完了時の手持ちアイテムペナルティ（使わなかった分）
+    var _ventTotal = 0, _ventCnt = 0;
+    _ventOpenPcts.forEach(function(v){ if(v.found){ _ventTotal += v.pct; _ventCnt++; } });
+    var ventScore = _ventCnt > 0 ? Math.round(_ventTotal / _ventCnt) : 0;
+    score1 += ventScore;
+    window._radarVentData = _ventOpenPcts;
+
+    // アイテム配置チェック（①-⑥、各5点減点）
+    var _itemChecks = [];
     try{
-      var alarmsInHand = (typeof state !== 'undefined' && state.itemCounts) ? (state.itemCounts.alm||0) : 0;
-      var signsInHand  = (typeof state !== 'undefined' && state.itemCounts) ? (state.itemCounts.sign||0) : 0;
-      score1 -= (alarmsInHand + signsInHand);
+      var _placedA = (typeof aptState !== 'undefined' && aptState && aptState['A'] && aptState['A'].placedItems) ? aptState['A'].placedItems : [];
+      function _hasItmRm(type, roomNum){
+        return _placedA.some(function(it){ return it.type === type && it.room === roomNum; });
+      }
+      function _leakToRm(leakName){
+        var s = String(leakName || '');
+        if(s.indexOf('脱衣所') !== -1) return 7;
+        if(s.indexOf('浴室') !== -1) return 8;
+        if(s.indexOf('台所') !== -1) return 9;
+        if(s.indexOf('寝室') !== -1) return 10;
+        if(s.indexOf('廊下') !== -1) return 5;
+        if(s.indexOf('トイレ') !== -1) return 6;
+        return -1;
+      }
+      var _rRm = (typeof reporterRoom !== 'undefined') ? reporterRoom : 9;
+      var _rEvac = (_rRm === -1);
+      var _leak1Rm = sc ? _leakToRm(sc.leak1) : -1;
+      var _leak2Str = sc ? String(sc.leak2 || 'なし') : 'なし';
+      var _leak2Rm = (_leak2Str !== 'なし' && _leak2Str !== '') ? _leakToRm(_leak2Str) : -1;
+      var _leakRooms = (_leak1Rm !== -1) ? [_leak1Rm] : [];
+      if(_leak2Rm !== -1 && _leak2Rm !== _leak1Rm) _leakRooms.push(_leak2Rm);
+
+      // ①通報者が滞在する空間に火気厳禁表示シートを設置
+      var _c1 = _rEvac ? null : _hasItmRm('sign', _rRm);
+      _itemChecks.push({no:'①', label:'通報者が滞在する空間に火気厳禁表示シートを設置', ok: _c1, evac: _rEvac});
+      if(!_rEvac && !_c1) score1 -= 5;
+
+      // ②通報者が滞在する空間にポケット警報器を設置
+      var _c2 = _rEvac ? null : _hasItmRm('alm', _rRm);
+      _itemChecks.push({no:'②', label:'通報者が滞在する空間にポケット警報器を設置', ok: _c2, evac: _rEvac});
+      if(!_rEvac && !_c2) score1 -= 5;
+
+      // ③反応箇所近傍に火気厳禁表示シート設置
+      var _c3 = _leakRooms.length > 0 && _leakRooms.every(function(r){ return _hasItmRm('sign', r); });
+      _itemChecks.push({no:'③', label:'反応箇所近傍に火気厳禁表示シート設置', ok: _c3, evac: false});
+      if(!_c3) score1 -= 5;
+
+      // ④反応箇所近傍にポケット警報器を設置
+      var _c4 = _leakRooms.length > 0 && _leakRooms.every(function(r){ return _hasItmRm('alm', r); });
+      _itemChecks.push({no:'④', label:'反応箇所近傍にポケット警報器を設置', ok: _c4, evac: false});
+      if(!_c4) score1 -= 5;
+
+      // ⑤火気使用箇所に火気厳禁表示シートを設置（台所セット）
+      var _c5 = _hasItmRm('sign', 9);
+      _itemChecks.push({no:'⑤', label:'火気使用箇所に火気厳禁表示シートを設置', ok: _c5, evac: false});
+      if(!_c5) score1 -= 5;
+
+      // ⑥排水口からの流入ガス監視のためポケット警報器を設置（脱衣所 or 浴室）
+      var _c6 = _hasItmRm('alm', 7) || _hasItmRm('alm', 8);
+      _itemChecks.push({no:'⑥', label:'排水口からの流入ガスの監視のためポケット警報器を設置', ok: _c6, evac: false});
+      if(!_c6) score1 -= 5;
     }catch(e){}
+    window._radarItemChecks = _itemChecks;
     score1 = Math.max(0, Math.min(100, score1));
 
     // ②社内情報共有（0-100）
@@ -5643,39 +5722,44 @@ function _drawRadarChart(){
     }
 
     // ④調査の密度（0-100）
-    // C級：(滞留ガス確認箇所数×10)+(カード取得枚数×5) 　B/A/S：(×5)+(×5)
+    // C級：(滞留ガス確認箇所数×5)+(カード取得枚数×5) 　B/A/S：(×2)+(×5)
     var score4 = 0;
     var cardsAcquiredCount = 0;
     try{ if(typeof window.__getOwnedCardIds === 'function') cardsAcquiredCount = window.__getOwnedCardIds().length; }catch(e){}
     if(diff === 'C級'){
-      score4 = (stats.noGasConfirmed||0) * 10 + cardsAcquiredCount * 5;
-    } else {
       score4 = (stats.noGasConfirmed||0) * 5 + cardsAcquiredCount * 5;
+    } else {
+      score4 = (stats.noGasConfirmed||0) * 2 + cardsAcquiredCount * 5;
     }
     score4 = Math.min(100, score4);
 
     // ⑤お客さま対応（0-100）
-    // = (通信担当者・消防大隊長以外への有効キーワード数×10 ※最大100)
-    //   - (お客さま不満回数×10)
-    //   - (会話したキャラクターの精神状態の平均ペナルティ: 興奮=30, 不安=15, 平静=0)
+    // ①有効な会話数×5（最大100）
+    // ②通報者への不満：入室・棚調査許可なし×-5（通報者避難済みなら0）
+    // ③ラーメン屋不満：許可なしメーター閉止→-20（避難済みなら0）
+    // ④焼き鳥屋不満：許可なしメーター閉止→-20（避難済み or カード_下水工事入手なら0）
     var score5 = 0;
-    score5 = Math.min(100, (stats.validKeywordsNonDisp||0) * 10);
-    score5 -= (stats.customerSatisfactionDecreases||0) * 10;
-    // 精神状態ペナルティ
-    try{
-      var stressMap = window._commStress || {};
-      var partnerKeys = ['reporter','alarmB','manager','kanrisha','yakitoriMaster','ramenMaster'];
-      var totalPenalty = 0, conversedCount = 0;
-      partnerKeys.forEach(function(p){
-        if(commLogs && commLogs[p] && commLogs[p].length > 0){
-          var sv = (stressMap[p] !== undefined) ? stressMap[p] : 50;
-          var pen = (sv > 60) ? 30 : (sv > 25) ? 15 : 0;
-          totalPenalty += pen;
-          conversedCount++;
-        }
-      });
-      if(conversedCount > 0) score5 -= Math.round(totalPenalty / conversedCount);
-    }catch(e){}
+    // ①有効な会話数
+    score5 = Math.min(100, (stats.validKeywordsNonDisp||0) * 5);
+    // ②通報者への不満（入室・棚調査許可なし）
+    var _repEvac5 = (typeof reporterRoom !== 'undefined' && reporterRoom === -1);
+    if(!_repEvac5){
+      // _reporterCustomerPenalty にはストレス分が一時的に加算される場合があるため除く
+      var _basePen5 = Math.max(0, (window._reporterCustomerPenalty || 0) - (window._stressPenalty || 0));
+      score5 -= _basePen5;
+    }
+    // ③ラーメン屋店主への不満
+    var _ramenEvac5 = (window._ramenEvacuated || false);
+    if(!_ramenEvac5 && (window._ramenPenaltyApplied || false)){
+      score5 -= 20;
+    }
+    // ④焼き鳥屋店主への不満
+    var _yakiEvac5 = (window._yakitoriEvacuated || false);
+    var _hasSewerCard5 = false;
+    try{ if(typeof window.__getOwnedCardIds === 'function') _hasSewerCard5 = window.__getOwnedCardIds().indexOf('カード_下水工事') !== -1; }catch(e){}
+    if(!_yakiEvac5 && !_hasSewerCard5 && (window._yakitoriPenaltyApplied || false)){
+      score5 -= 20;
+    }
     score5 = Math.max(0, Math.min(100, score5));
 
     var scores = [score1, score2, score3, score4, score5];
@@ -5870,15 +5954,69 @@ function showRadarDetails(){
     // 安全意識
     html += _section('＜安全意識＞');
     html += _row('完了時の危険度', (stats.dangerValueAtClear||0).toFixed(1) + '％');
-    html += _row('通報宅の換気率', ventRate + '％');
-    html += _row('ポケット警報機の使用数', alarmsUsed + '個');
-    html += _row('火気厳禁表示シートの使用数', signsUsed + '個');
     html += _row('危険度が上昇した数', (stats.dangerRateRiseCount||0) + '回');
+    // 7扉/窓の開閉度
+    var _ventData = window._radarVentData || [];
+    if(_ventData.length > 0){
+      html += '<div style="font-size:1.7cqmin;color:#90caf9;margin-top:0.8cqmin;margin-bottom:0.3cqmin;padding:0.3cqmin 0;border-bottom:0.15cqmin solid rgba(144,202,249,0.3);">【換気状況（開度）】</div>';
+      var _vTotal2 = 0, _vCnt2 = 0;
+      _ventData.forEach(function(v){
+        html += _row(v.label, v.found ? v.pct + '％' : '（検知なし）');
+        if(v.found){ _vTotal2 += v.pct; _vCnt2++; }
+      });
+      var _avgOpen2 = _vCnt2 > 0 ? Math.round(_vTotal2 / _vCnt2) : 0;
+      html += _row('換気率（平均開度）', _avgOpen2 + '％');
+    }
+    // アイテム配置チェック
+    var _itmChks = window._radarItemChecks || [];
+    if(_itmChks.length > 0){
+      html += '<div style="font-size:1.7cqmin;color:#90caf9;margin-top:0.8cqmin;margin-bottom:0.3cqmin;padding:0.3cqmin 0;border-bottom:0.15cqmin solid rgba(144,202,249,0.3);">【アイテム配置確認】</div>';
+      _itmChks.forEach(function(c){
+        var markStr;
+        if(c.evac) markStr = '<span style="color:#ffa726;font-weight:bold;">避難済み</span>';
+        else if(c.ok) markStr = '<span style="color:#66bb6a;font-weight:bold;">○</span>';
+        else markStr = '<span style="color:#ef5350;font-weight:bold;">×</span>';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.45cqmin 0;border-bottom:0.15cqmin solid rgba(255,255,255,0.08);">'
+          + '<span style="color:#90caf9;font-size:1.55cqmin;">' + c.no + '&nbsp;' + c.label + '</span>'
+          + '<span style="font-size:1.8cqmin;">' + markStr + '</span>'
+          + '</div>';
+      });
+    }
     // お客さま対応
     html += _section('＜お客さま対応＞');
-    html += _row('有効な会話数', (stats.validKeywordsNonDisp||0) + '回');
-    html += _row('お客さまが不満に感じた回数', (stats.customerSatisfactionDecreases||0) + '回');
-    html += _row('会話相手の精神状態', mentalStateStr);
+    html += _row('有効な会話数', (stats.validKeywordsNonDisp||0) + '回（＋' + Math.min(100,(stats.validKeywordsNonDisp||0)*5) + 'pt）');
+    // 通報者への不満
+    var _repEvacDet = (typeof reporterRoom !== 'undefined' && reporterRoom === -1);
+    if(_repEvacDet){
+      html += _row('通報者への不満（入室・棚調査）', '<span style="color:#ffa726;">避難済み（減点なし）</span>');
+    } else {
+      var _repPenDet = window._reporterCustomerPenalty || 0;
+      html += _row('通報者への不満（入室・棚調査）', (_repPenDet > 0 ? '－' + _repPenDet + 'pt' : '問題なし'));
+    }
+    // ラーメン屋不満
+    var _ramenEvacDet = (window._ramenEvacuated || false);
+    var _ramenPenDet = (window._ramenPenaltyApplied || false);
+    if(_ramenEvacDet){
+      html += _row('ラーメン屋店主の不満', '<span style="color:#ffa726;">避難済み（減点なし）</span>');
+    } else if(_ramenPenDet){
+      html += _row('ラーメン屋店主の不満', '<span style="color:#ef5350;">－20pt</span>');
+    } else {
+      html += _row('ラーメン屋店主の不満', '問題なし');
+    }
+    // 焼き鳥屋不満
+    var _yakiEvacDet = (window._yakitoriEvacuated || false);
+    var _yakiPenDet = (window._yakitoriPenaltyApplied || false);
+    var _sewerCardDet = false;
+    try{ if(typeof window.__getOwnedCardIds === 'function') _sewerCardDet = window.__getOwnedCardIds().indexOf('カード_下水工事') !== -1; }catch(e){}
+    if(_yakiEvacDet){
+      html += _row('焼き鳥屋店主の不満', '<span style="color:#ffa726;">避難済み（減点なし）</span>');
+    } else if(_sewerCardDet){
+      html += _row('焼き鳥屋店主の不満', '<span style="color:#ffa726;">下水工事カード入手（減点なし）</span>');
+    } else if(_yakiPenDet){
+      html += _row('焼き鳥屋店主の不満', '<span style="color:#ef5350;">－20pt</span>');
+    } else {
+      html += _row('焼き鳥屋店主の不満', '問題なし');
+    }
     // 迅速な調査
     html += _section('＜迅速な調査＞');
     html += _row('調査時間', elapsedMin + '分' + elapsedRemSec + '秒');
@@ -11175,11 +11313,13 @@ function resumeLoopSafe(){
           if(selectedMeterId===5 && !_yakitoriGasOk){
             _shopGasPenalty = (_shopGasPenalty||0) + 10;
             if(window._gameStats) window._gameStats.customerSatisfactionDecreases = (window._gameStats.customerSatisfactionDecreases||0) + 1;
+            window._yakitoriPenaltyApplied = true;
             showSystemMsg('お客さま対応力が減少した（焼き鳥屋店主の許可なくガスを閉止しました）');
             _penaltyShown = true;
           } else if(selectedMeterId===6 && !_ramenGasOk){
             _shopGasPenalty = (_shopGasPenalty||0) + 10;
             if(window._gameStats) window._gameStats.customerSatisfactionDecreases = (window._gameStats.customerSatisfactionDecreases||0) + 1;
+            window._ramenPenaltyApplied = true;
             showSystemMsg('お客さま対応力が減少した（ラーメン屋店主の許可なくガスを閉止しました）');
             _penaltyShown = true;
           }
@@ -12540,9 +12680,16 @@ function _commApplyMove(v){
     var isResidentB = (commContext && commContext.partner === 'alarmB');
 
     if(v==='evac'){
+      var _evacPartner = commContext ? commContext.partner : '';
       if(isResidentB){
         residentBRoom=-1;
         addReporterMsg('わかりました。避難します。');
+      } else if(_evacPartner === 'yakitoriMaster'){
+        window._yakitoriEvacuated = true;
+        addReporterMsg('分かった。避難します。');
+      } else if(_evacPartner === 'ramenMaster'){
+        window._ramenEvacuated = true;
+        addReporterMsg('分かりました。避難します。');
       } else {
         reporterRoom=-1;
         addReporterMsg('わかりました。避難します。');
@@ -22417,6 +22564,10 @@ window.stageEditorExportHTML = function() {
       window._reporterShelfPenaltyApplied = {};
       window._reporterCustomerPenalty = 0;
       window._reporterCustomerBonus = 0;
+      window._yakitoriEvacuated = false;
+      window._ramenEvacuated = false;
+      window._yakitoriPenaltyApplied = false;
+      window._ramenPenaltyApplied = false;
       return _origInit.apply(this, arguments);
     };
     window.initGame.__permResetHooked = true;
