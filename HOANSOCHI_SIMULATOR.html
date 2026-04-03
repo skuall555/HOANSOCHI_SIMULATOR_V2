@@ -29500,11 +29500,13 @@ function _initConstructionSystem(){
 'use strict';
 
 /* ---- パスワード定義（システム管理者がここを書き換えてHTML出力） ---- */
-var _PASS_USER  = 'USER1000';
+/* ユーザーは複数登録可：{name:'表示名', password:'パスワード'} の配列 */
+var _USERS = [{"name":"ユーザー1","password":"USER1000"}];
 var _PASS_ADMIN = 'TGNW99';
 
-/* ---- 現在のロール ---- */
+/* ---- 現在のロール / ログイン名 ---- */
 window._currentRole = null; // 'guest' | 'user' | 'admin'
+window._currentUserName = '';
 
 /* ============================
    ログイン画面HTML注入
@@ -29518,6 +29520,12 @@ function _injectLoginScreen(){
     'display:flex;align-items:center;justify-content:center;',
     'font-family:-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;'
   ].join('');
+
+  /* ユーザー名ドロップダウンのoption生成 */
+  var userOpts = _USERS.map(function(u,i){
+    return '<option value="'+i+'">'+u.name.replace(/</g,'&lt;')+'</option>';
+  }).join('');
+
   el.innerHTML = [
     '<div style="display:flex;flex-direction:column;align-items:center;gap:3cqmin;width:60cqmin;max-width:90vw;">',
       '<div style="font-size:3.5cqmin;font-weight:900;color:#e8f4ff;letter-spacing:0.1em;text-align:center;">保安措置シミュレーター</div>',
@@ -29543,6 +29551,13 @@ function _injectLoginScreen(){
       /* パスワード入力エリア（初期非表示） */
       '<div id="_login-pw-area" style="display:none;width:100%;flex-direction:column;gap:1.5cqmin;align-items:center;">',
         '<div id="_login-pw-label" style="color:#90caf9;font-size:1.8cqmin;"></div>',
+        /* ユーザー名選択（userのみ表示） */
+        '<select id="_login-user-sel" style="',
+          'display:none;width:100%;box-sizing:border-box;padding:1.2cqmin;',
+          'border-radius:0.8cqmin;border:0.2cqmin solid #42a5f5;',
+          'background:#0d1f3a;color:#fff;font-size:2cqmin;">',
+          userOpts,
+        '</select>',
         '<input id="_login-pw-input" type="password" placeholder="パスワードを入力" style="',
           'width:100%;box-sizing:border-box;padding:1.5cqmin;border-radius:0.8cqmin;',
           'border:0.2cqmin solid #42a5f5;background:#0d1f3a;color:#fff;font-size:2cqmin;',
@@ -29573,7 +29588,14 @@ function _injectLoginScreen(){
     document.getElementById('_login-btn-admin').style.display='none';
     var area = document.getElementById('_login-pw-area');
     area.style.display='flex';
-    document.getElementById('_login-pw-label').textContent='ログインパスワードを入力してください。';
+    var sel = document.getElementById('_login-user-sel');
+    if(role === 'user'){
+      document.getElementById('_login-pw-label').textContent='ユーザー名を選択してパスワードを入力してください。';
+      sel.style.display = '';
+    } else {
+      document.getElementById('_login-pw-label').textContent='管理者パスワードを入力してください。';
+      sel.style.display = 'none';
+    }
     document.getElementById('_login-pw-input').value='';
     document.getElementById('_login-pw-err').textContent='';
     document.getElementById('_login-pw-input').focus();
@@ -29585,10 +29607,11 @@ function _injectLoginScreen(){
     document.getElementById('_login-btn-user').style.display='';
     document.getElementById('_login-btn-admin').style.display='';
     document.getElementById('_login-pw-area').style.display='none';
+    document.getElementById('_login-user-sel').style.display='none';
   }
 
   document.getElementById('_login-btn-guest').onclick = function(){
-    _applyLogin('guest');
+    _applyLogin('guest', '');
   };
   document.getElementById('_login-btn-user').onclick = function(){
     showPwArea('user');
@@ -29608,10 +29631,13 @@ function _injectLoginScreen(){
     var pw = document.getElementById('_login-pw-input').value;
     var err = document.getElementById('_login-pw-err');
     if(_pendingRole === 'user'){
-      if(pw === _PASS_USER){ _applyLogin('user'); }
+      var sel = document.getElementById('_login-user-sel');
+      var idx = parseInt(sel.value, 10);
+      var u = _USERS[idx];
+      if(u && pw === u.password){ _applyLogin('user', u.name); }
       else { err.textContent = 'パスワードが違います。'; }
     } else if(_pendingRole === 'admin'){
-      if(pw === _PASS_ADMIN){ _applyLogin('admin'); }
+      if(pw === _PASS_ADMIN){ _applyLogin('admin', '管理者'); }
       else { err.textContent = 'パスワードが違います。'; }
     }
   }
@@ -29620,8 +29646,9 @@ function _injectLoginScreen(){
 /* ============================
    ログイン適用
    ============================ */
-function _applyLogin(role){
+function _applyLogin(role, userName){
   window._currentRole = role;
+  window._currentUserName = userName || '';
 
   /* ログイン画面を閉じる */
   var ls = document.getElementById('_login-screen');
@@ -29767,22 +29794,48 @@ window.openPwResetDialog = function(){
   var dlg = document.createElement('div');
   dlg.id = '_pw-reset-dialog';
   dlg.style.cssText = [
-    'position:fixed;inset:0;z-index:700000;',
+    'position:fixed;inset:0;z-index:700000;overflow-y:auto;',
     'background:rgba(0,0,0,0.85);display:flex;',
-    'align-items:center;justify-content:center;',
+    'align-items:flex-start;justify-content:center;padding:3cqmin 0;',
     'font-family:-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;'
   ].join('');
+
+  /* ユーザー行のHTML生成 */
+  var INP_STYLE = 'flex:1;padding:0.8cqmin;border-radius:0.5cqmin;border:0.15cqmin solid #42a5f5;background:#071526;color:#fff;font-size:1.7cqmin;min-width:0;';
+  var DEL_STYLE = 'padding:0.5cqmin 1.2cqmin;border:none;border-radius:0.5cqmin;background:#b71c1c;color:#fff;font-size:1.5cqmin;cursor:pointer;white-space:nowrap;';
+
+  function makeUserRowHtml(name, pw){
+    return '<div class="_pwr-user-row" style="display:flex;gap:1cqmin;align-items:center;">'
+      + '<input type="text" class="_pwr-uname" placeholder="ユーザー名" value="'+name.replace(/"/g,'&quot;')+'" style="'+INP_STYLE+'">'
+      + '<input type="text" class="_pwr-upw" placeholder="パスワード" value="'+pw.replace(/"/g,'&quot;')+'" style="'+INP_STYLE+'">'
+      + '<button class="_pwr-del-row" style="'+DEL_STYLE+'">✕</button>'
+      + '</div>';
+  }
+
+  var initRows = _USERS.map(function(u){ return makeUserRowHtml(u.name, u.password); }).join('');
+
   dlg.innerHTML = [
     '<div style="background:#0d1f3a;border:0.2cqmin solid #42a5f5;border-radius:1.5cqmin;',
-      'padding:3cqmin 4cqmin;width:60cqmin;max-width:90vw;display:flex;flex-direction:column;gap:2cqmin;">',
+      'padding:3cqmin 4cqmin;width:70cqmin;max-width:92vw;display:flex;flex-direction:column;gap:2cqmin;">',
       '<div style="font-size:2.5cqmin;font-weight:bold;color:#e8f4ff;text-align:center;">🔑 パスワード再設定</div>',
-      /* ユーザーパスワード */
+
+      /* ユーザー一覧 */
       '<div style="display:flex;flex-direction:column;gap:0.8cqmin;">',
-        '<label style="color:#90caf9;font-size:1.7cqmin;">ユーザーのパスワード</label>',
-        '<input id="_pwr-user" type="text" value="'+_PASS_USER+'" style="',
-          'padding:1cqmin;border-radius:0.7cqmin;border:0.15cqmin solid #42a5f5;',
-          'background:#071526;color:#fff;font-size:1.8cqmin;letter-spacing:0.08em;">',
+        '<div style="display:flex;align-items:center;justify-content:space-between;">',
+          '<label style="color:#90caf9;font-size:1.7cqmin;">ユーザー一覧</label>',
+          '<button id="_pwr-add-row" style="padding:0.5cqmin 1.5cqmin;border:none;border-radius:0.5cqmin;',
+            'background:#1976d2;color:#fff;font-size:1.7cqmin;cursor:pointer;font-weight:bold;">＋ 追加</button>',
+        '</div>',
+        '<div style="display:flex;gap:0.5cqmin;font-size:1.4cqmin;color:#78909c;padding:0 0 0.3cqmin 0;">',
+          '<span style="flex:1;">ユーザー名</span>',
+          '<span style="flex:1;">パスワード</span>',
+          '<span style="width:4cqmin;"></span>',
+        '</div>',
+        '<div id="_pwr-user-rows" style="display:flex;flex-direction:column;gap:0.8cqmin;">',
+          initRows,
+        '</div>',
       '</div>',
+
       /* 管理者パスワード */
       '<div style="display:flex;flex-direction:column;gap:0.8cqmin;">',
         '<label style="color:#90caf9;font-size:1.7cqmin;">システム管理者のパスワード</label>',
@@ -29790,6 +29843,7 @@ window.openPwResetDialog = function(){
           'padding:1cqmin;border-radius:0.7cqmin;border:0.15cqmin solid #42a5f5;',
           'background:#071526;color:#fff;font-size:1.8cqmin;letter-spacing:0.08em;">',
       '</div>',
+
       '<div id="_pwr-msg" style="color:#66bb6a;font-size:1.6cqmin;min-height:2cqmin;text-align:center;"></div>',
       '<div style="display:flex;gap:1.5cqmin;justify-content:center;">',
         '<button id="_pwr-export" style="',
@@ -29807,18 +29861,54 @@ window.openPwResetDialog = function(){
   ].join('');
   document.body.appendChild(dlg);
 
+  /* 行の削除ボタンをイベント委譲でバインド */
+  document.getElementById('_pwr-user-rows').addEventListener('click', function(e){
+    if(e.target.classList.contains('_pwr-del-row')){
+      var row = e.target.closest('._pwr-user-row');
+      if(row){
+        var rows = document.getElementById('_pwr-user-rows').querySelectorAll('._pwr-user-row');
+        if(rows.length <= 1){
+          document.getElementById('_pwr-msg').style.color='#ef5350';
+          document.getElementById('_pwr-msg').textContent = '最低1名のユーザーが必要です。';
+          return;
+        }
+        row.remove();
+        document.getElementById('_pwr-msg').textContent = '';
+      }
+    }
+  });
+
+  /* ＋ボタン：行追加 */
+  document.getElementById('_pwr-add-row').onclick = function(){
+    var container = document.getElementById('_pwr-user-rows');
+    var div = document.createElement('div');
+    div.innerHTML = makeUserRowHtml('', '');
+    container.appendChild(div.firstElementChild);
+    document.getElementById('_pwr-msg').textContent = '';
+  };
+
   document.getElementById('_pwr-close').onclick = function(){ dlg.remove(); };
+
   document.getElementById('_pwr-export').onclick = function(){
-    var newUser  = document.getElementById('_pwr-user').value.trim();
+    /* ユーザー行を収集 */
+    var rows = document.getElementById('_pwr-user-rows').querySelectorAll('._pwr-user-row');
+    var newUsers = [];
+    var valid = true;
+    rows.forEach(function(row){
+      var name = row.querySelector('._pwr-uname').value.trim();
+      var pw   = row.querySelector('._pwr-upw').value.trim();
+      if(!name || !pw){ valid = false; }
+      newUsers.push({name: name, password: pw});
+    });
     var newAdmin = document.getElementById('_pwr-admin').value.trim();
-    if(!newUser || !newAdmin){
+    if(!valid || !newAdmin){
       document.getElementById('_pwr-msg').style.color='#ef5350';
-      document.getElementById('_pwr-msg').textContent = 'パスワードを入力してください。';
+      document.getElementById('_pwr-msg').textContent = '全ての項目を入力してください。';
       return;
     }
     document.getElementById('_pwr-msg').style.color='#90caf9';
     document.getElementById('_pwr-msg').textContent = 'HTML生成中...';
-    _exportHtmlWithNewPasswords(newUser, newAdmin, function(ok){
+    _exportHtmlWithNewPasswords(newUsers, newAdmin, function(ok){
       if(ok){
         document.getElementById('_pwr-msg').style.color='#66bb6a';
         document.getElementById('_pwr-msg').textContent = '✔ 出力しました。';
@@ -29833,14 +29923,16 @@ window.openPwResetDialog = function(){
 /* ============================
    HTML出力（パスワード書き換え込み）
    ============================ */
-function _exportHtmlWithNewPasswords(newUser, newAdmin, cb){
+function _exportHtmlWithNewPasswords(newUsers, newAdmin, cb){
   try{
     var html = '<!DOCTYPE html>\n<html lang="ja">' + document.documentElement.innerHTML + '</html>';
-    /* パスワード変数を置き換え */
+    /* _USERS 配列を置き換え（JSON形式で書き出し） */
+    var usersJson = JSON.stringify(newUsers);
     html = html.replace(
-      /var _PASS_USER\s*=\s*'[^']*'/,
-      "var _PASS_USER = '" + newUser.replace(/'/g,"\\'") + "'"
+      /var _USERS\s*=\s*\[[\s\S]*?\];/,
+      'var _USERS = ' + usersJson + ';'
     );
+    /* 管理者パスワードを置き換え */
     html = html.replace(
       /var _PASS_ADMIN\s*=\s*'[^']*'/,
       "var _PASS_ADMIN = '" + newAdmin.replace(/'/g,"\\'") + "'"
@@ -29877,6 +29969,7 @@ function _exportHtmlWithNewPasswords(newUser, newAdmin, cb){
   window.confirmExit = function(){
     try{
       if(window._currentRole) sessionStorage.setItem('_hs_reload_role', window._currentRole);
+      if(window._currentUserName) sessionStorage.setItem('_hs_reload_username', window._currentUserName);
     }catch(e){}
     _orig.apply(this, arguments);
   };
@@ -29887,18 +29980,21 @@ function _exportHtmlWithNewPasswords(newUser, newAdmin, cb){
    ============================ */
 (function(){
   var _savedRole = null;
+  var _savedUserName = '';
   try{
     _savedRole = sessionStorage.getItem('_hs_reload_role');
+    _savedUserName = sessionStorage.getItem('_hs_reload_username') || '';
     if(_savedRole) sessionStorage.removeItem('_hs_reload_role');
+    if(_savedUserName) sessionStorage.removeItem('_hs_reload_username');
   }catch(e){}
 
   if(_savedRole){
     /* ゲーム内リロード（confirmExit経由）→ 自動ログイン */
-    var _r = _savedRole;
+    var _r = _savedRole; var _un = _savedUserName;
     if(document.readyState === 'loading'){
-      document.addEventListener('DOMContentLoaded', function(){ _applyLogin(_r); });
+      document.addEventListener('DOMContentLoaded', function(){ _applyLogin(_r, _un); });
     } else {
-      _applyLogin(_r);
+      _applyLogin(_r, _un);
     }
   } else {
     /* 新規起動 or 手動ブラウザ更新 → ログイン画面を表示 */
