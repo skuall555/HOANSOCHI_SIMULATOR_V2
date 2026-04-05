@@ -6821,12 +6821,15 @@ function handleGasIdAtHotspots(e){
     updateHotspots2();
 
     // 反応箇所１の処理（排風機使用済みの場合は何も表示しない）
-    if(typeof hotspot1!=='undefined' && hotspot1 && hotspot1.rect){
+    if(typeof hotspot1!=='undefined' && hotspot1){
       // その部屋で排風機が使用されていない場合に限り処理
       if(!window._hs1Vented){
         var r1=document.getElementById(hotspot1.roomId);
         if(r1 && r1.classList.contains('active')){
-          if(requiredDoorOpen2(hotspot1) && pointInRect2(x,y,hotspot1.rect)){
+          // ガス識別モードは部屋全体を判定エリアとして使用（ホバーでも反応するよう広範囲に）
+          var _r1Rect = (typeof rectInApp2==='function') ? rectInApp2(r1) : hotspot1.rect;
+          if(!_r1Rect && hotspot1.rect) _r1Rect = hotspot1.rect;
+          if(_r1Rect && requiredDoorOpen2(hotspot1) && pointInRect2(x,y,_r1Rect)){
             // メッセージボックス表示
             var lel=getLELForMsgBox();
             if(lel < 1) showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
@@ -6838,12 +6841,15 @@ function handleGasIdAtHotspots(e){
     }
 
     // 反応箇所２の処理（排風機使用済みの場合は何も表示しない）
-    if(typeof hotspot2!=='undefined' && hotspot2 && hotspot2.rect){
+    if(typeof hotspot2!=='undefined' && hotspot2){
       // その部屋で排風機が使用されていない場合に限り処理
       if(!window._hs2Vented){
         var r2=document.getElementById(hotspot2.roomId);
         if(r2 && r2.classList.contains('active')){
-          if(requiredDoorOpen2(hotspot2) && pointInRect2(x,y,hotspot2.rect)){
+          // ガス識別モードは部屋全体を判定エリアとして使用（ホバーでも反応するよう広範囲に）
+          var _r2Rect = (typeof rectInApp2==='function') ? rectInApp2(r2) : hotspot2.rect;
+          if(!_r2Rect && hotspot2.rect) _r2Rect = hotspot2.rect;
+          if(_r2Rect && requiredDoorOpen2(hotspot2) && pointInRect2(x,y,_r2Rect)){
             // メッセージボックス表示
             var lel=getLELForMsgBox();
             if(lel < 1) showGasResultBox('濃度：LEL'+lel+'%　ガス種別：識別不可', false);
@@ -7097,6 +7103,10 @@ detOv.addEventListener('mousedown', (e)=>{ handleOverlayClick(e); });
 // ただし初期状態で少し開いている扉・点検口はドラッグなしでも検知可能
 detOv.addEventListener('mousemove', (e)=>{
     if(!isPlacementMode && (isDetectorMode || isGasIdMode)){
+        if(isGasIdMode){
+            // ガス識別モード：ホバー中も濃度・ガス種メッセージを表示
+            try{ handleGasIdAtHotspots(e); }catch(_e){}
+        }
         if(_scanActive){
             updateDetToolPos(e);
             checkDoorGasAtPos(e);
@@ -20592,6 +20602,10 @@ window._tantouGenerateReply = function(rawText){
   var _ecgAmplitude = 0.15;
   var _lastNoseLevel = 0; // 0=静止, 1=ゆっくり揺れ, 2=素早く揺れ
 
+  // 臭気フェード状態管理
+  var _odorFadeStart = null;      // 閉止開始タイムスタンプ（null=フェード中でない）
+  var _odorSourceWasClosed = false; // 前回チェック時の閉止状態
+
   // 危険度パネルの下に配置
   function positionOdorPanel(){
     try{
@@ -20617,8 +20631,38 @@ window._tantouGenerateReply = function(rawText){
   function getPlayerProximityToReaction(){
     try{
       if(typeof isPaused!=='undefined' && isPaused) return 0;
-      // ガスメーター閉止後は臭気なし
-      if(typeof safetyMeasures!=='undefined' && safetyMeasures && safetyMeasures.meterClosed) return 0;
+
+      // 臭気源が閉止されているか判定（ガスメーター閉 or バルブ閉）
+      var _nowClosed = false;
+      try{
+        if(typeof meterStatus!=='undefined' && Array.isArray(meterStatus)){
+          for(var _mi=1;_mi<meterStatus.length;_mi++){ if(meterStatus[_mi]){ _nowClosed=true; break; } }
+        }
+      }catch(_e){}
+      if(!_nowClosed){
+        try{ if(window.__valveClosed) _nowClosed=true; }catch(_e){}
+      }
+
+      // 閉止状態の変化を検知してフェードタイマー管理
+      if(_nowClosed !== _odorSourceWasClosed){
+        if(_nowClosed){
+          // 開→閉：フェード開始
+          _odorFadeStart = Date.now();
+        } else {
+          // 閉→開：即座に臭気復活
+          _odorFadeStart = null;
+        }
+        _odorSourceWasClosed = _nowClosed;
+      }
+
+      // フェード係数の計算
+      var _fadeFactor = 1.0;
+      if(_nowClosed && _odorFadeStart !== null){
+        var _elapsed = Date.now() - _odorFadeStart;
+        _fadeFactor = Math.max(0, 1 - _elapsed / 30000);
+        if(_fadeFactor <= 0) return 0;
+      }
+
       var playerEl = document.getElementById('player');
       if(!playerEl || playerEl.style.display==='none') return 0;
       var appCont = document.getElementById('app-container');
@@ -20650,7 +20694,7 @@ window._tantouGenerateReply = function(rawText){
       if(typeof hotspot1!=='undefined') bestProx = Math.max(bestProx, checkHS(hotspot1, window._hs1Vented));
       if(typeof hotspot2!=='undefined') bestProx = Math.max(bestProx, checkHS(hotspot2, window._hs2Vented));
       if(typeof hotspot3!=='undefined') bestProx = Math.max(bestProx, checkHS(hotspot3, false));
-      return bestProx;
+      return bestProx * _fadeFactor;
     }catch(e){ return 0; }
   }
 
