@@ -3428,13 +3428,6 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       <div style="font-size:1.9cqmin;font-weight:bold;">No.7　安全率メーターとクリア条件</div>
       <div style="font-size:1.5cqmin;opacity:0.9;margin-top:0.5cqmin;">安全率メーターの見方と、ノルマ達成でシナリオクリアになる仕組みを学ぼう</div>
     </button>
-    <div style="margin-top:1.5cqmin;padding-top:1.5cqmin;border-top:2px solid #555;">
-      <div style="font-size:1.5cqmin;color:#aaa;margin-bottom:1.2cqmin;text-align:center;letter-spacing:0.05em;">── A 級チュートリアル ──</div>
-      <button class="menu-btn" style="background:linear-gradient(to bottom,#b71c1c 0%,#7f0000 100%);margin-bottom:2cqmin;text-align:left;padding:1.5cqmin 2cqmin;" onclick="startTutorial(21)">
-        <div style="font-size:1.9cqmin;font-weight:bold;">A1　消防の要請</div>
-        <div style="font-size:1.5cqmin;opacity:0.9;margin-top:0.5cqmin;">警報器鳴動中の建物で消防を手配する手順を学ぼう</div>
-      </button>
-    </div>
     <button class="menu-btn sec" onclick="closeTutorialSelect()">← メニューへ戻る</button>
   </div>
 </div>
@@ -26530,20 +26523,23 @@ function startTutorial(no){
     setTimeout(function(){
       try{ if(typeof startCityGasAlarm === 'function') startCityGasAlarm('tutorial_a1'); }catch(e){}
     }, 600);
-    /* mgrDoorClick フック（一度だけ） */
+    /* mgrDoorClick フック: チュートリアル21中は「施錠されている。応答はない。」のみ表示 */
     setTimeout(function(){
       try{
         if(typeof window.mgrDoorClick === 'function' && !window.mgrDoorClick.__tutAT1Hooked){
           var _origMgr = window.mgrDoorClick;
           window.mgrDoorClick = function(){
-            if(_tutNo === 21) window._tutAT1MgrDoorClicked = true;
+            if(_tutNo === 21){
+              window._tutAT1MgrDoorClicked = true;
+              try{ if(typeof window.showSystemMsg==='function') window.showSystemMsg('施錠されている。応答はない。'); }catch(e){}
+              return; // 通常の管理人ダイアログを開かない
+            }
             return _origMgr.apply(this, arguments);
           };
           window.mgrDoorClick.__tutAT1Hooked = true;
         }
       }catch(e){}
     }, 800);
-    /* _tm-hand-open-btn クリックフック（ポーリングで監視） */
   }
 
   /* チュートリアルオーバーレイ表示
@@ -26733,13 +26729,11 @@ function checkTutorialProgress(){
   }
   // A級No.1：フラグ監視
   if(_tutNo === 21){
-    /* 手持ちカードドロワー開放を検知 */
+    /* 手持ちカードドロワー開放を検知（_tm-drawer に open クラスが付いたら） */
     if(!window._tutAT1HandOpened){
       try{
-        var _handRow = document.getElementById('_sb-drawer-row') || document.querySelector('#_tm-hand-open-btn[data-open="true"]');
-        /* ドロワーが可視かどうか: _sb-drawer-row が存在し、高さがある */
-        var _sbRow = document.getElementById('_sb-drawer-row');
-        if(_sbRow && _sbRow.children.length > 0) window._tutAT1HandOpened = true;
+        var _drw = document.getElementById('_tm-drawer');
+        if(_drw && _drw.classList.contains('open')) window._tutAT1HandOpened = true;
       }catch(e){}
     }
     /* 消防を要請ボタン押下を検知 */
