@@ -3428,6 +3428,13 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
       <div style="font-size:1.9cqmin;font-weight:bold;">No.7　安全率メーターとクリア条件</div>
       <div style="font-size:1.5cqmin;opacity:0.9;margin-top:0.5cqmin;">安全率メーターの見方と、ノルマ達成でシナリオクリアになる仕組みを学ぼう</div>
     </button>
+    <div style="margin-top:1.5cqmin;padding-top:1.5cqmin;border-top:2px solid #555;">
+      <div style="font-size:1.5cqmin;color:#aaa;margin-bottom:1.2cqmin;text-align:center;letter-spacing:0.05em;">── A 級チュートリアル ──</div>
+      <button class="menu-btn" style="background:linear-gradient(to bottom,#b71c1c 0%,#7f0000 100%);margin-bottom:2cqmin;text-align:left;padding:1.5cqmin 2cqmin;" onclick="startTutorial(21)">
+        <div style="font-size:1.9cqmin;font-weight:bold;">A1　消防の要請</div>
+        <div style="font-size:1.5cqmin;opacity:0.9;margin-top:0.5cqmin;">警報器鳴動中の建物で消防を手配する手順を学ぼう</div>
+      </button>
+    </div>
     <button class="menu-btn sec" onclick="closeTutorialSelect()">← メニューへ戻る</button>
   </div>
 </div>
@@ -4029,8 +4036,8 @@ body,html{ font-family: var(--mc-font) !important; image-rendering: pixelated; }
         <select id="sc-ignition">
           <option value="なし">なし</option>
           <option value="工事現場_他工事損傷後に喫煙者が通過">工事現場_他工事損傷後に喫煙者が通過</option>
-          <option value="警報器鳴動30秒後に居住者B宅の扉で">警報器鳴動30秒後に居住者B宅の扉で</option>
           <option value="警報器鳴動100秒後に居住者B宅の扉で">警報器鳴動100秒後に居住者B宅の扉で</option>
+          <option value="警報器鳴動150秒後に居住者B宅の扉で">警報器鳴動150秒後に居住者B宅の扉で</option>
         </select>
       </div>
       <div class="scenario-category-header" style="background: rgb(62, 38, 0); color: rgb(255, 224, 178);">＜カテゴリー：工場＞</div>
@@ -19149,6 +19156,14 @@ window._tantouGenerateReply = function(rawText){
     startKensouBGM();
   }
 
+  /* チュートリアル用: 野次馬スポーンを外部から呼び出せるように公開 */
+  window.__startYakajiForTutorial = function(){
+    if(!_yakajiSpawned){
+      spawnYakaji();
+      _kohoAwarded = true; // チュートリアルでは自動付与するためクリック付与を無効化
+    }
+  };
+
   function startKensouBGM(){
     try{
       if(_yakajiBGM) return;
@@ -19238,8 +19253,15 @@ window._tantouGenerateReply = function(rawText){
     var _origInit = window.initGame;
     window.initGame = function(){
       _kaigoAwarded = false; _hinanAwarded = false;
+      _hinanVisited1F = false; _hinanVisited2F = false;
       _kasetsuAwarded = false; _kohoAwarded = false;
-      _yakajiSpawned = false; _corridorDoorClicked.clear();
+      _yakajiSpawned = false;
+      window._tutAT1MgrDoorClicked = false;
+      window._tutAT1PhoneOpened = false;
+      window._tutAT1CardModeEntered = false;
+      window._tutAT1HandOpened = false;
+      window._tutAT1ShoboPressed = false;
+      window._tutAT1M2Activated = false;
       if(_yakajiEl){ try{ _yakajiEl.remove(); }catch(e){} _yakajiEl = null; }
       stopKensouBGM();
       return _origInit.apply(this, arguments);
@@ -20618,7 +20640,7 @@ window._tantouGenerateReply = function(rawText){
       if(!dp || !op) return;
       var dpRect = dp.getBoundingClientRect();
       var appRect = document.getElementById('app-container').getBoundingClientRect();
-      var topPos = (dpRect.bottom - appRect.top);
+      var topPos = (dpRect.bottom - appRect.top) + (appRect.height * 0.10);
       op.style.top = topPos + 'px';
       // ヒントボタンの表示制御のみ（位置はCSSで固定: top:1.5cqmin; right:calc(17.5%+3cqmin)）
       var hb = document.getElementById('hint-open-btn');
@@ -24789,6 +24811,14 @@ var _tutT7SafetyFull = false;
 /* B級No.1チュートリアル用：状態追跡フラグ */
 var _tutBT1OutsidePipeTest = false;
 var _tutBT1OutOfScopeShown = false;
+/* A級 No.1 チュートリアル用：状態追跡フラグ */
+var _tutAT1MgrDoorClicked = false;
+var _tutAT1PhoneOpened = false;
+var _tutAT1CardModeEntered = false;
+var _tutAT1HandOpened = false;
+var _tutAT1ShoboPressed = false;
+var _tutAT1M2Activated = false;
+
 /* B級No.2チュートリアル用：状態追跡フラグ */
 var _tutBT2FirstBreakthroughOpened = false;
 var _tutBT2MgrCommOpened = false;
@@ -25818,6 +25848,231 @@ var TUTORIAL_STEPS = {
     /* Step 15: クリア説明 */
     { msg: '窓を全開にしました！鍵の入手から入室、換気による一連の流れを学びました。', icon: '🎉', highlightFn: null, nextBtn: true, checkFn: null },
     { isClear: true }
+  ],
+
+  /* ============================================================
+     A級 No.1 消防の要請
+     ============================================================ */
+  21: [
+    /* Step 0: イントロ */
+    { msg: '消防を要請するチュートリアルになります。\n現在、２０２号室で都市ガス警報器が鳴動しています。', icon: '🚒', highlightFn: null, nextBtn: true, checkFn: null },
+
+    /* Step 1: 202号室ノック → カード_要救助者の介護入手 */
+    {
+      msg: 'まずは、２０２号室が在宅しているか、ノックをして確認しましょう。',
+      icon: '🚪',
+      highlightFn: function(){
+        var d = document.getElementById('door-4');
+        if(d){ d.classList.add('tut-highlight'); _tutHighlighted.push(d); }
+      },
+      nextBtn: false,
+      checkFn: function(){
+        try{ return typeof window.__getOwnedCardIds==='function' && window.__getOwnedCardIds().indexOf('カード_要救助者の介護') !== -1; }catch(e){ return false; }
+      }
+    },
+
+    /* Step 2: 応答なし説明 */
+    { msg: '２０２号室から応答はありません。不在かもしれませんが、中で倒れている可能性もあります。', icon: '😰', highlightFn: null, nextBtn: true, checkFn: null },
+
+    /* Step 3: 管理人室へ → クリックで次へ */
+    {
+      msg: 'いずれにせよ、都市ガス警報器が鳴り続けており、建物内は危険な状況です。\n管理人はいないでしょうか？１Fエントランスの管理人室へ向かってみましょう。',
+      icon: '🏠',
+      highlightFn: function(){
+        var d = document.querySelector('.ent-door-mgr');
+        if(d){ d.classList.add('tut-highlight'); _tutHighlighted.push(d); }
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!window._tutAT1MgrDoorClicked; }
+    },
+
+    /* Step 4: 管理人不在 */
+    { msg: 'どうやら管理人は居ないようです。こうなってしまったら、速やかに消防を手配しましょう。', icon: '😮', highlightFn: null, nextBtn: true, checkFn: null },
+
+    /* Step 5: 消防の要請方法説明 */
+    { msg: '消防はスマートフォンを使用して、通信担当者へ現状を報告すると要請できます。', icon: '📱', highlightFn: null, nextBtn: true, checkFn: null },
+
+    /* Step 6: 屋外へ強制移動 + 野次馬 + カード付与 */
+    {
+      msg: '都市ガス警報器が鳴動している建物内では、エレベーターの使用や、スマートフォンの使用は控えましょう。\nまずは屋外へ移動します。',
+      icon: '🌳',
+      highlightFn: null,
+      nextBtn: true,
+      checkFn: null,
+      onNext: function(){
+        try{ changeRoom(1, 50); }catch(e){}
+        setTimeout(function(){
+          try{ if(typeof window.__startYakajiForTutorial==='function') window.__startYakajiForTutorial(); }catch(e){}
+          setTimeout(function(){
+            try{ window.__awardCard && window.__awardCard('カード_現場広報活動'); }catch(e){}
+            try{ window.__awardCard && window.__awardCard('カード_避難指示'); }catch(e){}
+          }, 400);
+        }, 300);
+      }
+    },
+
+    /* Step 7: スマホ使用 */
+    {
+      msg: 'スマートフォンを使用しましょう。',
+      icon: '📱',
+      highlightFn: function(){
+        /* インベントリのスマホアイテムをハイライト */
+        document.querySelectorAll('.inv-item').forEach(function(el){
+          if(el.dataset.key === 'phone'){ el.classList.add('tut-highlight'); _tutHighlighted.push(el); }
+        });
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var tp = document.getElementById('tel-panel');
+        return !!(tp && tp.classList.contains('active'));
+      }
+    },
+
+    /* Step 8: カードを使用して報告ボタン */
+    {
+      msg: '今回は「カードを使用して報告」を選択します。',
+      icon: '🃏',
+      highlightFn: function(){
+        setTimeout(function(){
+          var btn = document.getElementById('_tm-btn-card');
+          if(btn){ btn.classList.add('tut-highlight'); _tutHighlighted.push(btn); }
+        }, 400);
+      },
+      nextBtn: false,
+      checkFn: function(){
+        /* カードUIが構築されていれば _tm-b-shobo が存在する */
+        return !!document.getElementById('_tm-b-shobo');
+      }
+    },
+
+    /* Step 9: 所持カードボタン */
+    {
+      msg: '通信担当者へ現在の状況を報告します。「所持カード」ボタンをクリックしましょう。',
+      icon: '🃏',
+      highlightFn: function(){
+        setTimeout(function(){
+          var btn = document.getElementById('_tm-hand-open-btn');
+          if(btn){ btn.classList.add('tut-highlight'); _tutHighlighted.push(btn); }
+        }, 300);
+      },
+      nextBtn: false,
+      checkFn: function(){ return !!window._tutAT1HandOpened; }
+    },
+
+    /* Step 10: 所持カード表示 */
+    { msg: 'あなたの所持カードが表示されました。\n通信担当者へ都市ガス警報器が鳴動している状況を伝えましょう。', icon: '🃏', highlightFn: null, nextBtn: true, checkFn: null },
+
+    /* Step 11: カード_滞留ガスをドラッグ → 消防ボタンアクティブ */
+    {
+      msg: '所持カードの中から、警報器鳴動のカードを選択し、チャット欄へドラッグしましょう。',
+      icon: '↕️',
+      highlightFn: function(){
+        setTimeout(function(){
+          /* 所持カード内のカード_滞留ガスをハイライト */
+          document.querySelectorAll('.bt-card').forEach(function(c){
+            if(c.dataset.cardId === 'カード_滞留ガス'){ c.classList.add('tut-highlight'); _tutHighlighted.push(c); }
+          });
+        }, 400);
+      },
+      nextBtn: false,
+      checkFn: function(){
+        /* 消防を要請ボタンがアクティブになっているか */
+        var sb = document.getElementById('_tm-b-shobo');
+        return !!(sb && !sb.disabled && sb.className.indexOf(' on') >= 0);
+      }
+    },
+
+    /* Step 12: 消防を要請ボタン */
+    {
+      msg: 'グッジョブ！「消防を要請」ボタンがアクティブになりました。\n「消防を要請」ボタンをクリックしましょう。',
+      icon: '🚒',
+      highlightFn: function(){
+        setTimeout(function(){
+          var btn = document.getElementById('_tm-b-shobo');
+          if(btn){ btn.classList.add('tut-highlight'); _tutHighlighted.push(btn); }
+        }, 200);
+      },
+      nextBtn: false,
+      checkFn: function(){
+        var sc = document.getElementById('scene-breakthrough');
+        return !!(sc && sc.classList.contains('active'));
+      }
+    },
+
+    /* Step 13: 状況突破画面の説明 */
+    { msg: '状況突破画面に遷移しました。\n消防を要請するためには、３つのお題を答える必要があるようです。', icon: '📋', highlightFn: null, nextBtn: true, checkFn: null },
+
+    /* Step 14: ミッション1に挑戦 */
+    {
+      msg: 'まずは、１番上のお題に挑戦しましょう。現在、事故が発生する可能性がある状況です。どういった状況でしょう。該当しそうなカードをドラッグしましょう。',
+      icon: '🎯',
+      highlightFn: function(){
+        setTimeout(function(){
+          var rows = document.querySelectorAll('.bt-mission-row');
+          if(rows[0]){ rows[0].classList.add('tut-highlight'); _tutHighlighted.push(rows[0]); }
+        }, 300);
+      },
+      nextBtn: false,
+      checkFn: function(){
+        try{ return !!(window.__btState && window.__btState.missionSolved && window.__btState.missionSolved['shobo'] && window.__btState.missionSolved['shobo'][0]); }catch(e){ return false; }
+      }
+    },
+
+    /* Step 15: ミッション2クリック */
+    {
+      msg: 'グッジョブ！次に２つ目のお題です。\n２つ目のお題をクリックするとアクティブになります。',
+      icon: '🎯',
+      highlightFn: function(){
+        setTimeout(function(){
+          var rows = document.querySelectorAll('.bt-mission-row');
+          if(rows[1]){ rows[1].classList.add('tut-highlight'); _tutHighlighted.push(rows[1]); }
+        }, 300);
+      },
+      nextBtn: false,
+      checkFn: function(){
+        try{ return !!(window.__btState && window.__btState.selectedMission === 1); }catch(e){ return false; }
+      }
+    },
+
+    /* Step 16: ミッション2クリア */
+    {
+      msg: '救急隊も必要でしょうか？助けが必要な方がいる可能性があるカードをドラッグしてみましょう。',
+      icon: '🚑',
+      highlightFn: function(){
+        setTimeout(function(){
+          var rows = document.querySelectorAll('.bt-mission-row');
+          if(rows[1]){ rows[1].classList.add('tut-highlight'); _tutHighlighted.push(rows[1]); }
+        }, 300);
+      },
+      nextBtn: false,
+      checkFn: function(){
+        try{ return !!(window.__btState && window.__btState.missionSolved && window.__btState.missionSolved['shobo'] && window.__btState.missionSolved['shobo'][1]); }catch(e){ return false; }
+      }
+    },
+
+    /* Step 17: ミッション3クリア */
+    {
+      msg: 'グッジョブ！最後のお題です。消防の助けを借りたいことは何でしょう。建物内や近傍箇所の避難は完了しておらず、付近の住民も現在何が起きているか把握できていません。',
+      icon: '🏘️',
+      highlightFn: function(){
+        setTimeout(function(){
+          var rows = document.querySelectorAll('.bt-mission-row');
+          if(rows[2]){ rows[2].classList.add('tut-highlight'); _tutHighlighted.push(rows[2]); }
+        }, 300);
+      },
+      nextBtn: false,
+      checkFn: function(){
+        try{ return !!(window.__btState && window.__btState.missionSolved && window.__btState.missionSolved['shobo'] && window.__btState.missionSolved['shobo'][2]); }catch(e){ return false; }
+      }
+    },
+
+    /* Step 18: 消防要請成立 */
+    { msg: 'グッジョブ！これで消防の要請が通りました。', icon: '🎉', highlightFn: null, nextBtn: true, checkFn: null },
+
+    /* Step 19: まとめ */
+    { msg: '基本的な消防の要請手順については以上です。\nただし、火災が発生している場合では、火災カードのみで要請が可能となります。覚えておきましょう。', icon: '📖', highlightFn: null, nextBtn: true, checkFn: null },
+
+    { isClear: true }
   ]
 };
 
@@ -26223,6 +26478,11 @@ function startTutorial(no){
         if(_w){ _w.style.transform = 'translateX(0px)'; }
       });
     }catch(e){}
+    /* バルブ閉止状態リセット（B級No.1からの引き継ぎを防ぐ） */
+    try{ window.__valveClosed = false; window.__valveMode = false; }catch(e){}
+    try{ var _vs12=document.getElementById('valve-shut-entrance'); if(_vs12) _vs12.style.display='none'; }catch(e){}
+    /* メーター閉止もリセット */
+    try{ meterStatus = [false,false,false,false,false,false,false]; }catch(e){}
     /* 警報を停止してからリセット後に新たに開始 */
     try{ if(typeof stopCityGasAlarm === 'function') stopCityGasAlarm(); }catch(e){}
     try{ window._cityGasAlarmActive = false; }catch(e){}
@@ -26232,6 +26492,58 @@ function startTutorial(no){
     setTimeout(function(){
       try{ if(typeof startCityGasAlarm === 'function') startCityGasAlarm('tutorial_b2'); }catch(e){}
     }, 600);
+  } else if(no === 21){
+    /* A級 No.1: 消防の要請 */
+    window._tutAT1MgrDoorClicked = false;
+    window._tutAT1PhoneOpened = false;
+    window._tutAT1CardModeEntered = false;
+    window._tutAT1HandOpened = false;
+    window._tutAT1ShoboPressed = false;
+    window._tutAT1M2Activated = false;
+    state.vanStock = [];
+    state.inventory = ['phone', 'memo', 'det', 'sign'];
+    state.equipped = null;
+    state.itemCounts.sign = 10;
+    /* 居住者B（警報器鳴動宅）: 202号室、不在 */
+    try{ alarmResidentRoom = 4; }catch(e){}         // 4 = 2F右 = 202号室
+    try{ alarmEntryMethod = '管理人室に聞く'; }catch(e){}
+    try{ alarmRoomOpened = false; }catch(e){}
+    try{ if(activeScenario){ activeScenario.alarmEntry = '管理人室に聞く'; activeScenario.bRoomNo = 4; } }catch(e){}
+    /* 通報宅はA側 residentRoom=2 に設定（dummy, 警報宅はB側） */
+    try{ residentRoom = 2; roomOpened = true; }catch(e){}
+    /* 内管漏れなし */
+    try{ _indoorLeakRoomNo = 'なし'; }catch(e){}
+    try{ if(activeScenario){ activeScenario.indoorLeakRoomNo = 'なし'; activeScenario.indoorLeakRoom = 'なし'; activeScenario.indoorLeak = 'なし'; } }catch(e){}
+    /* バルブ・メーターリセット */
+    try{ window.__valveClosed = false; window.__valveMode = false; }catch(e){}
+    try{ meterStatus = [false,false,false,false,false,false,false]; }catch(e){}
+    /* カード_滞留ガスを初期付与 */
+    setTimeout(function(){
+      try{ window.__awardCard && window.__awardCard('カード_滞留ガス'); }catch(e){}
+    }, 500);
+    /* 警報を停止してから新たに開始 */
+    try{ if(typeof stopCityGasAlarm === 'function') stopCityGasAlarm(); }catch(e){}
+    try{ window._cityGasAlarmActive = false; }catch(e){}
+    renderVan(); renderInventory(); updateHand();
+    changeRoom(4, 50);  /* 2F共用部から開始 */
+    /* 警報器鳴動を開始 */
+    setTimeout(function(){
+      try{ if(typeof startCityGasAlarm === 'function') startCityGasAlarm('tutorial_a1'); }catch(e){}
+    }, 600);
+    /* mgrDoorClick フック（一度だけ） */
+    setTimeout(function(){
+      try{
+        if(typeof window.mgrDoorClick === 'function' && !window.mgrDoorClick.__tutAT1Hooked){
+          var _origMgr = window.mgrDoorClick;
+          window.mgrDoorClick = function(){
+            if(_tutNo === 21) window._tutAT1MgrDoorClicked = true;
+            return _origMgr.apply(this, arguments);
+          };
+          window.mgrDoorClick.__tutAT1Hooked = true;
+        }
+      }catch(e){}
+    }, 800);
+    /* _tm-hand-open-btn クリックフック（ポーリングで監視） */
   }
 
   /* チュートリアルオーバーレイ表示
@@ -26330,6 +26642,10 @@ function toggleTutorialMsgBox(){
 window.toggleTutorialMsgBox = toggleTutorialMsgBox;
 
 function tutorialNextStep(){
+  var steps = TUTORIAL_STEPS[_tutNo];
+  if(steps && steps[_tutStep] && typeof steps[_tutStep].onNext === 'function'){
+    try{ steps[_tutStep].onNext(); }catch(e){}
+  }
   _tutStep++;
   showTutorialStep();
 }
@@ -26412,6 +26728,31 @@ function checkTutorialProgress(){
       try{
         if(typeof commContext !== 'undefined' && commContext && commContext.partner === 'manager')
           window._tutBT2MgrCommOpened = true;
+      }catch(e){}
+    }
+  }
+  // A級No.1：フラグ監視
+  if(_tutNo === 21){
+    /* 手持ちカードドロワー開放を検知 */
+    if(!window._tutAT1HandOpened){
+      try{
+        var _handRow = document.getElementById('_sb-drawer-row') || document.querySelector('#_tm-hand-open-btn[data-open="true"]');
+        /* ドロワーが可視かどうか: _sb-drawer-row が存在し、高さがある */
+        var _sbRow = document.getElementById('_sb-drawer-row');
+        if(_sbRow && _sbRow.children.length > 0) window._tutAT1HandOpened = true;
+      }catch(e){}
+    }
+    /* 消防を要請ボタン押下を検知 */
+    if(!window._tutAT1ShoboPressed){
+      try{
+        var _btScr21 = document.getElementById('scene-breakthrough');
+        if(_btScr21 && _btScr21.classList.contains('active')) window._tutAT1ShoboPressed = true;
+      }catch(e){}
+    }
+    /* ミッション2が選択されたか（selectedMission===1） */
+    if(!window._tutAT1M2Activated){
+      try{
+        if(window.__btState && window.__btState.selectedMission === 1) window._tutAT1M2Activated = true;
       }catch(e){}
     }
   }
@@ -26506,8 +26847,10 @@ function showTutorialClear(){
                 ? 'B1 バルブ閉止と灯外内管'
                 : _tutNo === 12
                   ? 'B2 警報器鳴動と鍵の入手'
-                  : 'No.7 安全率メーターとクリア条件';
-  var _gradeStr = (_tutNo === 11 || _tutNo === 12) ? 'B級扱い' : 'C級扱い';
+                  : _tutNo === 21
+                    ? 'A1 消防の要請'
+                    : 'No.7 安全率メーターとクリア条件';
+  var _gradeStr = (_tutNo === 11 || _tutNo === 12) ? 'B級扱い' : (_tutNo === 21) ? 'A級扱い' : 'C級扱い';
   var clearMsg = document.getElementById('tutorial-clear-msg');
   if(clearMsg) clearMsg.textContent = 'チュートリアル ' + name + ' をクリアしました！\nプレイ記録を履歴に保存しました（' + _gradeStr + '）。';
 
@@ -26526,13 +26869,14 @@ function saveTutorialHistory(no){
       6: 'チュートリアル6：問診と検知器調査',
       7: 'チュートリアル7：安全率メーターとクリア条件',
       11: 'チュートリアルB1：バルブ閉止と灯外内管',
-      12: 'チュートリアルB2：警報器鳴動と鍵の入手'
+      12: 'チュートリアルB2：警報器鳴動と鍵の入手',
+      21: 'チュートリアルA1：消防の要請'
     };
-    var _scenarioNoMap = {1:-1,2:-2,3:-3,4:-4,5:-5,6:-6,7:-7,11:-11,12:-12};
+    var _scenarioNoMap = {1:-1,2:-2,3:-3,4:-4,5:-5,6:-6,7:-7,11:-11,12:-12,21:-21};
     var record = {
       scenarioNo: _scenarioNoMap[no] !== undefined ? _scenarioNoMap[no] : -no,
       scenarioName: names[no] || ('チュートリアル' + no),
-      grade: (no === 11 || no === 12) ? 'B' : 'C',
+      grade: (no === 11 || no === 12) ? 'B' : (no === 21) ? 'A' : 'C',
       totalPoints: 40,
       isCorrect: null,
       playerAnswer: 'チュートリアルクリア',
@@ -29412,7 +29756,18 @@ setInterval(function(){
       if(window._corridorFireOnAlarm){
         var delay = window._corridorFireOnAlarm;
         window._corridorFireOnAlarm = null;
-        setTimeout(triggerCorridorFire, delay);
+        setTimeout(function(){
+          // 台所の窓が開いていれば着火しない
+          try{
+            var _kwin = document.getElementById('kitchen-window-b');
+            var _kwinOpen = (typeof _isWindowOpen==='function') ? _isWindowOpen(_kwin) : false;
+            if(_kwinOpen){
+              try{ if(typeof window.showSystemMsg==='function') window.showSystemMsg('室内に充満していたガスは屋外へ放散されました。'); }catch(_e2){}
+              return;
+            }
+          }catch(_e){}
+          triggerCorridorFire();
+        }, delay);
       }
     }
     _prevAlarmActive = alarmNow;
@@ -29460,10 +29815,10 @@ function _initConstructionSystem(){
 
   // 着火タイマー（警報器系）— roadConstruction と無関係に設定
   var ign = sc.ignition||'なし';
-  if(ign==='警報器鳴動30秒後に居住者B宅の扉で'){
-    window._corridorFireOnAlarm = 30000;
-  } else if(ign==='警報器鳴動100秒後に居住者B宅の扉で'){
+  if(ign==='警報器鳴動100秒後に居住者B宅の扉で'){
     window._corridorFireOnAlarm = 100000;
+  } else if(ign==='警報器鳴動150秒後に居住者B宅の扉で'){
+    window._corridorFireOnAlarm = 150000;
   }
 
   if(sc.roadConstruction!=='あり') return;
